@@ -928,6 +928,10 @@ img, svg {
   gap: 0.5rem;
 }
 
+.field[hidden] {
+  display: none;
+}
+
 .field-label {
   font-size: 0.875rem;
   font-weight: 600;

@@ -22,6 +22,8 @@ const MIN_FILL_MS = 3000;            // humans take longer than this to write a 
 const BUDGET = 3;                    // messages per IP per window
 const WINDOW_MS = 60 * 60 * 1000;    // one hour
 const TOPICS = new Set(["Job opportunity", "Contract or consulting", "Freelance", "Something else"]);
+const REPLIES = new Set(["Email", "Phone call"]);
+const MIN_PHONE_DIGITS = 7;
 const sent = new Map();              // ip -> [timestamps] (per warm container)
 
 const reply = (statusCode, body) => ({
@@ -74,8 +76,11 @@ export const handler = async (event) => {
   const name = line(data.name, 120);
   const email = line(data.email, 200);
   const topic = TOPICS.has(data.topic) ? data.topic : "Something else";
+  const replyBy = REPLIES.has(data.reply) ? data.reply : "Email";
+  const phone = replyBy === "Phone call" ? line(data.phone, 30) : "";
   const message = String(data.message ?? "").trim().slice(0, 5000);
   if (!name || !EMAIL_RE.test(email) || message.length < 10) return reply(400, { error: "validation" });
+  if (replyBy === "Phone call" && phone.replace(/\D/g, "").length < MIN_PHONE_DIGITS) return reply(400, { error: "validation" });
 
   const when = new Intl.DateTimeFormat("en-US", {
     timeZone: "America/New_York", dateStyle: "medium", timeStyle: "short",
@@ -84,6 +89,7 @@ export const handler = async (event) => {
   const body = [
     `From:   ${name} <${email}>`,
     `Topic:  ${topic}`,
+    `Reply:  ${phone ? `${replyBy}, ${phone}` : replyBy}`,
     `Sent:   ${when}`,
     `IP:     ${ip}`,
     `Agent:  ${ua || "(none)"}`,

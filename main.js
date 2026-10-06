@@ -162,6 +162,23 @@
       status.classList.toggle("is-error", kind === "error");
     };
 
+    /* The phone field only shows, and is only required, when a call is requested. */
+    var replySelect = form.elements.reply;
+    var phoneInput = form.elements.phone;
+    var phoneField = form.querySelector("[data-reply-phone]");
+    var wantsCall = function () {
+      return Boolean(replySelect) && replySelect.value === "Phone call";
+    };
+    var syncPhone = function () {
+      if (!phoneInput || !phoneField) return;
+      var on = wantsCall();
+      phoneField.hidden = !on;
+      phoneInput.disabled = !on;
+      phoneInput.required = on;
+    };
+    if (replySelect) replySelect.addEventListener("change", syncPhone);
+    syncPhone();
+
     form.addEventListener("submit", function (event) {
       event.preventDefault();
       if (!form.checkValidity()) {
@@ -177,10 +194,13 @@
         name: form.elements.name.value,
         email: form.elements.email.value,
         topic: form.elements.topic.value,
+        reply: replySelect ? replySelect.value : "Email",
+        phone: wantsCall() && phoneInput ? phoneInput.value : "",
         message: form.elements.message.value,
         website: form.elements.website.value,
         elapsed: Date.now() - opened
       };
+      var byPhone = Boolean(payload.phone);
       submit.disabled = true;
       setStatus("Sending\u2026", "");
       fetch(endpoint, {
@@ -191,8 +211,14 @@
         .then(function (res) {
           if (!res.ok) throw new Error(String(res.status));
           form.reset();
+          syncPhone();
           form.classList.add("is-sent");
-          setStatus("Thanks, your message is on its way. I will reply by email unless you asked for another method.", "ok");
+          setStatus(
+            byPhone
+              ? "Thanks, your message is on its way. I will call you at the number you gave."
+              : "Thanks, your message is on its way. I will reply by email.",
+            "ok"
+          );
         })
         .catch(function (err) {
           var tooMany = err && err.message === "429";

@@ -303,7 +303,7 @@ The Contact section is a form that posts JSON to a Lambda Function URL; the Lamb
 | Env vars | `TO_EMAIL`, `FROM_EMAIL` (a verified SES identity), `ALLOWED_ORIGIN=https://mvcprogrammer.com` |
 | CSP | the CloudFront response headers policy lists the function URL origin in `connect-src` |
 
-The URL is in `index.html` as the form's `data-endpoint`; `main.js` posts `name`, `email`, `topic`, `message`, the honeypot `website`, and `elapsed` (ms the form was open). The Lambda answers 200 without sending when the honeypot is filled or `elapsed` is under 3 s, allows 3 messages per IP per hour per warm container, and rejects bad input with 400. It only sends when the browser `Origin` matches, so the form does not work from a local preview.
+The URL is in `index.html` as the form's `data-endpoint`; `main.js` posts `name`, `email`, `topic`, `reply` (`Email` or `Phone call`), `phone` (only for a call), `message`, the honeypot `website`, and `elapsed` (ms the form was open). The Lambda answers 200 without sending when the honeypot is filled or `elapsed` is under 3 s, allows 3 messages per IP per hour per warm container, and rejects bad input with 400. It only sends when the browser `Origin` matches, so the form does not work from a local preview.
 
 SES is in the sandbox, so both the sender and the recipient must be verified identities. The recipient is `mvc.programmer@gmail.com`. The sender is `mvcprogrammer@lightsplitters.com` (that domain is DKIM-verified in SES): sending from the Gmail address itself landed in Gmail's spam folder, because Gmail treats mail "from" one of its own accounts that did not come through Google as a spoof.
 
