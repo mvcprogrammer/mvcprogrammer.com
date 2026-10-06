@@ -1,0 +1,572 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="color-scheme" content="light dark">
+  <meta name="theme-color" content="#f7f8fa" media="(prefers-color-scheme: light)">
+  <meta name="theme-color" content="#1e1f22" media="(prefers-color-scheme: dark)">
+
+  <title>Neal Thomas | Senior Full-Stack Software Engineer | .NET, Angular, SQL Server</title>
+  <meta name="description" content="Neal Thomas is a senior full-stack software engineer in the Tampa Bay area, Florida, building enterprise business applications with C#/.NET Core, Angular, and SQL Server. 15+ years of experience, event-driven architecture, and deep accounting and healthcare domain knowledge.">
+  <meta name="author" content="Neal Thomas">
+  <link rel="canonical" href="https://mvcprogrammer.com/">
+
+  <!-- Open Graph -->
+  <meta property="og:type" content="website">
+  <meta property="og:url" content="https://mvcprogrammer.com/">
+  <meta property="og:title" content="Neal Thomas | Senior Full-Stack Software Engineer">
+  <meta property="og:description" content="Enterprise business applications on C#/.NET Core, Angular, and SQL Server. 15+ years of experience. Tampa Bay area, Florida.">
+  <meta property="og:site_name" content="mvcprogrammer.com">
+  <meta property="og:locale" content="en_US">
+  <meta property="og:image" content="https://mvcprogrammer.com/assets/images/og-image.jpg">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta property="og:image:alt" content="Neal Thomas, senior full-stack software engineer. .NET, Angular, SQL Server.">
+
+
+  <!-- Icons -->
+  <link rel="icon" href="favicon.svg" type="image/svg+xml">
+  <!-- TODO: add favicon.ico (32x32) and apple-touch-icon.png (180x180) for older browsers and iOS home screens. -->
+  <link rel="manifest" href="site.webmanifest">
+
+  <!-- Fonts are self-hosted (SIL Open Font License, see assets/fonts/). Preloaded so text renders in the right face on first paint. -->
+  <link rel="preload" href="assets/fonts/inter-latin.woff2" as="font" type="font/woff2" crossorigin>
+  <link rel="preload" href="assets/fonts/jetbrains-mono-latin.woff2" as="font" type="font/woff2" crossorigin>
+
+  <link rel="stylesheet" href="styles.css">
+
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "Person",
+    "name": "Neal Thomas",
+    "url": "https://mvcprogrammer.com/",
+    "jobTitle": "Senior Full-Stack Software Engineer",
+    "address": {
+      "@type": "PostalAddress",
+      "addressLocality": "Tampa Bay Area",
+      "addressRegion": "FL",
+      "addressCountry": "US"
+    },
+    "sameAs": [
+      "https://github.com/mvcprogrammer",
+      "https://www.linkedin.com/in/mvcprogrammer/",
+      "https://www.flickr.com/photos/lightsplitters/"
+    ],
+    "knowsAbout": ["C#", ".NET Core", "ASP.NET Core Web API", "Angular", "TypeScript", "SQL Server", "T-SQL", "RabbitMQ", "AWS", "Azure DevOps", "Event-driven architecture", "CQRS", "HL7", "FHIR", "Accounting systems"]
+  }
+  </script>
+</head>
+
+<body>
+  <a class="skip-link" href="#main">Skip to content</a>
+
+  <!-- Inline SVG sprite for social and service icons -->
+  <svg xmlns="http://www.w3.org/2000/svg" class="sr-only" aria-hidden="true" focusable="false">
+    <symbol id="icon-github" viewBox="0 0 24 24">
+      <path fill="currentColor" d="M12 .5C5.65.5.5 5.65.5 12c0 5.08 3.29 9.39 7.86 10.91.58.1.79-.25.79-.56v-2.17c-3.2.7-3.87-1.37-3.87-1.37-.52-1.33-1.28-1.68-1.28-1.68-1.04-.71.08-.7.08-.7 1.15.08 1.76 1.19 1.76 1.19 1.03 1.76 2.69 1.25 3.35.96.1-.75.4-1.25.73-1.54-2.55-.29-5.24-1.28-5.24-5.69 0-1.26.45-2.29 1.19-3.09-.12-.29-.52-1.46.11-3.05 0 0 .97-.31 3.17 1.18a11 11 0 0 1 5.77 0c2.2-1.49 3.17-1.18 3.17-1.18.63 1.59.23 2.76.11 3.05.74.8 1.19 1.83 1.19 3.09 0 4.42-2.69 5.39-5.25 5.68.41.36.78 1.06.78 2.13v3.16c0 .31.21.67.8.56A11.5 11.5 0 0 0 23.5 12C23.5 5.65 18.35.5 12 .5z"/>
+    </symbol>
+    <symbol id="icon-linkedin" viewBox="0 0 24 24">
+      <path fill="currentColor" d="M20.45 20.45h-3.55v-5.57c0-1.33-.03-3.04-1.85-3.04-1.85 0-2.14 1.45-2.14 2.94v5.67H9.36V9h3.41v1.56h.05c.47-.9 1.63-1.85 3.36-1.85 3.6 0 4.27 2.37 4.27 5.45v6.29zM5.34 7.43a2.06 2.06 0 1 1 0-4.12 2.06 2.06 0 0 1 0 4.12zM7.12 20.45H3.56V9h3.56v11.45zM22.22 0H1.77C.79 0 0 .77 0 1.73v20.54C0 23.23.79 24 1.77 24h20.45c.98 0 1.78-.77 1.78-1.73V1.73C24 .77 23.2 0 22.22 0z"/>
+    </symbol>
+    <symbol id="icon-flickr" viewBox="0 0 24 24">
+      <circle fill="currentColor" cx="7" cy="12" r="4.5"/><circle fill="currentColor" cx="17" cy="12" r="4.5"/>
+    </symbol>
+    <symbol id="icon-design" viewBox="0 0 24 24">
+      <path fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" d="M4 20h4l10.5-10.5a2.83 2.83 0 0 0-4-4L4 16v4zM13.5 6.5l4 4M3 21l3-1"/>
+    </symbol>
+    <symbol id="icon-code" viewBox="0 0 24 24">
+      <path fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" d="M8 7l-5 5 5 5M16 7l5 5-5 5M14 4l-4 16"/>
+    </symbol>
+    <symbol id="icon-deploy" viewBox="0 0 24 24">
+      <path fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" d="M7 18a4 4 0 0 1-.6-7.95A6 6 0 0 1 18 8.5 4.5 4.5 0 0 1 17.5 18H7zM12 12v6M9.5 14.5L12 12l2.5 2.5"/>
+    </symbol>
+    <symbol id="icon-monitor" viewBox="0 0 24 24">
+      <path fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" d="M3 12h4l3-7 4 14 3-7h4"/>
+    </symbol>
+    <symbol id="icon-test" viewBox="0 0 24 24">
+      <path fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" d="M9 3h6M10 3v6l-5.2 9A2 2 0 0 0 6.5 21h11a2 2 0 0 0 1.7-3L14 9V3M7.5 15h9"/>
+    </symbol>
+    <symbol id="icon-preview" viewBox="0 0 24 24">
+      <path fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" d="M2.5 12s3.5-6.5 9.5-6.5 9.5 6.5 9.5 6.5-3.5 6.5-9.5 6.5S2.5 12 2.5 12zM12 15a3 3 0 1 0 0-6 3 3 0 0 0 0 6z"/>
+    </symbol>
+    <symbol id="icon-wrench" viewBox="0 0 24 24">
+      <path fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" d="M14.5 6.5a4 4 0 0 0 4.8 4.8l-8.6 8.6a2.1 2.1 0 0 1-3-3l8.6-8.6a4 4 0 0 1 4.8-4.8l-2.6 2.6.6 2.6 2.6.6 2.6-2.6"/>
+    </symbol>
+    <symbol id="icon-audit" viewBox="0 0 24 24">
+      <path fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" d="M10.5 17a6.5 6.5 0 1 0 0-13 6.5 6.5 0 0 0 0 13zM15.5 15.5 21 21M7.75 10.5l1.9 1.9 3.6-3.9"/>
+    </symbol>
+    <symbol id="icon-data" viewBox="0 0 24 24">
+      <path fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" d="M12 3c4.4 0 8 1.3 8 3s-3.6 3-8 3-8-1.3-8-3 3.6-3 8-3zM4 6v12c0 1.7 3.6 3 8 3s8-1.3 8-3V6M4 12c0 1.7 3.6 3 8 3s8-1.3 8-3"/>
+    </symbol>
+    <symbol id="icon-mail" viewBox="0 0 24 24">
+      <path fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" d="M4 6h16a1 1 0 0 1 1 1v10a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V7a1 1 0 0 1 1-1zM3.5 7.5L12 13l8.5-5.5"/>
+    </symbol>
+    <symbol id="icon-download" viewBox="0 0 24 24">
+      <path fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" d="M12 4v11M7.5 10.5L12 15l4.5-4.5M4 19h16"/>
+    </symbol>
+  </svg>
+
+  <header class="site-header" id="top">
+    <div class="container header-inner">
+      <a class="brand" href="#top" aria-label="Neal Thomas, back to top">
+        <span class="brand-mark" aria-hidden="true"></span>
+        <span class="brand-name">Neal Thomas</span>
+      </a>
+
+      <button class="nav-toggle" type="button" aria-expanded="false" aria-controls="primary-nav" aria-label="Open menu">
+        <span class="nav-toggle-bar" aria-hidden="true"></span>
+        <span class="nav-toggle-bar" aria-hidden="true"></span>
+        <span class="nav-toggle-bar" aria-hidden="true"></span>
+      </button>
+
+      <nav class="site-nav" id="primary-nav" aria-label="Primary">
+        <ul class="nav-list" role="list">
+          <li><a class="nav-link" href="#about">About</a></li>
+          <li><a class="nav-link" href="#services">Services</a></li>
+          <li><a class="nav-link" href="#freelance">Freelance</a></li>
+          <li><a class="nav-link" href="#portfolio">Portfolio</a></li>
+          <li><a class="nav-link" href="#resume">Resume</a></li>
+          <li><a class="nav-link" href="#contact">Contact</a></li>
+        </ul>
+        <ul class="social-list" role="list" aria-label="Social profiles">
+          <li>
+            <a class="social-link" href="https://github.com/mvcprogrammer" target="_blank" rel="noopener noreferrer me" aria-label="GitHub">
+              <svg class="icon" aria-hidden="true" focusable="false"><use href="#icon-github"></use></svg>
+            </a>
+          </li>
+          <li>
+            <a class="social-link" href="https://www.linkedin.com/in/mvcprogrammer/" target="_blank" rel="noopener noreferrer me" aria-label="LinkedIn">
+              <svg class="icon" aria-hidden="true" focusable="false"><use href="#icon-linkedin"></use></svg>
+            </a>
+          </li>
+          <li>
+            <a class="social-link" href="https://www.flickr.com/photos/lightsplitters/" target="_blank" rel="noopener noreferrer me" aria-label="Flickr">
+              <svg class="icon" aria-hidden="true" focusable="false"><use href="#icon-flickr"></use></svg>
+            </a>
+          </li>
+        </ul>
+      </nav>
+    </div>
+  </header>
+
+  <main id="main" tabindex="-1">
+    <!-- ===== Hero ===== -->
+    <section class="hero" aria-labelledby="hero-title">
+      <div class="container">
+        <p class="eyebrow">Tampa Bay area, Florida, USA</p>
+        <h1 id="hero-title">Neal&nbsp;Thomas<span class="accent">.</span></h1>
+        <p class="lead">Senior full-stack engineer building enterprise business applications on C#&nbsp;/&nbsp;.NET, Angular, React, and SQL&nbsp;Server.</p>
+
+        <ul class="highlights" role="list" aria-label="Highlights">
+          <li><span class="highlight-value">15+ yrs</span><span class="highlight-label">C# / .NET</span></li>
+          <li><span class="highlight-value">Angular / React</span><span class="highlight-label">TypeScript front ends</span></li>
+          <li><span class="highlight-value">SQL Server</span><span class="highlight-label">T-SQL &amp; performance tuning</span></li>
+        </ul>
+
+        <div class="button-row">
+          <a class="button button-primary" href="#portfolio">View portfolio</a>
+          <a class="button button-secondary" href="#contact">Get in touch</a>
+        </div>
+      </div>
+    </section>
+
+    <!-- ===== About ===== -->
+    <section class="section" id="about" aria-labelledby="about-title">
+      <div class="container">
+        <p class="eyebrow">01 / About</p>
+        <h2 id="about-title">About me</h2>
+        <div class="about-grid">
+          <div class="about-body">
+            <p>I've spent 15+ years building enterprise business applications on C# / .NET and SQL Server, with Angular front ends over ASP.NET Core Web APIs. My SQL Server work runs deep: complex queries, stored procedures, indexing, execution plan analysis, and performance tuning under concurrent load.</p>
+            <p>Most recently I re-architected a legacy interval-polling Windows service into an event-driven RabbitMQ pipeline that handles 1M+ API requests around the clock. Before that I developed and maintained TOPS Software's proprietary accounting system, covering general ledger, receivables, payables, bank reconciliation, and financial reporting.</p>
+            <p>I follow SOLID principles and modern patterns like CQRS and dependency injection, and I own work from Sprint 0 and architecture review through delivery, including code review, mentoring, and production root-cause analysis. AI-assisted tools like Claude Code are part of my daily workflow.</p>
+            <a class="button button-primary" href="https://github.com/mvcprogrammer" target="_blank" rel="noopener noreferrer">
+              <svg class="icon" aria-hidden="true" focusable="false"><use href="#icon-github"></use></svg>
+              See my code on GitHub
+            </a>
+          </div>
+          <div class="about-aside">
+            <h3 class="aside-title">Core skills</h3>
+            <ul class="tag-list" role="list" aria-label="Skills">
+              <li class="tag">Angular</li>
+              <li class="tag">C# / .NET Core</li>
+              <li class="tag">SQL Server</li>
+              <li class="tag">AWS</li>
+              <li class="tag">RabbitMQ</li>
+              <li class="tag">Azure DevOps</li>
+              <li class="tag">xUnit</li>
+              <li class="tag">Docker</li>
+            </ul>
+            <h3 class="aside-title">Domains</h3>
+            <ul class="tag-list" role="list" aria-label="Domain expertise">
+              <li class="tag">Accounting</li>
+              <li class="tag">Healthcare (HL7, FHIR, HIPAA)</li>
+              <li class="tag">Real estate</li>
+            </ul>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ===== Quote ===== -->
+    <section class="quote-band" aria-label="Quote">
+      <div class="container">
+        <figure class="quote">
+          <blockquote>
+            <p>Sometimes it is the people no one can imagine anything of who do the things no one can imagine.</p>
+          </blockquote>
+          <figcaption>Alan Turing</figcaption>
+        </figure>
+      </div>
+    </section>
+
+    <!-- ===== Services ===== -->
+    <section class="section" id="services" aria-labelledby="services-title">
+      <div class="container">
+        <p class="eyebrow">02 / Services</p>
+        <h2 id="services-title">What I do</h2>
+        <div class="card-grid">
+          <article class="card service-card">
+            <div class="service-icon" aria-hidden="true">
+              <svg class="icon" focusable="false"><use href="#icon-design"></use></svg>
+            </div>
+            <h3>Design</h3>
+            <p>Turning requirements from Product into scalable design blueprints. I research the problem space and the systems already in play, then break the work into epics, stories, and tasks with clear acceptance criteria.</p>
+            <p>From there I plan Sprint 0, lead the architecture review, and guide the development effort through delivery, documenting progress, decisions, and challenges so the whole team can see where things stand.</p>
+          </article>
+          <article class="card service-card">
+            <div class="service-icon" aria-hidden="true">
+              <svg class="icon" focusable="false"><use href="#icon-data"></use></svg>
+            </div>
+            <h3>Data</h3>
+            <p>Relational schema design and T-SQL on SQL Server: stored procedures, indexing strategy, and execution plan analysis for queries that stay fast under concurrent load.</p>
+            <p>I treat the database as part of the application, with schema changes under source control and performance tuning driven by measurements rather than guesses.</p>
+          </article>
+          <article class="card service-card">
+            <div class="service-icon" aria-hidden="true">
+              <svg class="icon" focusable="false"><use href="#icon-code"></use></svg>
+            </div>
+            <h3>Code</h3>
+            <p>Maintainable, efficient code written to industry-standard conventions refined over 15 years, built on SOLID principles and modern patterns like CQRS and dependency injection.</p>
+            <p>Clean, consistent C# and TypeScript the next engineer can read without a tour, kept that way through analyzers, code review, and small, focused pull requests.</p>
+          </article>
+          <article class="card service-card">
+            <div class="service-icon" aria-hidden="true">
+              <svg class="icon" focusable="false"><use href="#icon-test"></use></svg>
+            </div>
+            <h3>Test</h3>
+            <p>Every feature ships with fully functional unit and integration tests in xUnit, NUnit, and Moq, covering the happy path, edge cases, and failure modes.</p>
+            <p>Tests run in the pipeline on every push, so refactoring stays safe and regressions surface before review rather than in production.</p>
+          </article>
+          <article class="card service-card">
+            <div class="service-icon" aria-hidden="true">
+              <svg class="icon" focusable="false"><use href="#icon-deploy"></use></svg>
+            </div>
+            <h3>Deploy</h3>
+            <p>CI/CD pipelines in Azure DevOps and GitHub Actions that build, test, and ship Docker images, from GitOps deployments with ArgoCD on Kubernetes down to lean deploy scripts for small serverless projects on AWS.</p>
+            <p>Environments are reproducible, rollbacks are a single step, and every release leaves a trail from commit to running container.</p>
+          </article>
+          <article class="card service-card">
+            <div class="service-icon" aria-hidden="true">
+              <svg class="icon" focusable="false"><use href="#icon-monitor"></use></svg>
+            </div>
+            <h3>Monitor &amp; Support</h3>
+            <p>Production is instrumented with structured logging through Serilog, Seq, Datadog, and CloudWatch, with dashboards and alarms tuned so problems surface before customers notice.</p>
+            <p>When something does slip through, I switch on debug-level logging for the affected component, trace the request through the logs, run the root-cause analysis, and ship the fix with a test that keeps it from coming back.</p>
+          </article>
+        </div>
+      </div>
+    </section>
+
+    <!-- ===== Freelance ===== -->
+    <section class="section" id="freelance" aria-labelledby="freelance-title">
+      <div class="container">
+        <p class="eyebrow">03 / Freelance</p>
+        <h2 id="freelance-title">Work with me</h2>
+        <p class="section-intro">Not every problem needs a full-time hire. I take on short, well-defined engagements for teams that want senior .NET, Angular, React, or SQL Server help without the ramp-up, and I keep the first step small so there is nothing to lose by trying it.</p>
+        <div class="card-grid">
+          <article class="card service-card">
+            <div class="service-icon" aria-hidden="true">
+              <svg class="icon" focusable="false"><use href="#icon-preview"></use></svg>
+            </div>
+            <h3>Low-risk preview</h3>
+            <p>Start with one small, fixed-scope piece of work, a day or two at most, so you can see how I communicate, estimate, and deliver before committing to anything bigger.</p>
+            <p>If it is not a fit, you still walk away with finished, tested work and a clear write-up of what I found.</p>
+          </article>
+          <article class="card service-card">
+            <div class="service-icon" aria-hidden="true">
+              <svg class="icon" focusable="false"><use href="#icon-wrench"></use></svg>
+            </div>
+            <h3>Small changes</h3>
+            <p>Bug fixes, small features, framework and dependency upgrades, and the tickets that never reach the top of the backlog.</p>
+            <p>Scoped up front and delivered as clean pull requests against your repository, with tests, so your team can review and merge on its own schedule.</p>
+          </article>
+          <article class="card service-card">
+            <div class="service-icon" aria-hidden="true">
+              <svg class="icon" focusable="false"><use href="#icon-audit"></use></svg>
+            </div>
+            <h3>Audits for developers</h3>
+            <p>A second set of senior eyes on your codebase: architecture and code review, a SQL Server performance pass over execution plans, indexes, and slow stored procedures, or a pre-release security check.</p>
+            <p>You get a written report with findings ranked by impact and concrete next steps, not a list of lint warnings.</p>
+          </article>
+        </div>
+        <div class="button-row section-cta">
+          <a class="button button-primary" href="#contact" data-topic="Freelance">Start a conversation</a>
+        </div>
+      </div>
+    </section>
+
+    <!-- ===== Portfolio ===== -->
+    <section class="section section-alt" id="portfolio" aria-labelledby="portfolio-title">
+      <div class="container">
+        <p class="eyebrow">04 / Portfolio</p>
+        <h2 id="portfolio-title">Selected work</h2>
+        <p class="section-intro">Most of my career has gone into enterprise systems that belong to the companies I built them for, so that code stays behind their walls. The projects below are my own. They are here to show how I design, write, test, and ship software when every decision is mine.</p>
+        <div class="card-grid portfolio-grid">
+          <article class="card portfolio-card portfolio-card-featured">
+            <div class="card-media">
+              <img src="assets/images/portfolio/mvcprogrammer-com.jpg" alt="Neal Thomas, with C# service code from a .NET API in the background" width="1200" height="750" loading="lazy" decoding="async">
+            </div>
+            <div class="card-body">
+              <h3>mvcprogrammer.com</h3>
+              <p class="card-subtitle">The tech behind this site</p>
+              <p>Plain HTML, CSS, and JavaScript with no framework, no build step, and no dependencies. The files live in a private S3 bucket that only CloudFront can read through Origin Access Control. CloudFront serves them worldwide over HTTPS with an ACM certificate, Route 53 points the domain at the distribution, and a GitHub Actions workflow authenticated with OIDC syncs the bucket and invalidates the cache on every push to main. No servers, no load balancer, no auto scaling group.</p>
+              <ul class="tag-list card-tags" role="list" aria-label="Technologies used on mvcprogrammer.com">
+                <li class="tag">HTML</li>
+                <li class="tag">CSS</li>
+                <li class="tag">Vanilla JavaScript</li>
+                <li class="tag">JSON-LD</li>
+                <li class="tag">Amazon S3</li>
+                <li class="tag">CloudFront + OAC</li>
+                <li class="tag">CloudFront Functions</li>
+                <li class="tag">ACM</li>
+                <li class="tag">Route 53</li>
+                <li class="tag">IAM</li>
+                <li class="tag">GitHub Actions (OIDC)</li>
+                <li class="tag">Content Security Policy</li>
+              </ul>
+              <a class="card-link" href="https://github.com/mvcprogrammer/mvcprogrammer" target="_blank" rel="noopener">View the source on GitHub</a>
+            </div>
+          </article>
+
+          <article class="card portfolio-card">
+            <div class="card-media">
+              <img src="assets/images/portfolio/property-search-kiosk.jpg" alt="Interactive property search kiosk screen listing Clearwater Beach condos with touch controls" width="1200" height="750" loading="lazy" decoding="async">
+            </div>
+            <div class="card-body">
+              <h3>Interactive Property Search Window Display</h3>
+              <p class="card-subtitle">Touch screen kiosk, React + .NET on AWS</p>
+              <p>A touch-screen kiosk behind the window of a Clearwater Beach real estate office, running since 2009. Visitors pick sales or rentals over an aerial photo of Sand Key, browse live MLS listings and photos, and ask to be emailed details or called back from an on-screen keyboard. The 2026 rebuild is a React and TypeScript screen built with Vite, pixel-matched to the original against captures of the live kiosk, in front of a .NET 10 API on AWS Lambda served through CloudFront.</p>
+              <p><strong>Built for 1920&times;1080.</strong> The screen is pixel-matched to the kiosk's fixed full-HD display and is meant to run full screen at that resolution. At any other size or zoom level the layout will not look right, by design.</p>
+              <ul class="tag-list card-tags" role="list" aria-label="Technologies used on the kiosk">
+                <li class="tag">React</li>
+                <li class="tag">TypeScript</li>
+                <li class="tag">Vite</li>
+                <li class="tag">.NET 10</li>
+                <li class="tag">AWS Lambda</li>
+                <li class="tag">CloudFront</li>
+                <li class="tag">Stellar MLS</li>
+                <li class="tag">1920&times;1080</li>
+              </ul>
+              <a class="card-link" href="https://github.com/mvcprogrammer/sandkey-display-web" target="_blank" rel="noopener">Kiosk screen on GitHub</a>
+              <a class="card-link" href="https://github.com/mvcprogrammer/sandkey" target="_blank" rel="noopener">API on GitHub</a>
+            </div>
+          </article>
+
+          <article class="card portfolio-card">
+            <div class="card-media">
+              <img src="assets/images/portfolio/lightsplitters-com.jpg" alt="Home page of lightsplitters.com showing the LightSplitters Media wedding, portrait, and pet photography galleries" width="1200" height="750" loading="lazy" decoding="async">
+            </div>
+            <div class="card-body">
+              <h3>lightsplitters.com</h3>
+              <p class="card-subtitle">Photography studio, Angular on AWS</p>
+              <p>The website for LightSplitters Media, my photography studio in Tampa Bay: weddings, portraits, family albums, and archival prints. An Angular 22 workspace with standalone components and signals, prerendered to static HTML with no server. A second app in the same workspace is a template for client sites, so each couple's wedding site or family album lives at its own subdomain from one shared build plus a JSON file and a folder of photos. Masonry galleries with a native dialog lightbox, responsive WebP and JPEG images, a contact form that posts to a Lambda function sending through SES, and print orders through Stripe Payment Links. All of it served from a private S3 bucket through CloudFront, with a CloudFront Function routing each subdomain to its folder.</p>
+              <ul class="tag-list card-tags" role="list" aria-label="Technologies used on lightsplitters.com">
+                <li class="tag">Angular 22</li>
+                <li class="tag">TypeScript</li>
+                <li class="tag">Signals</li>
+                <li class="tag">Prerendered SSG</li>
+                <li class="tag">SCSS</li>
+                <li class="tag">Amazon S3</li>
+                <li class="tag">CloudFront Functions</li>
+                <li class="tag">Lambda + SES</li>
+                <li class="tag">Route 53</li>
+                <li class="tag">Stripe</li>
+              </ul>
+              <a class="card-link" href="https://lightsplitters.com" target="_blank" rel="noopener">Visit lightsplitters.com</a>
+              <a class="card-link" href="https://github.com/mvcprogrammer/lightsplitters.com" target="_blank" rel="noopener">Source on GitHub</a>
+            </div>
+          </article>
+        </div>
+      </div>
+    </section>
+
+    <!-- ===== Resume ===== -->
+    <section class="section" id="resume" aria-labelledby="resume-title">
+      <div class="container">
+        <div class="section-head">
+          <div>
+            <p class="eyebrow">05 / Resume</p>
+            <h2 id="resume-title">Experience</h2>
+          </div>
+          <!-- The PDF lives at s3://mvcprogrammer.com/resume/ (outside the deploy sync, not in this repo).
+               The link goes through a Lambda function URL that sends an SNS notification and 302s to the PDF. See docs/DEPLOY.md. -->
+          <a class="button button-secondary" href="https://mbm35w76dfwyr3sg45ez5p4oma0aqtta.lambda-url.us-east-1.on.aws/" rel="noopener">
+            <svg class="icon" aria-hidden="true" focusable="false"><use href="#icon-download"></use></svg>
+            Download resume (PDF)
+          </a>
+        </div>
+
+        <ol class="timeline" role="list">
+          <li class="timeline-item">
+            <p class="timeline-date"><time datetime="2023-12">Dec 2023</time> – <time datetime="2026-05">May 2026</time> · Remote</p>
+            <h3>Senior Software Engineer</h3>
+            <p class="timeline-org">AdvancedMD</p>
+            <ul class="timeline-points">
+              <li>Re-architected a legacy interval-polling Windows service into an on-demand RabbitMQ pipeline, turning scheduled batch processing into event-driven real-time throughput handling 1M+ API requests 24/7.</li>
+              <li>Designed the publish/subscribe topology: durable queues, routing keys, consumer acknowledgment, dead-letter handling, and Polly retries with exponential backoff.</li>
+              <li>Scaled parallel consumers with bounded concurrency, thread-safe shared state, and cooperative cancellation for long-running operations.</li>
+              <li>Built and maintained HL7 v2 and FHIR integrations with external healthcare systems in a HIPAA-regulated environment.</li>
+              <li>Tuned SQL Server at enterprise scale on high-write integration tables: execution plans, indexing strategy, and query rewrites.</li>
+              <li>Owned production incident response and root-cause analysis; instrumented services with Serilog, Seq, Datadog, and CloudWatch.</li>
+            </ul>
+          </li>
+
+          <li class="timeline-item">
+            <p class="timeline-date"><time datetime="2022-08">Aug 2022</time> – <time datetime="2023-08">Aug 2023</time> · Hybrid</p>
+            <h3>Software Engineer II (Full Stack)</h3>
+            <p class="timeline-org">Arise Virtual Solutions</p>
+            <ul class="timeline-points">
+              <li>Developed full-stack features and REST API endpoints with ASP.NET Core on AWS-backed infrastructure.</li>
+              <li>Built asynchronous, queue-driven processing with AWS SQS and SNS to move long-running work off the request path.</li>
+              <li>Worked across EC2, Lambda, RDS, and S3, with CloudWatch for logging and operational monitoring.</li>
+            </ul>
+          </li>
+
+          <li class="timeline-item">
+            <p class="timeline-date"><time datetime="2020-02">Feb 2020</time> – <time datetime="2022-08">Aug 2022</time> · Florida</p>
+            <h3>Software Engineer (Full Stack)</h3>
+            <p class="timeline-org">TOPS Software</p>
+            <ul class="timeline-points">
+              <li>Built full-stack features with Angular 2+ front ends over ASP.NET Core and ASP.NET Web API back ends.</li>
+              <li>Developed and maintained the company's proprietary accounting system: general ledger, receivables and assessments, vendor payables, bank reconciliation, and financial reporting.</li>
+              <li>Implemented CQRS with MediatR and real-time client updates with SignalR and WebSockets.</li>
+              <li>Took features from requirements intake through architecture review, Sprint 0, and backlog grooming; ran code reviews and mentored engineers.</li>
+            </ul>
+          </li>
+
+          <li class="timeline-item">
+            <p class="timeline-date"><time datetime="2018-11">Nov 2018</time> – <time datetime="2020-01">Jan 2020</time> · Florida</p>
+            <h3>C# Developer (Full Stack)</h3>
+            <p class="timeline-org">LIG Marine Managers Insurance</p>
+            <ul class="timeline-points">
+              <li>Led the migration of the company platform from .NET Framework 3.x to .NET Core MVC.</li>
+              <li>Developed Web API services documented with Swagger, plus a WPF client built on Caliburn.Micro.</li>
+              <li>Maintained legacy software, expanded unit test coverage, and improved overall codebase health.</li>
+            </ul>
+          </li>
+
+          <li class="timeline-item">
+            <p class="timeline-date"><time datetime="2010-01">Jan 2010</time> – <time datetime="2018-10">Oct 2018</time> · Florida</p>
+            <h3>C# Developer (Full Stack)</h3>
+            <p class="timeline-org">CENTURY 21</p>
+            <ul class="timeline-points">
+              <li>Developed SaaS real estate software using C# and C++.</li>
+              <li>Managed API integrations with major external platforms including Google and Facebook.</li>
+              <li>Built an interactive kiosk window display application (full-screen HD, non-web target).</li>
+            </ul>
+          </li>
+        </ol>
+
+        <h3 class="subsection-title">Education</h3>
+        <ol class="timeline timeline-compact" role="list">
+          <li class="timeline-item">
+            <h4>MIT OpenCourseWare</h4>
+            <p class="timeline-org">Physics</p>
+          </li>
+          <li class="timeline-item">
+            <h4>High School Diploma</h4>
+            <p class="timeline-org">Graduated at age 16</p>
+          </li>
+        </ol>
+      </div>
+    </section>
+
+    <!-- ===== Contact ===== -->
+    <section class="section section-alt" id="contact" aria-labelledby="contact-title">
+      <div class="container">
+        <p class="eyebrow">06 / Contact</p>
+        <h2 id="contact-title">Let's talk</h2>
+        <p class="section-intro">Hiring, contract work, or a question about one of the projects above. Send a note and I will reply by email, usually within a day.</p>
+        <form class="contact-form" id="contact-form" method="post" novalidate data-endpoint="https://y4z5rf27yv7aoy4zpuu5twkwl40ijxab.lambda-url.us-east-1.on.aws/">
+          <div class="form-row">
+            <label class="field">
+              <span class="field-label">Name</span>
+              <input type="text" name="name" autocomplete="name" required maxlength="120">
+            </label>
+            <label class="field">
+              <span class="field-label">Email</span>
+              <input type="email" name="email" autocomplete="email" required maxlength="200">
+            </label>
+          </div>
+          <label class="field">
+            <span class="field-label">What is this about?</span>
+            <select name="topic">
+              <option>Job opportunity</option>
+              <option>Contract or consulting</option>
+              <option>Freelance</option>
+              <option>Something else</option>
+            </select>
+          </label>
+          <label class="field">
+            <span class="field-label">Message</span>
+            <textarea name="message" rows="6" required minlength="10" maxlength="5000"></textarea>
+          </label>
+          <!-- Honeypot: hidden from people, filled by bots. The Lambda drops any submission with a value here. -->
+          <label class="field field-trap" aria-hidden="true">
+            <span class="field-label">Website</span>
+            <input type="text" name="website" tabindex="-1" autocomplete="off">
+          </label>
+          <p class="form-status" role="status" aria-live="polite"></p>
+          <button class="button button-primary" type="submit">
+            <svg class="icon" aria-hidden="true" focusable="false"><use href="#icon-mail"></use></svg>
+            Send message
+          </button>
+          <noscript><p class="form-status is-error">This form needs JavaScript. You can also reach me on <a href="https://www.linkedin.com/in/mvcprogrammer/" rel="noopener noreferrer">LinkedIn</a>.</p></noscript>
+        </form>
+      </div>
+    </section>
+  </main>
+
+  <footer class="site-footer">
+    <div class="container footer-inner">
+      <p class="footer-copy">&copy; <span id="year">2026</span> mvcprogrammer.com</p>
+      <ul class="footer-links" role="list" aria-label="Legal">
+        <li><a href="privacy.html">Privacy</a></li>
+        <li><a href="terms.html">SMS terms</a></li>
+      </ul>
+      <ul class="social-list" role="list" aria-label="Social profiles">
+        <li>
+          <a class="social-link" href="https://github.com/mvcprogrammer" target="_blank" rel="noopener noreferrer me" aria-label="GitHub">
+            <svg class="icon" aria-hidden="true" focusable="false"><use href="#icon-github"></use></svg>
+          </a>
+        </li>
+        <li>
+          <a class="social-link" href="https://www.linkedin.com/in/mvcprogrammer/" target="_blank" rel="noopener noreferrer me" aria-label="LinkedIn">
+            <svg class="icon" aria-hidden="true" focusable="false"><use href="#icon-linkedin"></use></svg>
+          </a>
+        </li>
+        <li>
+          <a class="social-link" href="https://www.flickr.com/photos/lightsplitters/" target="_blank" rel="noopener noreferrer me" aria-label="Flickr">
+            <svg class="icon" aria-hidden="true" focusable="false"><use href="#icon-flickr"></use></svg>
+          </a>
+        </li>
+      </ul>
+    </div>
+  </footer>
+
+  <script src="main.js" defer></script>
+</body>
+</html>

@@ -1,0 +1,44 @@
+{
+  "Comment": "SES Easy DKIM for mvcprogrammer.com",
+  "Changes": [
+    {
+      "Action": "UPSERT",
+      "ResourceRecordSet": {
+        "Name": "ctjnykwtowl7vzbnuptjuyykwyckhxf4._domainkey.mvcprogrammer.com",
+        "Type": "CNAME",
+        "TTL": 300,
+        "ResourceRecords": [
+          {
+            "Value": "ctjnykwtowl7vzbnuptjuyykwyckhxf4.dkim.amazonses.com"
+          }
+        ]
+      }
+    },
+    {
+      "Action": "UPSERT",
+      "ResourceRecordSet": {
+        "Name": "4jn3o42zh7fltauydglal4b7qgrs3rqt._domainkey.mvcprogrammer.com",
+        "Type": "CNAME",
+        "TTL": 300,
+        "ResourceRecords": [
+          {
+            "Value": "4jn3o42zh7fltauydglal4b7qgrs3rqt.dkim.amazonses.com"
+          }
+        ]
+      }
+    },
+    {
+      "Action": "UPSERT",
+      "ResourceRecordSet": {
+        "Name": "32rpznjjlfqnoz5qygt7sx3jr64afo3v._domainkey.mvcprogrammer.com",
+        "Type": "CNAME",
+        "TTL": 300,
+        "ResourceRecords": [
+          {
+            "Value": "32rpznjjlfqnoz5qygt7sx3jr64afo3v.dkim.amazonses.com"
+          }
+        ]
+      }
+    }
+  ]
+}

@@ -1,0 +1,12 @@
+{
+  "name": "Neal Thomas | Senior Full-Stack Software Engineer",
+  "short_name": "Neal Thomas",
+  "description": "Senior full-stack software engineer in the Tampa Bay area, Florida. .NET, Angular, SQL Server.",
+  "start_url": "/",
+  "display": "browser",
+  "background_color": "#f7f8fa",
+  "theme_color": "#2f62d9",
+  "icons": [
+    { "src": "/favicon.svg", "sizes": "any", "type": "image/svg+xml" }
+  ]
+}
