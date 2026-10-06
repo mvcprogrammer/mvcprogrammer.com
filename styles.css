@@ -205,10 +205,6 @@ img, svg {
   flex: none;
 }
 
-.accent {
-  color: var(--accent);
-}
-
 /* ---------- Typography helpers ---------- */
 .eyebrow {
   font-family: var(--font-mono);
@@ -622,6 +618,7 @@ img, svg {
 }
 
 .quote blockquote p {
+  color: var(--accent);
   font-size: clamp(1.25rem, 1rem + 1.4vw, 1.75rem);
   font-weight: 500;
   line-height: 1.4;

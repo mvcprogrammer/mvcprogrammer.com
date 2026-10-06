@@ -47,15 +47,15 @@
         <p class="legal-meta">Effective October 6, 2026</p>
         <p class="lead">mvcprogrammer.com is the personal portfolio of Neal Thomas, a sole proprietor software engineer in Holiday, Florida. This policy describes the little data the site handles, the contact form, and the one text-message program it runs.</p>
 
-        <h2>What the site collects</h2>
+        <h2>What the Site Collects</h2>
         <p>The site is a set of static pages. It sets no cookies, runs no analytics, embeds no third-party trackers, and has no accounts. The only place it asks for anything about you is the contact form described below.</p>
         <p>Like any web server, the hosting service (Amazon CloudFront and Amazon S3) records standard access logs: the requesting IP address, the page requested, the time, the browser's user-agent string, and the referring page. These logs are used only to keep the site running and are not combined with any other data about you.</p>
 
-        <h2>Contact form</h2>
+        <h2>Contact Form</h2>
         <p>The contact form on the home page asks for your name, your email address, a topic, and your message. When you send it, the form posts those four fields to a small AWS Lambda function, which emails them to Neal Thomas through Amazon Simple Email Service. The email also records the requesting IP address and the browser's user-agent string so that abuse can be traced. Nothing you type is stored anywhere other than that email and the function's execution log, which Amazon retains for a limited time. Your details are used only to reply to you.</p>
         <p>The form includes a hidden field that people never see but automated spam tools tend to fill in, and it notes how long the form was open before it was sent. Submissions that trip either check are discarded without being emailed.</p>
 
-        <h2>Resume download alerts</h2>
+        <h2>Resume Download Alerts</h2>
         <p>When someone clicks the Resume button, the request passes through a small AWS Lambda function before the PDF is delivered. That function sends Neal Thomas a notification so he knows the resume was downloaded. The notification contains:</p>
         <ul>
           <li>the date and time of the download,</li>
@@ -66,15 +66,15 @@
         </ul>
         <p>No name, email address, or phone number of the visitor is collected, because none is asked for. The location is the one associated with the network, not the visitor's precise position. At most one notification is sent per IP address every fifteen minutes. The notification is delivered to Neal Thomas by email and, once enabled, by text message to his own mobile phone. It is not stored anywhere other than the notification itself and the Lambda function's execution log, which Amazon retains for a limited time.</p>
 
-        <h2>Text messages (SMS)</h2>
+        <h2>Text Messages (SMS)</h2>
         <p>The only text messages sent from this site's toll-free number are the resume download alerts described above, and the only recipients are Neal Thomas and anyone he has personally added to the alert list. Visitors to the site are never texted, and the site never collects visitor phone numbers.</p>
         <p><strong>Mobile information is never shared.</strong> Phone numbers subscribed to the alerts, and consent to receive them, are not sold, rented, or shared with any third party or affiliate for marketing or promotional purposes. The only parties that handle the numbers are Amazon Web Services, which delivers the messages, and the recipients' mobile carriers.</p>
         <p>Recipients can stop the messages at any time by replying <strong>STOP</strong> to any alert, or by asking Neal Thomas to remove their number. See the <a href="terms.html">SMS terms</a> for details.</p>
 
-        <h2>Service providers</h2>
+        <h2>Service Providers</h2>
         <p>The site runs on Amazon Web Services (S3, CloudFront, Lambda, Simple Email Service, and Simple Notification Service). Amazon processes the data above on Neal Thomas's behalf under its own <a href="https://aws.amazon.com/privacy/" rel="noopener noreferrer">privacy notice</a>. The IP lookup described above is answered by ipinfo.io under its <a href="https://ipinfo.io/privacy-policy" rel="noopener noreferrer">privacy policy</a>.</p>
 
-        <h2>Links to other sites</h2>
+        <h2>Links to Other Sites</h2>
         <p>The site links to GitHub, LinkedIn, X, and the live projects shown in the portfolio. Those sites have their own privacy practices, which this policy does not cover.</p>
 
         <h2>Changes</h2>
