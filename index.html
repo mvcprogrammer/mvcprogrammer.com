@@ -551,6 +551,54 @@
         </form>
       </div>
     </section>
+
+    <!-- ===== Colophon ===== -->
+    <section class="section colophon" id="colophon" aria-labelledby="colophon-title">
+      <div class="container">
+        <p class="eyebrow">07 / Colophon</p>
+        <h2 id="colophon-title">How This Site Is Built</h2>
+        <p class="section-intro">A footnote for the curious. There is no server behind this page, only static files on a CDN and two small functions.</p>
+        <dl class="colophon-list">
+          <div class="colophon-item">
+            <dt>Front end</dt>
+            <dd>Plain HTML, CSS, and vanilla JavaScript. No framework, no build step, no bundler, and no dependencies: one stylesheet and one deferred script of about 250 lines, shipped exactly as written.</dd>
+          </div>
+          <div class="colophon-item">
+            <dt>Styling</dt>
+            <dd>Mobile-first CSS built on custom properties. Light and dark themes follow the operating system through <code>prefers-color-scheme</code>, with a palette borrowed from JetBrains Rider, and <code>prefers-reduced-motion</code> switches off the transitions. Inter and JetBrains Mono are self-hosted as variable WOFF2 subsets and preloaded. Icons are a single inline SVG sprite.</dd>
+          </div>
+          <div class="colophon-item">
+            <dt>Markup</dt>
+            <dd>Semantic landmarks, a skip link, ARIA labels, and visible focus rings for keyboard and screen-reader users. Search engines get JSON-LD structured data, Open Graph tags, a canonical URL, and a sitemap.</dd>
+          </div>
+          <div class="colophon-item">
+            <dt>Hosting</dt>
+            <dd>The files sit in a private Amazon S3 bucket that only CloudFront can read, through Origin Access Control. CloudFront serves them over HTTP/2 and HTTP/3 with an ACM certificate, Route 53 aliases the domain to the distribution, and a CloudFront Function redirects <code>www</code> to the apex.</dd>
+          </div>
+          <div class="colophon-item">
+            <dt>Security</dt>
+            <dd>A CloudFront response headers policy sets a strict Content Security Policy (same-origin only, no inline script or style, nothing third-party), two-year HSTS, <code>X-Frame-Options: DENY</code>, <code>nosniff</code>, and a locked-down Permissions-Policy. The site sets no cookies and runs no analytics.</dd>
+          </div>
+          <div class="colophon-item">
+            <dt>Contact form</dt>
+            <dd>Posts JSON to an AWS Lambda function URL (Node.js 22 on arm64) that emails the message through Amazon SES. Spam is filtered before anything is sent: an origin check, a honeypot field, a minimum fill time, a per-IP hourly budget, and length caps on every field.</dd>
+          </div>
+          <div class="colophon-item">
+            <dt>Resume link</dt>
+            <dd>The PDF is kept out of the public repository. The download button goes to a second Lambda that publishes a notification to an SNS topic, then answers with a <code>302</code> to the file in S3. If the notification fails, the visitor still gets the resume.</dd>
+          </div>
+          <div class="colophon-item">
+            <dt>Deploys</dt>
+            <dd>A GitHub Actions workflow runs on every push to <code>main</code>. It assumes a least-privilege IAM role through OIDC, so no AWS keys are stored in GitHub, runs <code>aws s3 sync --delete</code> in two passes (a week of browser caching for fonts and images, five minutes for pages), and invalidates the CloudFront cache. The third-party actions are pinned to commit hashes.</dd>
+          </div>
+          <div class="colophon-item">
+            <dt>Tooling</dt>
+            <dd>Written in JetBrains Rider with Claude Code as a pair programmer, and previewed locally with <code>python3 -m http.server</code> before each commit.</dd>
+          </div>
+        </dl>
+        <a class="card-link" href="https://github.com/mvcprogrammer/mvcprogrammer" target="_blank" rel="noopener">Read the source on GitHub</a>
+      </div>
+    </section>
   </main>
 
   <footer class="site-footer">
