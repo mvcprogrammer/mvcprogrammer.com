@@ -1,7 +1,7 @@
 # Hi, I'm Neal Thomas
 
 **Senior Full-Stack Software Engineer** · C# / .NET Core · Angular · SQL Server · AWS
-Tampa Bay area, Florida · 15+ years building enterprise business applications
+Tampa Bay, Florida · 15+ years building enterprise business applications
 
 [![Website](https://img.shields.io/badge/mvcprogrammer.com-0A66C2?style=flat&logo=googlechrome&logoColor=white)](https://mvcprogrammer.com)
 [![LinkedIn](https://img.shields.io/badge/LinkedIn-0A66C2?style=flat&logo=linkedin&logoColor=white)](https://www.linkedin.com/in/mvcprogrammer/)

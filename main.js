@@ -192,7 +192,7 @@
           if (!res.ok) throw new Error(String(res.status));
           form.reset();
           form.classList.add("is-sent");
-          setStatus("Thanks, your message is on its way. I will reply by email.", "ok");
+          setStatus("Thanks, your message is on its way. I will reply by email unless you asked for another method.", "ok");
         })
         .catch(function (err) {
           var tooMany = err && err.message === "429";
