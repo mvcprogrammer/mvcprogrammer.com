@@ -347,6 +347,20 @@ cd infra/lambda/contact && zip -j /tmp/contact.zip index.mjs && \
 
 Dropped and sent submissions are logged as one JSON line each in the function's CloudWatch log group, with the IP and user agent, so a spam wave can be traced.
 
+## Logs
+
+Both Lambdas write one JSON line per request to CloudWatch Logs: `/aws/lambda/mvcprogrammer-resume-download` and `/aws/lambda/mvcprogrammer-contact`. Each group keeps 90 days of events (set 2026-10-07). A new function's group has no retention until you set it:
+
+```sh
+aws logs put-retention-policy --log-group-name /aws/lambda/<function> --retention-in-days 90
+
+# Read recent lines without the START/END/REPORT noise, or follow live
+aws logs tail /aws/lambda/mvcprogrammer-resume-download --since 24h --format short | grep INFO
+aws logs tail /aws/lambda/mvcprogrammer-contact --follow
+```
+
+CloudFront access logs are separate and go to S3, not CloudWatch: standard logging on the distribution writes gzipped W3C files to `s3://mvcprogrammer-cf-logs-334383610383/cf/` (enabled 2026-10-07, bucket lifecycle expires them after 30 days). Sync the prefix locally and `gunzip` to analyse them. Logging itself is free; the only cost is S3 storage, so turn it off under the distribution's Logging settings once it has answered the question that prompted it.
+
 ## GitHub Actions (optional)
 
 `.github/workflows/deploy.yml` runs the same steps on every push to `main`. It authenticates with OpenID Connect (OIDC), so no long-lived access keys are stored in GitHub. Third-party actions are pinned to commit SHAs with the version in a trailing comment; bump the SHA and the comment together when upgrading.
