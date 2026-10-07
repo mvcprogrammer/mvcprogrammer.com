@@ -5,7 +5,7 @@ Tampa Bay, Florida · 15+ years building enterprise business applications
 
 [![Website](https://img.shields.io/badge/mvcprogrammer.com-0A66C2?style=flat&logo=googlechrome&logoColor=white)](https://mvcprogrammer.com)
 [![LinkedIn](https://img.shields.io/badge/LinkedIn-0A66C2?style=flat&logo=linkedin&logoColor=white)](https://www.linkedin.com/in/mvcprogrammer/)
-[![Email](https://img.shields.io/badge/mvc.programmer%40gmail.com-D14836?style=flat&logo=gmail&logoColor=white)](mailto:mvc.programmer@gmail.com)
+[![Email](https://img.shields.io/badge/neal.thomas%40mvcprogrammer.com-2F62D9?style=flat&logo=minutemailer&logoColor=white)](mailto:neal.thomas@mvcprogrammer.com)
 
 I build back ends that run around the clock and front ends people like using. Most recently I re-architected a legacy polling Windows service into an event-driven **RabbitMQ** pipeline that processes **1M+ API requests, 24/7**. Before that I built and maintained a proprietary accounting system (general ledger, receivables, payables, bank reconciliation, financial reporting) on Angular and ASP.NET Core.
 
