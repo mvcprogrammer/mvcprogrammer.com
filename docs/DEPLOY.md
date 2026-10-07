@@ -321,21 +321,21 @@ The Contact section is a form that posts JSON to a Lambda Function URL; the Lamb
 
 The URL is in `index.html` as the form's `data-endpoint`; `main.js` posts `name`, `email`, `topic`, `reply` (`Email` or `Phone call`), `phone` (only for a call), `message`, the honeypot `website`, and `elapsed` (ms the form was open). The Lambda answers 200 without sending when the honeypot is filled or `elapsed` is under 3 s, allows 3 messages per IP per hour per warm container, and rejects bad input with 400. It only sends when the browser `Origin` matches, so the form does not work from a local preview.
 
-SES is in the sandbox, so both the sender and the recipient must be verified identities. The recipient is `neal.thomas@mvcprogrammer.com` (a Microsoft 365 mailbox from GoDaddy, verified in SES 2026-10-07; it replaced `mvc.programmer@gmail.com`). The sender is `mvcprogrammer@lightsplitters.com` (that domain is DKIM-verified in SES): sending from the Gmail address itself landed in Gmail's spam folder, because Gmail treats mail "from" one of its own accounts that did not come through Google as a spoof.
+SES is in the sandbox, so both the sender and the recipient must be verified identities. The recipient is `neal.thomas@mvcprogrammer.com` (a Microsoft 365 mailbox from GoDaddy, verified in SES 2026-10-07; it replaced `mvc.programmer@gmail.com`). The sender is `website@mvcprogrammer.com`: the domain is DKIM-verified in SES (the three `_domainkey` CNAMEs in `infra/ses-dkim-change-batch.json`, added 2026-10-07), and any address at a verified domain may send, so no mailbox exists for it. `Reply-To` is the visitor, so nobody replies to the sender. Earlier the sender was `mvcprogrammer@lightsplitters.com`, and before that the Gmail address itself, which landed in Gmail's spam because Gmail treats mail "from" one of its own accounts that did not come through Google as a spoof.
 
-**To send from `website@mvcprogrammer.com` instead** (the SES domain identity already exists), publish its three DKIM CNAMEs in Route 53 and wait for SES to confirm them, then point the Lambda at the new sender:
+**How the domain sender was set up** (done 2026-10-07; repeat only if the SES identity is ever recreated, which issues new DKIM tokens):
 
 ```sh
 # 1. DNS: the change batch is checked in at infra/ses-dkim-change-batch.json
 aws route53 change-resource-record-sets --hosted-zone-id Z02467662SJ3B6YDOZKEF \
   --change-batch file://infra/ses-dkim-change-batch.json
 
-# 2. Wait until this says SUCCESS (usually minutes, can be up to 72 h)
+# 2. Wait until this says SUCCESS (took about 35 minutes; Amazon allows up to 72 h)
 aws sesv2 get-email-identity --email-identity mvcprogrammer.com --query DkimAttributes.Status
 
 # 3. Switch the sender
 aws lambda update-function-configuration --function-name mvcprogrammer-contact \
-  --environment "Variables={TO_EMAIL=neal.thomas@mvcprogrammer.com,FROM_EMAIL=mvcprogrammer@lightsplitters.com,ALLOWED_ORIGIN=https://mvcprogrammer.com}"
+  --environment "Variables={TO_EMAIL=neal.thomas@mvcprogrammer.com,FROM_EMAIL=website@mvcprogrammer.com,ALLOWED_ORIGIN=https://mvcprogrammer.com}"
 ```
 
 Redeploy the code after editing it:
