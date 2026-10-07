@@ -321,7 +321,7 @@ The Contact section is a form that posts JSON to a Lambda Function URL; the Lamb
 
 The URL is in `index.html` as the form's `data-endpoint`; `main.js` posts `name`, `email`, `topic`, `reply` (`Email` or `Phone call`), `phone` (only for a call), `message`, the honeypot `website`, and `elapsed` (ms the form was open). The Lambda answers 200 without sending when the honeypot is filled or `elapsed` is under 3 s, allows 3 messages per IP per hour per warm container, and rejects bad input with 400. It only sends when the browser `Origin` matches, so the form does not work from a local preview.
 
-SES is in the sandbox, so both the sender and the recipient must be verified identities. The recipient is `mvc.programmer@gmail.com`. The sender is `mvcprogrammer@lightsplitters.com` (that domain is DKIM-verified in SES): sending from the Gmail address itself landed in Gmail's spam folder, because Gmail treats mail "from" one of its own accounts that did not come through Google as a spoof.
+SES is in the sandbox, so both the sender and the recipient must be verified identities. The recipient is `neal.thomas@mvcprogrammer.com` (a Microsoft 365 mailbox from GoDaddy, verified in SES 2026-10-07; it replaced `mvc.programmer@gmail.com`). The sender is `mvcprogrammer@lightsplitters.com` (that domain is DKIM-verified in SES): sending from the Gmail address itself landed in Gmail's spam folder, because Gmail treats mail "from" one of its own accounts that did not come through Google as a spoof.
 
 **To send from `website@mvcprogrammer.com` instead** (the SES domain identity already exists), publish its three DKIM CNAMEs in Route 53 and wait for SES to confirm them, then point the Lambda at the new sender:
 
@@ -335,7 +335,7 @@ aws sesv2 get-email-identity --email-identity mvcprogrammer.com --query DkimAttr
 
 # 3. Switch the sender
 aws lambda update-function-configuration --function-name mvcprogrammer-contact \
-  --environment "Variables={TO_EMAIL=mvc.programmer@gmail.com,FROM_EMAIL=website@mvcprogrammer.com,ALLOWED_ORIGIN=https://mvcprogrammer.com}"
+  --environment "Variables={TO_EMAIL=neal.thomas@mvcprogrammer.com,FROM_EMAIL=mvcprogrammer@lightsplitters.com,ALLOWED_ORIGIN=https://mvcprogrammer.com}"
 ```
 
 Redeploy the code after editing it:
