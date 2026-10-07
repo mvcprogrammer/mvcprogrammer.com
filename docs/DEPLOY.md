@@ -107,6 +107,8 @@ Under Error pages, map both HTTP 403 and HTTP 404 to response code 404 with resp
 
 Every URL in `404.html` is root-relative (`/styles.css`, not `styles.css`) because CloudFront serves it at whatever path was requested, including nested ones.
 
+**Use an AWS CLI released after August 2022 (v2.7.x and earlier predate OAC).** An older CLI does not know the `OriginAccessControlId` field, so `get-distribution-config` silently drops it and the following `update-distribution` detaches the OAC from the origin. Every request then gets S3's `AccessDenied` XML until the OAC is put back (console: Origins > Edit > Origin access, or `update-distribution` from a current CLI or boto3) and the cache is invalidated. Check with `aws --version` before any distribution update.
+
 After creating the distribution, the console shows a "copy policy" banner for the bucket. Apply it, or use this policy (fill in the account ID and distribution ID):
 
 ```sh
