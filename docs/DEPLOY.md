@@ -6,10 +6,12 @@ Plain HTML, CSS, and vanilla JavaScript. No framework, no build step, no backend
 
 ```
 index.html                  the single page
+404.html                    small not-found page, served by CloudFront for any missing path
 privacy.html, terms.html    privacy policy and SMS terms (required for the toll-free SMS registration)
 styles.css                  mobile-first styles, light/dark via prefers-color-scheme
 main.js                     nav toggle, active-section highlighting, footer year, image fallback
 favicon.svg                 tab icon (follows dark mode)
+favicon.ico, apple-touch-icon.png  raster fallbacks rendered from favicon.svg (16/32/48 px ICO, 180 px PNG)
 site.webmanifest
 robots.txt
 sitemap.xml
@@ -33,7 +35,7 @@ python3 -m http.server 8080
 
 ## Before you deploy
 
-Search `index.html` for `TODO` and resolve each one: the `favicon.ico` / `apple-touch-icon.png` fallbacks. The resume PDF is not in the repo; see [Resume download](#resume-download). Update `<lastmod>` in `sitemap.xml` when content changes.
+The resume PDF is not in the repo; see [Resume download](#resume-download). Update `<lastmod>` in `sitemap.xml` when content changes.
 
 ## Deploy to S3 + CloudFront
 
@@ -91,7 +93,19 @@ The console is the least error-prone way to create the distribution. Use these s
 | Security policy (TLS) | TLSv1.2_2021 |
 | Response headers policy | the custom policy from step 4a below |
 
-Optional: under Error pages, map HTTP 403 to response code 404 with response page path `/index.html`. With OAC, S3 returns 403 for missing keys, so this turns "not found" into the home page instead of an XML error.
+Under Error pages, map both HTTP 403 and HTTP 404 to response code 404 with response page path `/404.html` and an error caching minimum TTL of 300 seconds. With OAC, S3 answers 403 for missing keys, so this turns "not found" into the small 404 page (about 3 KB) instead of an S3 XML error or the full home page, and the five-minute error TTL keeps scanner probes for the same path from reaching the origin again. From the CLI, fetch the config with `aws cloudfront get-distribution-config --id <DISTRIBUTION_ID>`, set `DistributionConfig.CustomErrorResponses` to the block below, and send it back with `aws cloudfront update-distribution --id <DISTRIBUTION_ID> --if-match <ETag> --distribution-config file://config.json`.
+
+```json
+{
+  "Quantity": 2,
+  "Items": [
+    { "ErrorCode": 403, "ResponseCode": "404", "ResponsePagePath": "/404.html", "ErrorCachingMinTTL": 300 },
+    { "ErrorCode": 404, "ResponseCode": "404", "ResponsePagePath": "/404.html", "ErrorCachingMinTTL": 300 }
+  ]
+}
+```
+
+Every URL in `404.html` is root-relative (`/styles.css`, not `styles.css`) because CloudFront serves it at whatever path was requested, including nested ones.
 
 After creating the distribution, the console shows a "copy policy" banner for the bucket. Apply it, or use this policy (fill in the account ID and distribution ID):
 
@@ -213,9 +227,9 @@ aws s3 sync assets/ s3://mvcprogrammer.com/assets/ --delete \
 aws s3 sync . s3://mvcprogrammer.com/ --delete \
   --cache-control "public, max-age=300, s-maxage=31536000" \
   --exclude "*" \
-  --include "index.html" --include "privacy.html" --include "terms.html" \
+  --include "index.html" --include "privacy.html" --include "terms.html" --include "404.html" \
   --include "styles.css" --include "main.js" \
-  --include "favicon.svg" --include "site.webmanifest" \
+  --include "favicon.svg" --include "favicon.ico" --include "apple-touch-icon.png" --include "site.webmanifest" \
   --include "robots.txt" --include "sitemap.xml" --include "assets/*" \
   --exclude "assets/README.md" --exclude "assets/*/README.md" --exclude "*.gitkeep"
 
