@@ -19,7 +19,7 @@ The three cards in the [portfolio](https://mvcprogrammer.com/#portfolio), in the
 
 My portfolio, written in **plain HTML, CSS, and vanilla JavaScript**. No framework, no build step, no dependencies.
 
-- **Hand-written front end:** mobile-first responsive CSS, automatic light/dark theme via `prefers-color-scheme`, self-hosted fonts, accessible markup (ARIA, semantic landmarks), and structured data (JSON-LD) for search.
+- **Hand-written front end:** mobile-first responsive CSS, automatic light/dark theme via `prefers-color-scheme`, self-hosted fonts, accessible markup (ARIA, semantic landmarks), and structured data (JSON-LD) for search. Progressive enhancement: the Experience timeline is in the HTML and is re-rendered from the API with a skill filter once it answers.
 - **Serverless static hosting on AWS:** private **S3** bucket behind **CloudFront** with Origin Access Control, **ACM** TLS certificate, **Route 53** DNS, HTTP/2 + HTTP/3.
 - **Hardened by default:** a strict Content Security Policy (no inline script, nothing third-party), HSTS, and security headers set by a CloudFront response headers policy; a **CloudFront Function** redirects `www` to the apex.
 - **CI/CD with no stored secrets:** **GitHub Actions** deploys every push to `main`, syncing to S3 and invalidating CloudFront, authenticated with **OIDC** and a least-privilege IAM role.

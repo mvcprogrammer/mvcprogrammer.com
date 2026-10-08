@@ -235,6 +235,168 @@
     });
   }
 
+  /* ---------- Experience from the API ----------
+     The timeline is in the HTML, so it reads without this script. When the
+     Experience API (/api, see api/openapi.yaml) answers, the list is re-rendered
+     from the JSON and a skill filter appears. Any failure leaves the HTML as it was. */
+  var timeline = document.getElementById("experience-timeline");
+  var skillFilter = document.getElementById("skill-filter");
+  if (timeline && skillFilter && window.fetch) {
+    var apiBase = timeline.getAttribute("data-api") || "/api";
+    var chipList = skillFilter.querySelector(".skill-filter-list");
+    var countOut = skillFilter.querySelector(".skill-filter-count");
+    var jsonLink = skillFilter.querySelector(".skill-filter-link");
+    var MONTHS = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+    var VISIBLE_CHIPS = 12;
+    var allPositions = [];
+    var chips = [];
+
+    var getJson = function (path) {
+      return fetch(apiBase + path, { headers: { Accept: "application/json" } }).then(function (res) {
+        if (!res.ok) throw new Error(String(res.status));
+        return res.json();
+      });
+    };
+
+    var el = function (tag, className, text) {
+      var node = document.createElement(tag);
+      if (className) node.className = className;
+      if (text != null) node.textContent = text;
+      return node;
+    };
+
+    /* "2023-12" -> "Dec 2023" */
+    var monthLabel = function (ym) {
+      var parts = String(ym).split("-");
+      var m = parseInt(parts[1], 10);
+      return (MONTHS[m - 1] || parts[1]) + " " + parts[0];
+    };
+
+    var timeEl = function (ym) {
+      var t = el("time", null, monthLabel(ym));
+      t.setAttribute("datetime", ym);
+      return t;
+    };
+
+    /* Matches the hand-written markup: "Remote", "Hybrid", or the place for on-site roles. */
+    var placeLabel = function (p) {
+      if (p.workMode === "remote") return "Remote";
+      if (p.workMode === "hybrid") return "Hybrid";
+      return p.location || "On-site";
+    };
+
+    var renderPosition = function (p) {
+      var item = el("li", "timeline-item");
+      var date = el("p", "timeline-date");
+      date.appendChild(timeEl(p.startDate));
+      date.appendChild(document.createTextNode(" \u2013 "));
+      if (p.endDate) {
+        date.appendChild(timeEl(p.endDate));
+      } else {
+        date.appendChild(document.createTextNode("Present"));
+      }
+      date.appendChild(document.createTextNode(" \u00b7 " + placeLabel(p)));
+      item.appendChild(date);
+      item.appendChild(el("h3", null, p.title));
+      item.appendChild(el("p", "timeline-org", p.organization));
+      var points = el("ul", "timeline-points");
+      (p.highlights || []).forEach(function (h) {
+        points.appendChild(el("li", null, h));
+      });
+      item.appendChild(points);
+      return item;
+    };
+
+    var renderList = function (list, skill) {
+      var frag = document.createDocumentFragment();
+      list.items.forEach(function (p) {
+        frag.appendChild(renderPosition(p));
+      });
+      timeline.textContent = "";
+      timeline.appendChild(frag);
+      var n = list.items.length;
+      countOut.textContent =
+        n + (n === 1 ? " position" : " positions") + (skill ? " with " + skill : "");
+      jsonLink.href = apiBase + "/experience" + (skill ? "?skill=" + encodeURIComponent(skill) : "");
+      jsonLink.textContent = "/api/experience" + (skill ? "?skill=" + encodeURIComponent(skill) : "");
+    };
+
+    var setPressed = function (active) {
+      chips.forEach(function (chip) {
+        chip.setAttribute("aria-pressed", chip.getAttribute("data-skill") === (active || "") ? "true" : "false");
+      });
+    };
+
+    var select = function (skill) {
+      timeline.classList.add("is-loading");
+      var request = skill ? getJson("/experience?skill=" + encodeURIComponent(skill)) : Promise.resolve(allPositions);
+      request
+        .then(function (list) {
+          renderList(list, skill);
+          setPressed(skill);
+        })
+        .catch(function () {
+          renderList(allPositions, null);
+          setPressed(null);
+        })
+        .then(function () {
+          timeline.classList.remove("is-loading");
+        });
+    };
+
+    var addChip = function (skill, label, hidden) {
+      var chip = el("button", "skill-chip", label);
+      chip.type = "button";
+      chip.setAttribute("data-skill", skill);
+      chip.setAttribute("aria-pressed", skill ? "false" : "true");
+      if (hidden) chip.hidden = true;
+      chip.addEventListener("click", function () {
+        select(skill);
+      });
+      chipList.appendChild(chip);
+      chips.push(chip);
+      return chip;
+    };
+
+    var buildChips = function (skills) {
+      addChip("", "All");
+      skills.items.forEach(function (s, i) {
+        var chip = addChip(s.name, s.name, i >= VISIBLE_CHIPS);
+        chip.title = s.positionCount + (s.positionCount === 1 ? " position" : " positions");
+      });
+      var extra = skills.items.length - VISIBLE_CHIPS;
+      if (extra > 0) {
+        var more = el("button", "skill-chip skill-chip-more", "+" + extra + " more");
+        more.type = "button";
+        more.setAttribute("aria-expanded", "false");
+        more.addEventListener("click", function () {
+          chips.forEach(function (chip) {
+            chip.hidden = false;
+          });
+          more.remove();
+        });
+        chipList.appendChild(more);
+      }
+    };
+
+    getJson("/experience")
+      .then(function (list) {
+        if (!list || !list.items || !list.items.length) throw new Error("empty");
+        allPositions = list;
+        renderList(list, null);
+        return getJson("/skills");
+      })
+      .then(function (skills) {
+        if (skills && skills.items && skills.items.length) {
+          buildChips(skills);
+          skillFilter.hidden = false;
+        }
+      })
+      .catch(function () {
+        /* The hand-written timeline stays. */
+      });
+  }
+
   /* ---------- Portfolio image fallback ----------
      Until the real images are added, show a labeled slot instead of a
      broken-image icon. Remove this block once all images are in place. */
