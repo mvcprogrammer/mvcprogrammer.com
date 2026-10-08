@@ -522,6 +522,35 @@ curl -si "https://<FunctionUrl host>/api/health"     # 403: the raw URL is Cloud
 
 The site's CSP needs no change: `/api` is same-origin, covered by `connect-src 'self'`.
 
+Done 2026-10-08: origin `experience-api` and the `/api/*` behavior are live on `E23085GR2SZJHC`, with the
+`mvcprogrammer-www-redirect` function attached to the new behavior too so `www` redirects on API paths as well.
+
+### 4. Let the API's own 404 through
+
+Custom error responses are distribution-wide, so the original `404 -> /404.html` mapping also replaced the
+API's `application/problem+json` 404 with the site's HTML page. The S3 bucket policy grants only `s3:GetObject`
+(no `ListBucket`), so S3 answers **403** for a missing file, never 404; the `403 -> /404.html` mapping is the one
+that actually serves the site's not-found page. Removing the 404 mapping therefore changes nothing for the site
+and lets the API's 404 reach the client. Keep the 403 mapping.
+
+```bash
+aws cloudfront get-distribution-config --id E23085GR2SZJHC > /tmp/dist.json
+python3 - <<'EOF2'
+import json
+d = json.load(open('/tmp/dist.json')); c = d['DistributionConfig']
+items = [e for e in c['CustomErrorResponses']['Items'] if e['ErrorCode'] != 404]
+c['CustomErrorResponses'] = {"Quantity": len(items), "Items": items}
+json.dump(c, open('/tmp/dist-config.json', 'w'))
+open('/tmp/dist-etag', 'w').write(d['ETag'])
+EOF2
+aws cloudfront update-distribution --id E23085GR2SZJHC --if-match "$(cat /tmp/dist-etag)" --distribution-config file:///tmp/dist-config.json --query Distribution.Status
+aws cloudfront wait distribution-deployed --id E23085GR2SZJHC
+# The HTML 404 was cached for the API path (ErrorCachingMinTTL 300), so flush it
+aws cloudfront create-invalidation --distribution-id E23085GR2SZJHC --paths "/api/*"
+curl -s -o /dev/null -w "%{http_code} %{content_type}\n" https://mvcprogrammer.com/no-such-page        # 404 text/html
+curl -s -w " [%{http_code} %{content_type}]\n" https://mvcprogrammer.com/api/experience/acme          # 404 application/problem+json
+```
+
 ### Logs
 
 ```bash
