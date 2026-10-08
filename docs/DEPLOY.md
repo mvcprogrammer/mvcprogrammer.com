@@ -411,3 +411,119 @@ CloudFront access logs are separate and go to S3, not CloudWatch: standard loggi
    | Variable | `AWS_REGION` | `us-east-1` |
 
 Push to `main`, or run the workflow manually from the Actions tab.
+
+## Experience API
+
+The read-only API behind the Experience section. Code and design notes: [api/README.md](../api/README.md).
+Stack: `mvcprogrammer-experience-api` (CloudFormation, SAM transform) from `api/template.yaml`.
+
+Prerequisites, once per machine:
+
+```bash
+dotnet --version                                  # 10.x SDK
+dotnet tool update -g Amazon.Lambda.Tools         # 7.0.0 or later knows the dotnet10 runtime
+aws --version                                     # 2.37 or later (the 2022 CLI cannot edit OAC origins; see 2026-10-07)
+```
+
+### 1. Deploy the stack
+
+Packages the function (ReadyToRun, linux-arm64, framework-dependent), uploads it, and creates or updates the stack.
+The S3 bucket is any bucket in the account for deployment artifacts; the distribution ARN scopes the invoke permission.
+
+```bash
+cd api/src/Experience.Api
+dotnet lambda deploy-serverless \
+  --s3-bucket aws-sam-cli-managed-default-samclisourcebucket-113mxhhn8smh9 \
+  --template-parameters "DistributionArn=arn:aws:cloudfront::334383610383:distribution/E23085GR2SZJHC"
+```
+
+Then read the outputs; the CloudFront step needs three of them:
+
+```bash
+aws cloudformation describe-stacks --stack-name mvcprogrammer-experience-api \
+  --query 'Stacks[0].Outputs[].[OutputKey,OutputValue]' --output table
+```
+
+### 2. Seed the table
+
+Idempotent; re-run after editing `api/seed/positions.json`. It does not delete positions removed from the file.
+
+```bash
+dotnet run --project api/src/Experience.Seed -- --table mvcprogrammer-experience
+```
+
+### 3. Wire CloudFront (one time)
+
+The distribution predates the stack, so this is done against the live config. Add a second origin pointing at the
+function URL and a `/api/*` behavior in front of the S3 origin.
+
+```bash
+aws cloudfront get-distribution-config --id E23085GR2SZJHC > /tmp/dist.json
+ETAG=$(python3 -c 'import json;print(json.load(open("/tmp/dist.json"))["ETag"])')
+```
+
+Edit `/tmp/dist.json` `DistributionConfig`:
+
+- `Origins.Items`: append
+  ```json
+  {
+    "Id": "experience-api",
+    "DomainName": "<FunctionUrl host, e.g. abc123.lambda-url.us-east-1.on.aws>",
+    "OriginPath": "",
+    "CustomHeaders": { "Quantity": 0 },
+    "CustomOriginConfig": {
+      "HTTPPort": 80, "HTTPSPort": 443, "OriginProtocolPolicy": "https-only",
+      "OriginSslProtocols": { "Quantity": 1, "Items": ["TLSv1.2"] },
+      "OriginReadTimeout": 30, "OriginKeepaliveTimeout": 5
+    },
+    "ConnectionAttempts": 3, "ConnectionTimeout": 10,
+    "OriginShield": { "Enabled": false },
+    "OriginAccessControlId": "<OriginAccessControlId output>"
+  }
+  ```
+  and bump `Origins.Quantity`.
+- `CacheBehaviors.Items`: append
+  ```json
+  {
+    "PathPattern": "/api/*",
+    "TargetOriginId": "experience-api",
+    "ViewerProtocolPolicy": "redirect-to-https",
+    "AllowedMethods": { "Quantity": 3, "Items": ["GET", "HEAD", "OPTIONS"],
+                        "CachedMethods": { "Quantity": 2, "Items": ["GET", "HEAD"] } },
+    "Compress": true,
+    "CachePolicyId": "<CachePolicyId output>",
+    "OriginRequestPolicyId": "<managed policy AllViewerExceptHostHeader; look up its id with aws cloudfront list-origin-request-policies --type managed>",
+    "ResponseHeadersPolicyId": "28b549c3-c562-418c-a803-abe16efe78eb",
+    "SmoothStreaming": false,
+    "FieldLevelEncryptionId": "",
+    "LambdaFunctionAssociations": { "Quantity": 0 },
+    "FunctionAssociations": { "Quantity": 0 },
+    "TrustedSigners": { "Enabled": false, "Quantity": 0 },
+    "TrustedKeyGroups": { "Enabled": false, "Quantity": 0 }
+  }
+  ```
+  and bump `CacheBehaviors.Quantity`. The Host header must not reach a function URL, which is why the origin request
+  policy is the "except Host" one. When the write endpoints ship, `AllowedMethods` widens to all seven.
+
+Apply, strip the wrapper first:
+
+```bash
+python3 -c 'import json;d=json.load(open("/tmp/dist.json"));json.dump(d["DistributionConfig"],open("/tmp/dist-config.json","w"))'
+aws cloudfront update-distribution --id E23085GR2SZJHC --if-match "$ETAG" --distribution-config file:///tmp/dist-config.json
+```
+
+Verify once deployed (a few minutes):
+
+```bash
+curl -si https://mvcprogrammer.com/api/health
+curl -si https://mvcprogrammer.com/api/experience | grep -i "etag\|cache-control\|x-cache"
+curl -si "https://<FunctionUrl host>/api/health"     # 403: the raw URL is CloudFront-only
+```
+
+The site's CSP needs no change: `/api` is same-origin, covered by `connect-src 'self'`.
+
+### Logs
+
+```bash
+aws logs tail /aws/lambda/mvcprogrammer-experience-api --since 1h --format short
+```

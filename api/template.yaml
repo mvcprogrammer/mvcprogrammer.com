@@ -47,10 +47,11 @@ Resources:
         - AttributeName: SK
           KeyType: RANGE
       # Single-table layout, one partition for the resume:
-      #   PK = "RESUME"           SK = "POSITION#<startDate>#<id>"   one item per position
-      # Positions sort by SK, so a Query with ScanIndexForward=false returns newest first.
-      # Skills are an attribute (string set) on each position and are aggregated in code;
-      # at this size a GSI would cost more in clarity than it saves in reads.
+      #   PK = "RESUME"   SK = "POSITION#<id>"   one item per position (see PositionMapper.cs)
+      # One Query with begins_with(SK, "POSITION#") returns them all; the API sorts by start
+      # date in code and GetItem fetches one by id. Skills are a list attribute on each
+      # position and are aggregated in code. At this size a GSI would cost more in clarity
+      # than it saves in reads.
 
   # ---------------------------------------------------------------- Compute
 

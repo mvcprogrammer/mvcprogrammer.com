@@ -1,0 +1,81 @@
+[
+  {
+    "id": "advancedmd",
+    "title": "Senior Software Engineer",
+    "organization": "AdvancedMD",
+    "startDate": "2023-12",
+    "endDate": "2026-05",
+    "workMode": "remote",
+    "location": "Remote",
+    "highlights": [
+      "Re-architected a legacy interval-polling Windows service into an on-demand RabbitMQ pipeline, turning scheduled batch processing into event-driven real-time throughput handling 1M+ API requests 24/7.",
+      "Designed the publish/subscribe topology: durable queues, routing keys, consumer acknowledgment, dead-letter handling, and Polly retries with exponential backoff.",
+      "Scaled parallel consumers with bounded concurrency, thread-safe shared state, and cooperative cancellation for long-running operations.",
+      "Built and maintained HL7 v2 and FHIR integrations with external healthcare systems in a HIPAA-regulated environment.",
+      "Tuned SQL Server at enterprise scale on high-write integration tables: execution plans, indexing strategy, and query rewrites.",
+      "Owned production incident response and root-cause analysis; instrumented services with Serilog, Seq, Datadog, and CloudWatch."
+    ],
+    "skills": ["C#", ".NET", "RabbitMQ", "Event-driven architecture", "SQL Server", "HL7", "FHIR", "HIPAA", "Polly", "Serilog", "Seq", "Datadog", "CloudWatch"]
+  },
+  {
+    "id": "arise",
+    "title": "Software Engineer II (Full Stack)",
+    "organization": "Arise Virtual Solutions",
+    "startDate": "2022-08",
+    "endDate": "2023-08",
+    "workMode": "hybrid",
+    "location": "Florida",
+    "highlights": [
+      "Developed full-stack features and REST API endpoints with ASP.NET Core on AWS-backed infrastructure.",
+      "Built asynchronous, queue-driven processing with AWS SQS and SNS to move long-running work off the request path.",
+      "Worked across EC2, Lambda, RDS, and S3, with CloudWatch for logging and operational monitoring."
+    ],
+    "skills": ["C#", ".NET", "ASP.NET Core", "REST APIs", "AWS", "SQS", "SNS", "Lambda", "EC2", "RDS", "S3", "CloudWatch"]
+  },
+  {
+    "id": "tops-software",
+    "title": "Software Engineer (Full Stack)",
+    "organization": "TOPS Software",
+    "startDate": "2020-02",
+    "endDate": "2022-08",
+    "workMode": "on-site",
+    "location": "Florida",
+    "highlights": [
+      "Built full-stack features with Angular 2+ front ends over ASP.NET Core and ASP.NET Web API back ends.",
+      "Developed and maintained the company's proprietary accounting system: general ledger, receivables and assessments, vendor payables, bank reconciliation, and financial reporting.",
+      "Implemented CQRS with MediatR and real-time client updates with SignalR and WebSockets.",
+      "Took features from requirements intake through architecture review, Sprint 0, and backlog grooming; ran code reviews and mentored engineers."
+    ],
+    "skills": ["C#", ".NET", "ASP.NET Core", "ASP.NET Web API", "Angular", "SQL Server", "CQRS", "MediatR", "SignalR", "WebSockets", "Accounting systems", "Code review", "Mentoring"]
+  },
+  {
+    "id": "lig-marine",
+    "title": "C# Developer (Full Stack)",
+    "organization": "LIG Marine Managers Insurance",
+    "startDate": "2018-11",
+    "endDate": "2020-01",
+    "workMode": "on-site",
+    "location": "Florida",
+    "highlights": [
+      "Led the migration of the company platform from .NET Framework 3.x to .NET Core MVC.",
+      "Developed Web API services documented with Swagger, plus a WPF client built on Caliburn.Micro.",
+      "Maintained legacy software, expanded unit test coverage, and improved overall codebase health."
+    ],
+    "skills": ["C#", ".NET Framework", ".NET Core", "ASP.NET MVC", "ASP.NET Web API", "Swagger", "WPF", "Caliburn.Micro", "Unit testing"]
+  },
+  {
+    "id": "century-21",
+    "title": "C# Developer (Full Stack)",
+    "organization": "CENTURY 21",
+    "startDate": "2010-01",
+    "endDate": "2018-10",
+    "workMode": "on-site",
+    "location": "Florida",
+    "highlights": [
+      "Developed SaaS real estate software using C# and C++.",
+      "Managed API integrations with major external platforms including Google and Facebook.",
+      "Built an interactive kiosk window display application (full-screen HD, non-web target)."
+    ],
+    "skills": ["C#", "C++", ".NET Framework", "SaaS", "API integration", "Google APIs", "Facebook APIs", "Kiosk applications"]
+  }
+]

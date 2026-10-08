@@ -10,3 +10,9 @@ Thumbs.db
 # Local environment
 .env
 .env.*
+
+# .NET
+bin/
+obj/
+*.user
+TestResults/
