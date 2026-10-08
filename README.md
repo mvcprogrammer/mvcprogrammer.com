@@ -80,7 +80,7 @@ The website for LightSplitters Media, my photography studio in Tampa Bay: weddin
 | **Observability** | OpenTelemetry, Serilog, Seq, Datadog, CloudWatch, health checks |
 | **Architecture** | SOLID, CQRS, dependency injection, event-driven design, serverless, microservices, legacy modernization |
 | **Testing** | xUnit, NUnit, Telerik JustMock, Moq, NSubstitute, WebApplicationFactory integration tests, .NET analyzers as build errors |
-| **Domains** | Accounting (GL, AR/AP, bank reconciliation, QuickBooks API) · Healthcare (HL7 v2, FHIR, HIPAA) · Real estate (Stellar MLS via the Bridge Data Output API: listings, photos, paging, token handling) |
+| **Domains** | Accounting (GL, AR/AP, bank reconciliation, QuickBooks API) · Healthcare (HL7 v2, FHIR, HIPAA) · Real estate (Stellar MLS via the Bridge Data Output API: listings, photos, paging, token handling) · Financial trading systems (day-trading platforms, 15 years in C++ before .NET) |
 | **AI-assisted dev** | Claude / Claude Code, ChatGPT, LangChain |
 
 ---
