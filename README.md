@@ -23,8 +23,9 @@ My portfolio, written in **plain HTML, CSS, and vanilla JavaScript**. No framewo
 - **Serverless static hosting on AWS:** private **S3** bucket behind **CloudFront** with Origin Access Control, **ACM** TLS certificate, **Route 53** DNS, HTTP/2 + HTTP/3.
 - **Hardened by default:** a strict Content Security Policy (no inline script, nothing third-party), HSTS, and security headers set by a CloudFront response headers policy; a **CloudFront Function** redirects `www` to the apex.
 - **CI/CD with no stored secrets:** **GitHub Actions** deploys every push to `main`, syncing to S3 and invalidating CloudFront, authenticated with **OIDC** and a least-privilege IAM role.
+- **Experience API:** a read-only **C# / .NET 10** minimal API on **AWS Lambda** (arm64) behind CloudFront at `/api/*`, reading a single **DynamoDB** table. Spec-first (the OpenAPI 3.1 contract was committed before the code), a repository facade with a hand-rolled mapper, ETag and Cache-Control caching, RFC 9457 problem details, an IAM-only function URL that accepts only CloudFront, and xunit tests over the in-process host. Write endpoints are specified and stubbed. Details: [api/README.md](api/README.md).
 
-The stack, as listed on the site: HTML · CSS · Vanilla JavaScript · JSON-LD · Amazon S3 · CloudFront + OAC · CloudFront Functions · ACM · Route 53 · IAM · GitHub Actions (OIDC) · Content Security Policy
+The stack, as listed on the site: HTML · CSS · Vanilla JavaScript · JSON-LD · C# / .NET 10 on Lambda · DynamoDB · OpenAPI 3.1 · Amazon S3 · CloudFront + OAC · CloudFront Functions · ACM · Route 53 · IAM · GitHub Actions (OIDC) · Content Security Policy
 
 Full infrastructure walkthrough: [docs/DEPLOY.md](docs/DEPLOY.md)
 
@@ -73,9 +74,9 @@ The website for LightSplitters Media, my photography studio in Tampa Bay: weddin
 | **Languages** | C#, TypeScript, JavaScript, SQL (T-SQL) |
 | **Front end** | Angular 2+, vanilla JS, HTML / CSS, Vite, REST API consumption |
 | **.NET & APIs** | .NET 10 / .NET Core, ASP.NET Core Web API & MVC, EF Core, Dapper, MediatR, AutoMapper, SignalR / WebSockets, OpenAPI / Swagger, ProblemDetails, rate limiting, source-generated System.Text.Json, OAuth 2.0 / JWT |
-| **Databases** | SQL Server: complex queries, stored procedures, indexing, execution plans, performance tuning, deadlock diagnosis |
+| **Databases** | SQL Server: complex queries, stored procedures, indexing, execution plans, performance tuning, deadlock diagnosis · DynamoDB (single-table design) |
 | **Messaging & resilience** | RabbitMQ, AWS SQS / SNS, Hangfire, Polly, Microsoft.Extensions.Http.Resilience, async/await, TPL, `Parallel.ForEachAsync`, `SemaphoreSlim` |
-| **Cloud & DevOps** | AWS (Lambda, S3, CloudFront, Route 53, ACM, IAM, SSM Parameter Store, EC2, RDS, CloudWatch), AWS SAM / CloudFormation, GitHub Actions (OIDC), Azure DevOps, Docker, Git |
+| **Cloud & DevOps** | AWS (Lambda, DynamoDB, S3, CloudFront, Route 53, ACM, IAM, SSM Parameter Store, EC2, RDS, CloudWatch), AWS SAM / CloudFormation, GitHub Actions (OIDC), Azure DevOps, Docker, Git |
 | **Observability** | OpenTelemetry, Serilog, Seq, Datadog, CloudWatch, health checks |
 | **Architecture** | SOLID, CQRS, dependency injection, event-driven design, serverless, microservices, legacy modernization |
 | **Testing** | xUnit, NUnit, Moq, NSubstitute, WebApplicationFactory integration tests, .NET analyzers as build errors |

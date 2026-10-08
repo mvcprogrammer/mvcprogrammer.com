@@ -564,7 +564,7 @@
       <div class="container">
         <p class="eyebrow">07 / Colophon</p>
         <h2 id="colophon-title">How This Site Is Built</h2>
-        <p class="section-intro">A footnote for the curious. There is no server behind this page, only static files on a CDN and two small functions.</p>
+        <p class="section-intro">A footnote for the curious. There is no server behind this page, only static files on a CDN and three small functions.</p>
         <dl class="colophon-list">
           <div class="colophon-item">
             <dt>Front end</dt>
@@ -593,6 +593,10 @@
           <div class="colophon-item">
             <dt>Resume link</dt>
             <dd>The PDF is kept out of the public repository. The download button goes to a second Lambda that publishes a notification to an SNS topic, then answers with a <code>302</code> to the file in S3. If the notification fails, the visitor still gets the resume.</dd>
+          </div>
+          <div class="colophon-item">
+            <dt>Experience API</dt>
+            <dd>The work history above is also served by a small read-only API at <code>/api/experience</code>, with a skill filter and an aggregated <code>/api/skills</code> view. It is C# on .NET 10, run on AWS Lambda (arm64) behind this same CloudFront distribution and reading a single DynamoDB table. The OpenAPI contract was written and committed before any code. Responses carry ETags and cache headers so CloudFront answers most requests itself, errors follow RFC 9457 problem details, and the function URL accepts only requests signed by CloudFront. Write endpoints are specified and stubbed for an admin API to come.</dd>
           </div>
           <div class="colophon-item">
             <dt>Deploys</dt>
