@@ -20,7 +20,9 @@ info:
     - Every response is cacheable. CloudFront honours `Cache-Control` and `ETag`, so
       the Lambda runs rarely. Clients that send `If-None-Match` receive `304`.
     - Errors use RFC 9457 Problem Details (`application/problem+json`).
-    - No authentication. The data is the public resume.
+    - Reads need no authentication; the data is the public resume. Writes (create, update,
+      delete) are specified now and stubbed to `501 Not Implemented` until the admin API
+      ships; they will require an API key.
   contact:
     name: Neal Thomas
     url: https://mvcprogrammer.com/#contact
@@ -38,6 +40,8 @@ servers:
 tags:
   - name: Experience
     description: Positions held, newest first.
+  - name: Admin
+    description: Write side. Specified, stubbed, not yet implemented.
   - name: Skills
     description: Skills aggregated across positions.
   - name: Operations
@@ -87,6 +91,45 @@ paths:
         '500':
           $ref: '#/components/responses/InternalError'
 
+    post:
+      tags: [Admin]
+      operationId: createPosition
+      summary: Create a position (stub)
+      description: Stores a new position under the id in the body. Currently answers `501`.
+      security:
+        - ApiKey: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Position'
+      responses:
+        '201':
+          description: Created.
+          headers:
+            Location:
+              description: URL of the new position.
+              schema:
+                type: string
+                format: uri-reference
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Position'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '409':
+          description: A position with that id already exists.
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '501':
+          $ref: '#/components/responses/NotImplemented'
+
   /experience/{positionId}:
     get:
       tags: [Experience]
@@ -122,6 +165,64 @@ paths:
           $ref: '#/components/responses/NotFound'
         '500':
           $ref: '#/components/responses/InternalError'
+
+    put:
+      tags: [Admin]
+      operationId: updatePosition
+      summary: Replace a position (stub)
+      description: Full replacement of the position at `positionId`. Currently answers `501`.
+      security:
+        - ApiKey: []
+      parameters:
+        - name: positionId
+          in: path
+          required: true
+          schema:
+            $ref: '#/components/schemas/PositionId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PositionInput'
+      responses:
+        '200':
+          description: Replaced.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Position'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '501':
+          $ref: '#/components/responses/NotImplemented'
+
+    delete:
+      tags: [Admin]
+      operationId: deletePosition
+      summary: Delete a position (stub)
+      description: Removes the position at `positionId`. Currently answers `501`.
+      security:
+        - ApiKey: []
+      parameters:
+        - name: positionId
+          in: path
+          required: true
+          schema:
+            $ref: '#/components/schemas/PositionId'
+      responses:
+        '204':
+          description: Deleted. No body.
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '501':
+          $ref: '#/components/responses/NotImplemented'
 
   /skills:
     get:
@@ -178,6 +279,13 @@ paths:
                 version: 1.0.0
 
 components:
+  securitySchemes:
+    ApiKey:
+      type: apiKey
+      in: header
+      name: X-Api-Key
+      description: Required by the write operations once they are implemented. Reads never need it.
+
   parameters:
     IfNoneMatch:
       name: If-None-Match
@@ -240,6 +348,29 @@ components:
             type: about:blank
             title: Internal Server Error
             status: 500
+            instance: /api/experience
+    Unauthorized:
+      description: Missing or invalid API key.
+      content:
+        application/problem+json:
+          schema:
+            $ref: '#/components/schemas/Problem'
+          example:
+            type: https://mvcprogrammer.com/api/problems/unauthorized
+            title: Unauthorized
+            status: 401
+            instance: /api/experience
+    NotImplemented:
+      description: The operation is specified but not built yet.
+      content:
+        application/problem+json:
+          schema:
+            $ref: '#/components/schemas/Problem'
+          example:
+            type: https://mvcprogrammer.com/api/problems/not-implemented
+            title: Not implemented
+            status: 501
+            detail: Write operations are part of the admin API, which has not shipped yet.
             instance: /api/experience
 
   schemas:
@@ -307,6 +438,48 @@ components:
         skills:
           type: array
           description: Skills exercised in this role. Display names, de-duplicated, case preserved.
+          uniqueItems: true
+          maxItems: 40
+          items:
+            type: string
+            minLength: 1
+            maxLength: 60
+
+    PositionInput:
+      type: object
+      description: A position without its id. Used by update, where the id comes from the path.
+      required: [title, organization, startDate, endDate, workMode, location, highlights, skills]
+      additionalProperties: false
+      properties:
+        title:
+          type: string
+          minLength: 1
+          maxLength: 120
+        organization:
+          type: string
+          minLength: 1
+          maxLength: 120
+        startDate:
+          $ref: '#/components/schemas/YearMonth'
+        endDate:
+          oneOf:
+            - $ref: '#/components/schemas/YearMonth'
+            - type: 'null'
+        workMode:
+          $ref: '#/components/schemas/WorkMode'
+        location:
+          type: string
+          maxLength: 80
+        highlights:
+          type: array
+          minItems: 1
+          maxItems: 12
+          items:
+            type: string
+            minLength: 1
+            maxLength: 400
+        skills:
+          type: array
           uniqueItems: true
           maxItems: 40
           items:
