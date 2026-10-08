@@ -1,0 +1,453 @@
+openapi: 3.1.0
+
+info:
+  title: mvcprogrammer.com Experience API
+  version: 1.0.0
+  summary: Read-only API serving the Experience section of mvcprogrammer.com.
+  description: |
+    A small, public, read-only API that is the source of truth for the work history
+    shown on [mvcprogrammer.com](https://mvcprogrammer.com). The site's static HTML
+    carries a server-rendered copy as a fallback; on load, the page fetches this API
+    and re-renders the timeline from it.
+
+    **Design notes**
+
+    - Spec first. This document was written and committed before any implementation.
+    - Served same-origin at `https://mvcprogrammer.com/api/*` through a CloudFront
+      behavior in front of an AWS Lambda running C# on .NET. No CORS, and the site's
+      strict Content Security Policy is unchanged.
+    - Backed by a single DynamoDB table. All reads are eventually consistent.
+    - Every response is cacheable. CloudFront honours `Cache-Control` and `ETag`, so
+      the Lambda runs rarely. Clients that send `If-None-Match` receive `304`.
+    - Errors use RFC 9457 Problem Details (`application/problem+json`).
+    - No authentication. The data is the public resume.
+  contact:
+    name: Neal Thomas
+    url: https://mvcprogrammer.com/#contact
+  license:
+    name: MIT
+    identifier: MIT
+
+# Explicitly public: no security schemes apply to any operation.
+security: []
+
+servers:
+  - url: https://mvcprogrammer.com/api
+    description: Production, behind CloudFront
+
+tags:
+  - name: Experience
+    description: Positions held, newest first.
+  - name: Skills
+    description: Skills aggregated across positions.
+  - name: Operations
+    description: Liveness.
+
+paths:
+  /experience:
+    get:
+      tags: [Experience]
+      operationId: listPositions
+      summary: List positions
+      description: |
+        Returns every position, ordered by start date descending. Optionally filter
+        to positions that list a given skill.
+      parameters:
+        - name: skill
+          in: query
+          required: false
+          description: |
+            Case-insensitive skill name. Only positions whose `skills` include it are
+            returned. An unknown skill yields an empty list, not an error.
+          schema:
+            type: string
+            minLength: 1
+            maxLength: 60
+          example: RabbitMQ
+        - $ref: '#/components/parameters/IfNoneMatch'
+      responses:
+        '200':
+          description: The matching positions.
+          headers:
+            ETag:
+              $ref: '#/components/headers/ETag'
+            Cache-Control:
+              $ref: '#/components/headers/CacheControl'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PositionList'
+              examples:
+                default:
+                  $ref: '#/components/examples/PositionListExample'
+        '304':
+          $ref: '#/components/responses/NotModified'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '500':
+          $ref: '#/components/responses/InternalError'
+
+  /experience/{positionId}:
+    get:
+      tags: [Experience]
+      operationId: getPosition
+      summary: Get one position
+      parameters:
+        - name: positionId
+          in: path
+          required: true
+          description: Stable slug identifying the position.
+          schema:
+            $ref: '#/components/schemas/PositionId'
+          example: advancedmd
+        - $ref: '#/components/parameters/IfNoneMatch'
+      responses:
+        '200':
+          description: The position.
+          headers:
+            ETag:
+              $ref: '#/components/headers/ETag'
+            Cache-Control:
+              $ref: '#/components/headers/CacheControl'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Position'
+              examples:
+                default:
+                  $ref: '#/components/examples/PositionExample'
+        '304':
+          $ref: '#/components/responses/NotModified'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/InternalError'
+
+  /skills:
+    get:
+      tags: [Skills]
+      operationId: listSkills
+      summary: List skills
+      description: |
+        Every distinct skill across all positions, with the positions that list it.
+        Ordered by position count descending, then name ascending. Intended to drive
+        the skill filter on the site.
+      parameters:
+        - $ref: '#/components/parameters/IfNoneMatch'
+      responses:
+        '200':
+          description: The aggregated skills.
+          headers:
+            ETag:
+              $ref: '#/components/headers/ETag'
+            Cache-Control:
+              $ref: '#/components/headers/CacheControl'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SkillList'
+              examples:
+                default:
+                  $ref: '#/components/examples/SkillListExample'
+        '304':
+          $ref: '#/components/responses/NotModified'
+        '500':
+          $ref: '#/components/responses/InternalError'
+
+  /health:
+    get:
+      tags: [Operations]
+      operationId: getHealth
+      summary: Liveness check
+      description: Returns `200` when the function is up. Does not touch DynamoDB. Never cached.
+      responses:
+        '200':
+          description: Alive.
+          headers:
+            Cache-Control:
+              description: Always `no-store`.
+              schema:
+                type: string
+                const: no-store
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Health'
+              example:
+                status: ok
+                version: 1.0.0
+
+components:
+  parameters:
+    IfNoneMatch:
+      name: If-None-Match
+      in: header
+      required: false
+      description: An `ETag` from a previous response. If it still matches, the server replies `304` with no body.
+      schema:
+        type: string
+      example: '"a1b2c3d4"'
+
+  headers:
+    ETag:
+      description: Strong validator for the response body. Changes whenever the data changes.
+      schema:
+        type: string
+      example: '"a1b2c3d4"'
+    CacheControl:
+      description: Shared caches may hold the response for an hour; browsers revalidate after five minutes.
+      schema:
+        type: string
+      example: public, max-age=300, s-maxage=3600
+
+  responses:
+    NotModified:
+      description: The resource has not changed since the `ETag` the client sent. No body.
+      headers:
+        ETag:
+          $ref: '#/components/headers/ETag'
+    BadRequest:
+      description: A query parameter was malformed.
+      content:
+        application/problem+json:
+          schema:
+            $ref: '#/components/schemas/Problem'
+          example:
+            type: https://mvcprogrammer.com/api/problems/invalid-parameter
+            title: Invalid parameter
+            status: 400
+            detail: "'skill' must be between 1 and 60 characters."
+            instance: /api/experience?skill=
+    NotFound:
+      description: No position has that id.
+      content:
+        application/problem+json:
+          schema:
+            $ref: '#/components/schemas/Problem'
+          example:
+            type: https://mvcprogrammer.com/api/problems/not-found
+            title: Position not found
+            status: 404
+            detail: No position with id 'acme'.
+            instance: /api/experience/acme
+    InternalError:
+      description: Something failed on the server. The body never includes internals.
+      content:
+        application/problem+json:
+          schema:
+            $ref: '#/components/schemas/Problem'
+          example:
+            type: about:blank
+            title: Internal Server Error
+            status: 500
+            instance: /api/experience
+
+  schemas:
+    PositionId:
+      type: string
+      description: Lowercase slug, stable across edits to the position.
+      pattern: '^[a-z0-9]+(?:-[a-z0-9]+)*$'
+      minLength: 2
+      maxLength: 60
+      examples: [advancedmd, tops-software]
+
+    YearMonth:
+      type: string
+      description: Calendar month in ISO 8601 `YYYY-MM` form.
+      pattern: '^\d{4}-(0[1-9]|1[0-2])$'
+      examples: ['2023-12']
+
+    WorkMode:
+      type: string
+      description: Where the work happened.
+      enum: [remote, hybrid, on-site]
+
+    Position:
+      type: object
+      description: One role at one organization.
+      required: [id, title, organization, startDate, endDate, workMode, location, highlights, skills]
+      additionalProperties: false
+      properties:
+        id:
+          $ref: '#/components/schemas/PositionId'
+        title:
+          type: string
+          description: Job title as held.
+          minLength: 1
+          maxLength: 120
+          examples: [Senior Software Engineer]
+        organization:
+          type: string
+          minLength: 1
+          maxLength: 120
+          examples: [AdvancedMD]
+        startDate:
+          $ref: '#/components/schemas/YearMonth'
+        endDate:
+          description: Last month in the role, or `null` while current.
+          oneOf:
+            - $ref: '#/components/schemas/YearMonth'
+            - type: 'null'
+        workMode:
+          $ref: '#/components/schemas/WorkMode'
+        location:
+          type: string
+          description: Free-text place, as shown on the site.
+          maxLength: 80
+          examples: [Florida]
+        highlights:
+          type: array
+          description: Resume bullets, in display order.
+          minItems: 1
+          maxItems: 12
+          items:
+            type: string
+            minLength: 1
+            maxLength: 400
+        skills:
+          type: array
+          description: Skills exercised in this role. Display names, de-duplicated, case preserved.
+          uniqueItems: true
+          maxItems: 40
+          items:
+            type: string
+            minLength: 1
+            maxLength: 60
+
+    PositionList:
+      type: object
+      required: [count, items]
+      additionalProperties: false
+      properties:
+        count:
+          type: integer
+          minimum: 0
+          description: Number of items returned.
+        filter:
+          type: object
+          description: Present only when a filter was applied.
+          additionalProperties: false
+          properties:
+            skill:
+              type: string
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/Position'
+
+    Skill:
+      type: object
+      required: [name, positionCount, positionIds]
+      additionalProperties: false
+      properties:
+        name:
+          type: string
+          minLength: 1
+          maxLength: 60
+          examples: [SQL Server]
+        positionCount:
+          type: integer
+          minimum: 1
+        positionIds:
+          type: array
+          description: Positions listing this skill, newest first.
+          minItems: 1
+          uniqueItems: true
+          items:
+            $ref: '#/components/schemas/PositionId'
+
+    SkillList:
+      type: object
+      required: [count, items]
+      additionalProperties: false
+      properties:
+        count:
+          type: integer
+          minimum: 0
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/Skill'
+
+    Health:
+      type: object
+      required: [status, version]
+      additionalProperties: false
+      properties:
+        status:
+          type: string
+          const: ok
+        version:
+          type: string
+          description: Deployed API version, matching `info.version` of this document.
+
+    Problem:
+      type: object
+      description: RFC 9457 Problem Details.
+      required: [title, status]
+      properties:
+        type:
+          type: string
+          format: uri
+          default: about:blank
+        title:
+          type: string
+        status:
+          type: integer
+          minimum: 400
+          maximum: 599
+        detail:
+          type: string
+        instance:
+          type: string
+          format: uri-reference
+
+  examples:
+    PositionExample:
+      summary: Current role
+      value:
+        id: advancedmd
+        title: Senior Software Engineer
+        organization: AdvancedMD
+        startDate: '2023-12'
+        endDate: '2026-05'
+        workMode: remote
+        location: Remote
+        highlights:
+          - Re-architected a legacy interval-polling Windows service into an on-demand RabbitMQ pipeline.
+          - Designed the publish/subscribe topology with durable queues, dead-letter handling, and Polly retries.
+          - Built and maintained HL7 v2 and FHIR integrations in a HIPAA-regulated environment.
+        skills: [C#, .NET, RabbitMQ, SQL Server, HL7, FHIR, Polly, Serilog, Datadog]
+
+    PositionListExample:
+      summary: Filtered by skill
+      value:
+        count: 1
+        filter:
+          skill: RabbitMQ
+        items:
+          - id: advancedmd
+            title: Senior Software Engineer
+            organization: AdvancedMD
+            startDate: '2023-12'
+            endDate: '2026-05'
+            workMode: remote
+            location: Remote
+            highlights:
+              - Re-architected a legacy interval-polling Windows service into an on-demand RabbitMQ pipeline.
+            skills: [C#, .NET, RabbitMQ, SQL Server]
+
+    SkillListExample:
+      summary: Aggregated skills
+      value:
+        count: 3
+        items:
+          - name: C#
+            positionCount: 5
+            positionIds: [advancedmd, arise, tops-software, lig-marine, century-21]
+          - name: SQL Server
+            positionCount: 4
+            positionIds: [advancedmd, arise, tops-software, lig-marine]
+          - name: RabbitMQ
+            positionCount: 1
+            positionIds: [advancedmd]

@@ -1,0 +1,7 @@
+# Lint config for `npx @redocly/cli lint api/openapi.yaml`.
+extends:
+  - recommended
+rules:
+  # /skills and /health are read-only with no client-controlled input, so they have
+  # no 4XX responses to document. The endpoints that take input do document theirs.
+  operation-4xx-response: off
