@@ -397,6 +397,46 @@
       });
   }
 
+  /* ---------- Live kiosk demo ----------
+     The dialog is in the HTML; the iframe is not. It is created when the demo opens
+     and removed when it closes, so the kiosk and its Lambda only load on request. */
+  var kioskDialog = document.getElementById("kiosk-dialog");
+  var kioskButtons = document.querySelectorAll("[data-kiosk-demo]");
+  if (kioskDialog && kioskButtons.length && typeof kioskDialog.showModal === "function") {
+    var kioskSlot = kioskDialog.querySelector(".kiosk-frame-slot");
+    var kioskClose = kioskDialog.querySelector("[data-kiosk-close]");
+
+    var openKiosk = function () {
+      var frame = document.createElement("iframe");
+      frame.className = "kiosk-frame";
+      frame.src = kioskDialog.getAttribute("data-src");
+      frame.title = "Interactive Property Search Window Display, live";
+      frame.setAttribute("loading", "eager");
+      kioskSlot.textContent = "";
+      kioskSlot.appendChild(frame);
+      kioskDialog.showModal();
+    };
+
+    Array.prototype.forEach.call(kioskButtons, function (button) {
+      button.addEventListener("click", openKiosk);
+    });
+
+    if (kioskClose) {
+      kioskClose.addEventListener("click", function () {
+        kioskDialog.close();
+      });
+    }
+
+    // A click on the backdrop lands on the dialog element itself, not its children.
+    kioskDialog.addEventListener("click", function (event) {
+      if (event.target === kioskDialog) kioskDialog.close();
+    });
+
+    kioskDialog.addEventListener("close", function () {
+      kioskSlot.textContent = "";
+    });
+  }
+
   /* ---------- Portfolio image fallback ----------
      Until the real images are added, show a labeled slot instead of a
      broken-image icon. Remove this block once all images are in place. */

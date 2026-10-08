@@ -967,6 +967,88 @@ img, svg {
   transition: opacity 0.2s var(--ease);
 }
 
+/* ---------- Live kiosk demo dialog ---------- */
+.card-actions {
+  margin-top: 1.25rem;
+}
+
+.kiosk-dialog {
+  width: min(96vw, 100rem);
+  max-width: none;
+  max-height: 96vh;
+  padding: 0;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--surface);
+  color: var(--text);
+  box-shadow: var(--shadow);
+}
+
+.kiosk-dialog::backdrop {
+  background: rgba(10, 11, 13, 0.72);
+}
+
+.kiosk-dialog-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 1.25rem 1.5rem 1rem;
+}
+
+.kiosk-dialog-head h2 {
+  font-size: 1.25rem;
+  margin-bottom: 0.35rem;
+}
+
+.kiosk-dialog-note {
+  color: var(--text-muted);
+  font-size: 0.9375rem;
+  max-width: 60rem;
+}
+
+.kiosk-dialog-close {
+  flex: none;
+  width: 2.5rem;
+  height: 2.5rem;
+  font: inherit;
+  font-size: 1.5rem;
+  line-height: 1;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  background: transparent;
+  color: var(--text);
+  cursor: pointer;
+  transition: color 0.2s var(--ease), border-color 0.2s var(--ease), background-color 0.2s var(--ease);
+}
+
+.kiosk-dialog-close:hover {
+  color: var(--hover);
+  border-color: var(--hover);
+  background: var(--hover-soft);
+}
+
+/* 16:9 when there is room, otherwise capped so the dialog fits the window. The kiosk scales
+   itself to whatever box it gets and letterboxes the rest, so the shape does not need to be exact. */
+.kiosk-frame-slot {
+  height: min(calc(min(96vw, 100rem) * 9 / 16), 68vh);
+  background: #1d1d1d;
+}
+
+.kiosk-frame {
+  display: block;
+  width: 100%;
+  height: 100%;
+  border: 0;
+}
+
+.kiosk-dialog-foot {
+  padding: 0.75rem 1.5rem 1rem;
+  font-family: var(--font-mono);
+  font-size: 0.8125rem;
+  color: var(--text-muted);
+}
+
 /* ---------- Contact ---------- */
 .contact-form {
   position: relative;

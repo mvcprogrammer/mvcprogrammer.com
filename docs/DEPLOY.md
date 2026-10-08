@@ -148,7 +148,7 @@ cat > headers-policy.json <<'JSON'
     "ReferrerPolicy": { "Override": true, "ReferrerPolicy": "strict-origin-when-cross-origin" },
     "ContentSecurityPolicy": {
       "Override": true,
-      "ContentSecurityPolicy": "default-src 'self'; script-src 'self'; style-src 'self'; img-src 'self' data:; font-src 'self'; connect-src 'self'; object-src 'none'; base-uri 'self'; form-action 'none'; frame-ancestors 'none'; upgrade-insecure-requests"
+      "ContentSecurityPolicy": "default-src 'self'; script-src 'self'; style-src 'self'; img-src 'self' data:; font-src 'self'; connect-src 'self'; object-src 'none'; base-uri 'self'; form-action 'none'; frame-ancestors 'none'; frame-src https://display.lightsplitters.com; upgrade-insecure-requests"
     }
   },
   "CustomHeadersConfig": {
@@ -244,6 +244,19 @@ aws cloudfront create-invalidation --distribution-id <DISTRIBUTION_ID> --paths "
 ```
 
 The `--include "assets/*"` in the second sync keeps `--delete` from removing the assets uploaded in the first step. The second sync will re-upload changed assets with the shorter browser TTL only if they changed between the two commands, which does not happen in practice.
+
+### 4c. Live kiosk demo (frame-src)
+
+The portfolio's "Try the live kiosk" button opens display.lightsplitters.com in an iframe inside a `<dialog>`.
+`default-src 'self'` would block that, so the CSP on the response headers policy carries one extra directive,
+`frame-src https://display.lightsplitters.com` (added 2026-10-08). The kiosk sends no `X-Frame-Options` or
+`frame-ancestors`, so it allows being framed. The iframe is created only when the dialog opens and removed when
+it closes (`main.js`), so the kiosk's Lambda is not hit by visitors who never press the button.
+
+To change the directive, edit the policy in the console (CloudFront, Policies, Response headers, the
+`mvcprogrammer-security-headers` policy, Content-Security-Policy) and save; it applies on the next request, no
+invalidation needed. Or by CLI, fetch the policy with `get-response-headers-policy`, edit the
+`ContentSecurityPolicy` value in the config, and `update-response-headers-policy` with the returned ETag as `--if-match`.
 
 ## Resume download
 
