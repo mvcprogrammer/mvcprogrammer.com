@@ -630,7 +630,7 @@ img, svg {
   margin-top: 1.25rem;
   font-family: var(--font-mono);
   font-size: 0.875rem;
-  color: var(--text-muted);
+  color: var(--hover);
 }
 
 .quote figcaption::before {
