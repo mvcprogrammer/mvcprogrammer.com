@@ -361,6 +361,17 @@ aws logs tail /aws/lambda/mvcprogrammer-contact --follow
 
 CloudFront access logs are separate and go to S3, not CloudWatch: standard logging on the distribution writes gzipped W3C files to `s3://mvcprogrammer-cf-logs-334383610383/cf/` (enabled 2026-10-07, bucket lifecycle expires them after 30 days). Sync the prefix locally and `gunzip` to analyse them. Logging itself is free; the only cost is S3 storage, so turn it off under the distribution's Logging settings once it has answered the question that prompted it.
 
+Reviewed 2026-10-08 over the first two days of logs (about 4,800 requests): every 4xx was scanner traffic (PHP and `.env`
+probes, WordPress paths, `POST /`), none of the old site's URLs (`/images/`, `/js/`, `/css/`, `single-blog.html`) arrived
+with a referrer or from a real visitor, and every visit referred from LinkedIn, Facebook, Google, or GitHub loaded `/` cleanly.
+So no legacy redirects were added. Scanners mostly hit `www.`, where they get a 301 and go away. Storage runs about 0.4 MB
+a day. To stop logging:
+
+```bash
+# Logging lives in DistributionConfig.Logging; set Enabled to false and update with the current ETag
+aws cloudfront get-distribution-config --id E23085GR2SZJHC --query 'DistributionConfig.Logging'
+```
+
 ## GitHub Actions (optional)
 
 `.github/workflows/deploy.yml` runs the same steps on every push to `main`. It authenticates with OpenID Connect (OIDC), so no long-lived access keys are stored in GitHub. Third-party actions are pinned to commit SHAs with the version in a trailing comment; bump the SHA and the comment together when upgrading.
