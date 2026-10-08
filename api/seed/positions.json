@@ -15,7 +15,21 @@
       "Tuned SQL Server at enterprise scale on high-write integration tables: execution plans, indexing strategy, and query rewrites.",
       "Owned production incident response and root-cause analysis; instrumented services with Serilog, Seq, Datadog, and CloudWatch."
     ],
-    "skills": ["C#", ".NET", "RabbitMQ", "Event-driven architecture", "SQL Server", "HL7", "FHIR", "HIPAA", "Polly", "Serilog", "Seq", "Datadog", "CloudWatch"]
+    "skills": [
+      "C#",
+      ".NET",
+      "RabbitMQ",
+      "Event-driven architecture",
+      "SQL Server",
+      "HL7",
+      "FHIR",
+      "HIPAA",
+      "Polly",
+      "Serilog",
+      "Seq",
+      "Datadog",
+      "CloudWatch"
+    ]
   },
   {
     "id": "arise",
@@ -30,7 +44,20 @@
       "Built asynchronous, queue-driven processing with AWS SQS and SNS to move long-running work off the request path.",
       "Worked across EC2, Lambda, RDS, and S3, with CloudWatch for logging and operational monitoring."
     ],
-    "skills": ["C#", ".NET", "ASP.NET Core", "REST APIs", "AWS", "SQS", "SNS", "Lambda", "EC2", "RDS", "S3", "CloudWatch"]
+    "skills": [
+      "C#",
+      ".NET",
+      "ASP.NET Core",
+      "REST APIs",
+      "AWS",
+      "SQS",
+      "SNS",
+      "Lambda",
+      "EC2",
+      "RDS",
+      "S3",
+      "CloudWatch"
+    ]
   },
   {
     "id": "tops-software",
@@ -46,7 +73,21 @@
       "Implemented CQRS with MediatR and real-time client updates with SignalR and WebSockets.",
       "Took features from requirements intake through architecture review, Sprint 0, and backlog grooming; ran code reviews and mentored engineers."
     ],
-    "skills": ["C#", ".NET", "ASP.NET Core", "ASP.NET Web API", "Angular", "SQL Server", "CQRS", "MediatR", "SignalR", "WebSockets", "Accounting systems", "Code review", "Mentoring"]
+    "skills": [
+      "C#",
+      ".NET",
+      "ASP.NET Core",
+      "ASP.NET Web API",
+      "Angular",
+      "SQL Server",
+      "CQRS",
+      "MediatR",
+      "SignalR",
+      "WebSockets",
+      "Accounting systems",
+      "Code review",
+      "Mentoring"
+    ]
   },
   {
     "id": "lig-marine",
@@ -61,7 +102,17 @@
       "Developed Web API services documented with Swagger, plus a WPF client built on Caliburn.Micro.",
       "Maintained legacy software, expanded unit test coverage, and improved overall codebase health."
     ],
-    "skills": ["C#", ".NET Framework", ".NET Core", "ASP.NET MVC", "ASP.NET Web API", "Swagger", "WPF", "Caliburn.Micro", "Unit testing"]
+    "skills": [
+      "C#",
+      ".NET Framework",
+      ".NET Core",
+      "ASP.NET MVC",
+      "ASP.NET Web API",
+      "Swagger",
+      "WPF",
+      "Caliburn.Micro",
+      "Unit testing"
+    ]
   },
   {
     "id": "century-21",
@@ -73,9 +124,23 @@
     "location": "Florida",
     "highlights": [
       "Developed SaaS real estate software using C# and C++.",
+      "Integrated Stellar MLS listing data through the Bridge Data Output API: listing search and detail endpoints, field selection, paging, photo delivery from the Bridge media CDN, and access-token handling, feeding both the SaaS product and the kiosk.",
       "Managed API integrations with major external platforms including Google and Facebook.",
-      "Built an interactive kiosk window display application (full-screen HD, non-web target)."
+      "Built an interactive kiosk window display application (full-screen HD, non-web target) showing live MLS listings."
     ],
-    "skills": ["C#", "C++", ".NET Framework", "SaaS", "API integration", "Google APIs", "Facebook APIs", "Kiosk applications"]
+    "skills": [
+      "C#",
+      "C++",
+      ".NET Framework",
+      "SaaS",
+      "Stellar MLS",
+      "Bridge Data Output API",
+      "MLS integration",
+      "Real estate",
+      "API integration",
+      "Google APIs",
+      "Facebook APIs",
+      "Kiosk applications"
+    ]
   }
 ]

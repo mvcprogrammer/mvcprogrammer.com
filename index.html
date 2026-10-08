@@ -8,7 +8,7 @@
   <meta name="theme-color" content="#1e1f22" media="(prefers-color-scheme: dark)">
 
   <title>Neal Thomas | Senior Full-Stack Software Engineer | .NET, Angular, SQL Server</title>
-  <meta name="description" content="Neal Thomas is a senior full-stack software engineer in Tampa Bay, Florida, building enterprise API applications with C#/.NET Core, Angular, and SQL Server. 15+ years of experience, event-driven architecture, and deep accounting and healthcare domain knowledge.">
+  <meta name="description" content="Neal Thomas is a senior full-stack software engineer in Tampa Bay, Florida, building enterprise API applications with C#/.NET Core, Angular, and SQL Server. 15+ years of experience, event-driven architecture, deep accounting and healthcare domain knowledge, and freelance Stellar MLS / Bridge Data Output API integration for real estate.">
   <meta name="author" content="Neal Thomas">
   <link rel="canonical" href="https://mvcprogrammer.com/">
 
@@ -55,7 +55,7 @@
       "https://www.linkedin.com/in/mvcprogrammer/",
       "https://www.flickr.com/photos/lightsplitters/"
     ],
-    "knowsAbout": ["C#", ".NET Core", "ASP.NET Core Web API", "Angular", "TypeScript", "SQL Server", "T-SQL", "RabbitMQ", "AWS", "Azure DevOps", "Event-driven architecture", "CQRS", "HL7", "FHIR", "Accounting systems"]
+    "knowsAbout": ["C#", ".NET Core", "ASP.NET Core Web API", "Angular", "TypeScript", "SQL Server", "T-SQL", "RabbitMQ", "AWS", "Azure DevOps", "Event-driven architecture", "CQRS", "HL7", "FHIR", "Accounting systems", "Stellar MLS", "Bridge Data Output API", "MLS integration", "Real estate software"]
   }
   </script>
 </head>
@@ -205,7 +205,7 @@
             <ul class="tag-list" role="list" aria-label="Domain expertise">
               <li class="tag">Accounting</li>
               <li class="tag">Healthcare (HL7, FHIR, HIPAA)</li>
-              <li class="tag">Real estate</li>
+              <li class="tag">Real estate (Stellar MLS, Bridge API)</li>
             </ul>
           </div>
         </div>
@@ -368,7 +368,7 @@
             <div class="card-body">
               <h3>Interactive Property Search Window Display</h3>
               <p class="card-subtitle">Touch screen kiosk, React + .NET on AWS</p>
-              <p>A touch-screen kiosk behind the window of a Clearwater Beach real estate office, running since 2009. Visitors pick sales or rentals over an aerial photo of Sand Key, browse live MLS listings and photos, and ask to be emailed details or called back from an on-screen keyboard. The 2026 rebuild is a React and TypeScript screen built with Vite, pixel-matched to the original against captures of the live kiosk, in front of a .NET 10 API on AWS Lambda served through CloudFront.</p>
+              <p>A touch-screen kiosk behind the window of a Clearwater Beach real estate office, running since 2009. Visitors pick sales or rentals over an aerial photo of Sand Key, browse live Stellar MLS listings and photos pulled through the Bridge Data Output API, and ask to be emailed details or called back from an on-screen keyboard. The 2026 rebuild is a React and TypeScript screen built with Vite, pixel-matched to the original against captures of the live kiosk, in front of a .NET 10 API on AWS Lambda served through CloudFront.</p>
               <p><strong>Built for 1920&times;1080.</strong> The screen is pixel-matched to the kiosk's fixed full-HD display and is meant to run full screen at that resolution. At any other size or zoom level the layout will not look right, by design.</p>
               <ul class="tag-list card-tags" role="list" aria-label="Technologies used on the kiosk">
                 <li class="tag">React</li>
@@ -378,6 +378,7 @@
                 <li class="tag">AWS Lambda</li>
                 <li class="tag">CloudFront</li>
                 <li class="tag">Stellar MLS</li>
+                <li class="tag">Bridge Data Output API</li>
                 <li class="tag">1920&times;1080</li>
               </ul>
               <a class="card-link" href="https://github.com/mvcprogrammer/sandkey-display-web" target="_blank" rel="noopener">Kiosk screen on GitHub</a>
@@ -492,8 +493,9 @@
             <p class="timeline-org">CENTURY 21</p>
             <ul class="timeline-points">
               <li>Developed SaaS real estate software using C# and C++.</li>
+              <li>Integrated Stellar MLS listing data through the Bridge Data Output API: listing search and detail endpoints, field selection, paging, photo delivery from the Bridge media CDN, and access-token handling, feeding both the SaaS product and the kiosk.</li>
               <li>Managed API integrations with major external platforms including Google and Facebook.</li>
-              <li>Built an interactive kiosk window display application (full-screen HD, non-web target).</li>
+              <li>Built an interactive kiosk window display application (full-screen HD, non-web target) showing live MLS listings.</li>
             </ul>
           </li>
         </ol>

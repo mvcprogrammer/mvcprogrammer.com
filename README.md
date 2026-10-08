@@ -80,7 +80,7 @@ The website for LightSplitters Media, my photography studio in Tampa Bay: weddin
 | **Observability** | OpenTelemetry, Serilog, Seq, Datadog, CloudWatch, health checks |
 | **Architecture** | SOLID, CQRS, dependency injection, event-driven design, serverless, microservices, legacy modernization |
 | **Testing** | xUnit, NUnit, Moq, NSubstitute, WebApplicationFactory integration tests, .NET analyzers as build errors |
-| **Domains** | Accounting (GL, AR/AP, bank reconciliation, QuickBooks API) · Healthcare (HL7 v2, FHIR, HIPAA) |
+| **Domains** | Accounting (GL, AR/AP, bank reconciliation, QuickBooks API) · Healthcare (HL7 v2, FHIR, HIPAA) · Real estate (Stellar MLS via the Bridge Data Output API: listings, photos, paging, token handling) |
 | **AI-assisted dev** | Claude / Claude Code, ChatGPT, LangChain |
 
 ---
@@ -90,6 +90,7 @@ The website for LightSplitters Media, my photography studio in Tampa Bay: weddin
 - **Event-driven at scale:** designed a RabbitMQ publish/subscribe topology with durable queues, dead-letter handling, and Polly retries with exponential backoff, so traffic spikes are absorbed by the queue instead of dropped.
 - **Healthcare interoperability:** always-on HL7 v2 and FHIR integrations with external systems in a HIPAA-regulated environment.
 - **Accounting systems:** built a proprietary accounting platform designed to run without a traditional month-end close; CQRS with MediatR and real-time updates over SignalR.
+- **MLS integration:** Stellar MLS listing data through the Bridge Data Output API, from the CENTURY 21 years to the 2026 kiosk rebuild; available for freelance Bridge API integration work.
 - **Modernization:** led a platform migration from .NET Framework 3.x to .NET Core MVC, and rebuilt a 17-year-old kiosk backend as a serverless .NET 10 API ([SandKey](https://github.com/mvcprogrammer/sandkey)).
 
 ---
