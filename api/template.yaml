@@ -1,0 +1,143 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Transform: AWS::Serverless-2016-10-31
+
+Description: >
+  Experience API for mvcprogrammer.com. A read-only C# (.NET 10, arm64) Lambda
+  behind a CloudFront behavior at /api/*, reading from a single DynamoDB table.
+  Spec: api/openapi.yaml.
+
+# The CloudFront distribution that serves mvcprogrammer.com predates this stack and
+# is not managed here. This stack creates everything the API needs and the CloudFront
+# pieces that can stand alone (an origin access control and a cache policy); attaching
+# them to the distribution as a second origin and an /api/* behavior is a documented
+# one-time step in docs/DEPLOY.md.
+
+Parameters:
+  DistributionArn:
+    Type: String
+    Description: ARN of the existing CloudFront distribution that will call the function URL.
+    AllowedPattern: '^arn:aws:cloudfront::\d{12}:distribution/[A-Z0-9]+$'
+  ApiVersion:
+    Type: String
+    Default: 1.0.0
+    Description: Reported by /health. Keep in step with info.version in openapi.yaml.
+  LogRetentionDays:
+    Type: Number
+    Default: 14
+
+Resources:
+
+  # ---------------------------------------------------------------- Data
+
+  ExperienceTable:
+    Type: AWS::DynamoDB::Table
+    DeletionPolicy: Retain
+    UpdateReplacePolicy: Retain
+    Properties:
+      TableName: mvcprogrammer-experience
+      BillingMode: PAY_PER_REQUEST
+      AttributeDefinitions:
+        - AttributeName: PK
+          AttributeType: S
+        - AttributeName: SK
+          AttributeType: S
+      KeySchema:
+        - AttributeName: PK
+          KeyType: HASH
+        - AttributeName: SK
+          KeyType: RANGE
+      # Single-table layout, one partition for the resume:
+      #   PK = "RESUME"           SK = "POSITION#<startDate>#<id>"   one item per position
+      # Positions sort by SK, so a Query with ScanIndexForward=false returns newest first.
+      # Skills are an attribute (string set) on each position and are aggregated in code;
+      # at this size a GSI would cost more in clarity than it saves in reads.
+
+  # ---------------------------------------------------------------- Compute
+
+  ApiLogGroup:
+    Type: AWS::Logs::LogGroup
+    Properties:
+      LogGroupName: /aws/lambda/mvcprogrammer-experience-api
+      RetentionInDays: !Ref LogRetentionDays
+
+  ApiFunction:
+    Type: AWS::Serverless::Function
+    DependsOn: ApiLogGroup
+    Properties:
+      FunctionName: mvcprogrammer-experience-api
+      Description: Read-only Experience API, ASP.NET Core minimal API hosted on Lambda.
+      Runtime: dotnet10
+      Architectures: [arm64]
+      # With Amazon.Lambda.AspNetCoreServer.Hosting the handler is the assembly name.
+      Handler: Experience.Api
+      CodeUri: ./src/Experience.Api/
+      MemorySize: 1024
+      Timeout: 10
+      Environment:
+        Variables:
+          TABLE_NAME: !Ref ExperienceTable
+          API_VERSION: !Ref ApiVersion
+      Policies:
+        - DynamoDBReadPolicy:
+            TableName: !Ref ExperienceTable
+      FunctionUrlConfig:
+        # IAM auth plus the permission below means only CloudFront, signing with the
+        # origin access control, can invoke the URL. Hitting it directly returns 403.
+        AuthType: AWS_IAM
+        InvokeMode: BUFFERED
+
+  CloudFrontInvokePermission:
+    Type: AWS::Lambda::Permission
+    Properties:
+      FunctionName: !Ref ApiFunction
+      Action: lambda:InvokeFunctionUrl
+      Principal: cloudfront.amazonaws.com
+      SourceArn: !Ref DistributionArn
+      FunctionUrlAuthType: AWS_IAM
+
+  # ---------------------------------------------------------------- CloudFront pieces
+
+  ApiOriginAccessControl:
+    Type: AWS::CloudFront::OriginAccessControl
+    Properties:
+      OriginAccessControlConfig:
+        Name: mvcprogrammer-experience-api
+        Description: Lets the mvcprogrammer.com distribution sign requests to the Experience API function URL.
+        OriginAccessControlOriginType: lambda
+        SigningBehavior: always
+        SigningProtocol: sigv4
+
+  ApiCachePolicy:
+    Type: AWS::CloudFront::CachePolicy
+    Properties:
+      CachePolicyConfig:
+        Name: mvcprogrammer-experience-api
+        Comment: Cache by path and the skill query string; TTLs defer to the origin's Cache-Control.
+        MinTTL: 0
+        DefaultTTL: 300
+        MaxTTL: 3600
+        ParametersInCacheKeyAndForwardedToOrigin:
+          EnableAcceptEncodingGzip: true
+          EnableAcceptEncodingBrotli: true
+          CookiesConfig:
+            CookieBehavior: none
+          HeadersConfig:
+            HeaderBehavior: none
+          QueryStringsConfig:
+            QueryStringBehavior: whitelist
+            QueryStrings: [skill]
+
+Outputs:
+  FunctionUrl:
+    Description: Origin domain for the CloudFront behavior (strip the scheme and trailing slash).
+    Value: !GetAtt ApiFunctionUrl.FunctionUrl
+  FunctionArn:
+    Value: !GetAtt ApiFunction.Arn
+  TableName:
+    Value: !Ref ExperienceTable
+  OriginAccessControlId:
+    Description: Attach to the API origin on the distribution.
+    Value: !GetAtt ApiOriginAccessControl.Id
+  CachePolicyId:
+    Description: Use on the /api/* behavior.
+    Value: !Ref ApiCachePolicy
