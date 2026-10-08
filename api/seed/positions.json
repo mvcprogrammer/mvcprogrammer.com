@@ -18,6 +18,9 @@
     "skills": [
       "C#",
       ".NET",
+      ".NET Core",
+      ".NET Framework",
+      "ASP.NET Web API",
       "RabbitMQ",
       "Event-driven architecture",
       "SQL Server",
@@ -47,7 +50,9 @@
     "skills": [
       "C#",
       ".NET",
+      ".NET Core",
       "ASP.NET Core",
+      "ASP.NET Web API",
       "REST APIs",
       "AWS",
       "SQS",
@@ -132,6 +137,7 @@
       "C#",
       "C++",
       ".NET Framework",
+      "ASP.NET Web API",
       "SaaS",
       "Stellar MLS",
       "Bridge Data Output API",
