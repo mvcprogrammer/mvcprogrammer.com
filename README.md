@@ -79,7 +79,7 @@ The website for LightSplitters Media, my photography studio in Tampa Bay: weddin
 | **Cloud & DevOps** | AWS (Lambda, DynamoDB, S3, CloudFront, Route 53, ACM, IAM, SSM Parameter Store, EC2, RDS, CloudWatch), AWS SAM / CloudFormation, GitHub Actions (OIDC), Azure DevOps, Docker, Git |
 | **Observability** | OpenTelemetry, Serilog, Seq, Datadog, CloudWatch, health checks |
 | **Architecture** | SOLID, CQRS, dependency injection, event-driven design, serverless, microservices, legacy modernization |
-| **Testing** | xUnit, NUnit, Moq, NSubstitute, WebApplicationFactory integration tests, .NET analyzers as build errors |
+| **Testing** | xUnit, NUnit, Telerik JustMock, Moq, NSubstitute, WebApplicationFactory integration tests, .NET analyzers as build errors |
 | **Domains** | Accounting (GL, AR/AP, bank reconciliation, QuickBooks API) · Healthcare (HL7 v2, FHIR, HIPAA) · Real estate (Stellar MLS via the Bridge Data Output API: listings, photos, paging, token handling) |
 | **AI-assisted dev** | Claude / Claude Code, ChatGPT, LangChain |
 

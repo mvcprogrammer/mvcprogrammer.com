@@ -28,6 +28,9 @@
       "FHIR",
       "HIPAA",
       "Unit testing",
+      "NUnit",
+      "xUnit",
+      "Telerik JustMock",
       "Polly",
       "Serilog",
       "Seq",
@@ -90,6 +93,8 @@
       "MediatR",
       "SignalR",
       "WebSockets",
+      "Unit testing",
+      "xUnit",
       "Accounting systems",
       "Code review",
       "Mentoring"
