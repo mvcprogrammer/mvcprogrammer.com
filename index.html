@@ -341,7 +341,7 @@
             <div class="card-body">
               <h3>mvcprogrammer.com</h3>
               <p class="card-subtitle">The tech behind this site</p>
-              <p>Plain HTML, CSS, and JavaScript with no framework, no build step, and no dependencies. The files live in a private S3 bucket that only CloudFront can read through Origin Access Control. CloudFront serves them worldwide over HTTPS with an ACM certificate, Route 53 points the domain at the distribution, and a GitHub Actions workflow authenticated with OIDC syncs the bucket and invalidates the cache on every push to main. No servers, no load balancer, no auto scaling group. The Experience section is also served by a small read-only C# API on Lambda and DynamoDB, with the HTML as its fallback.</p>
+              <p>This site follows the KISS principle: keep it simple, and add nothing that is not earning its place. Plain HTML, CSS, and JavaScript with no framework, no build step, and no dependencies. The files live in a private S3 bucket that only CloudFront can read through Origin Access Control. CloudFront serves them worldwide over HTTPS with an ACM certificate, Route 53 points the domain at the distribution, and a GitHub Actions workflow authenticated with OIDC syncs the bucket and invalidates the cache on every push to main. No servers, no load balancer, no auto scaling group. The Experience section is also served by a small read-only C# API on Lambda and DynamoDB, with the HTML as its fallback.</p>
               <ul class="tag-list card-tags" role="list" aria-label="Technologies used on mvcprogrammer.com">
                 <li class="tag">HTML</li>
                 <li class="tag">CSS</li>
@@ -359,7 +359,7 @@
                 <li class="tag">GitHub Actions (OIDC)</li>
                 <li class="tag">Content Security Policy</li>
               </ul>
-              <a class="card-link" href="https://github.com/mvcprogrammer/mvcprogrammer" target="_blank" rel="noopener">View the source on GitHub</a>
+              <a class="card-link" href="https://github.com/mvcprogrammer/mvcprogrammer.com" target="_blank" rel="noopener">View the source on GitHub</a>
             </div>
           </article>
 
@@ -585,11 +585,11 @@
       <div class="container">
         <p class="eyebrow">07 / Colophon</p>
         <h2 id="colophon-title">How This Site Is Built</h2>
-        <p class="section-intro">A footnote for the curious. There is no server behind this page, only static files on a CDN and three small functions.</p>
+        <p class="section-intro">A footnote for the curious. The whole site follows the KISS principle, keep it simple: there is no server behind this page, only static files on a CDN and three small functions.</p>
         <dl class="colophon-list">
           <div class="colophon-item">
             <dt>Front end</dt>
-            <dd>Plain HTML, CSS, and vanilla JavaScript. No framework, no build step, no bundler, and no dependencies: one stylesheet and one deferred script of about 450 lines, shipped exactly as written. The Experience timeline is in the HTML, so it reads without JavaScript; when the Experience API answers, the script re-renders it from the JSON and reveals a skill filter.</dd>
+            <dd>KISS applied to the front end: plain HTML, CSS, and vanilla JavaScript. No framework, no build step, no bundler, and no dependencies: one stylesheet and one deferred script of about 450 lines, shipped exactly as written. The Experience timeline is in the HTML, so it reads without JavaScript; when the Experience API answers, the script re-renders it from the JSON and reveals a skill filter.</dd>
           </div>
           <div class="colophon-item">
             <dt>Styling</dt>
@@ -617,7 +617,7 @@
           </div>
           <div class="colophon-item">
             <dt>API integration</dt>
-            <dd>The work history above is also served by a small read-only API at <code>/api/experience</code>, with a skill filter and an aggregated <code>/api/skills</code> view. It is C# on .NET 10, run on AWS Lambda (arm64) behind this same CloudFront distribution and reading a single DynamoDB table. The OpenAPI contract was written and committed before any code. Responses carry ETags and cache headers so CloudFront answers most requests itself, errors follow RFC 9457 problem details, and the function URL accepts only requests signed by CloudFront. Write endpoints are specified and stubbed for an admin API to come. The contract is public: <a href="https://github.com/mvcprogrammer/mvcprogrammer/blob/main/api/openapi.yaml" target="_blank" rel="noopener">OpenAPI spec</a>.</dd>
+            <dd>The work history above is also served by a small read-only API at <code>/api/experience</code>, with a skill filter and an aggregated <code>/api/skills</code> view. It is C# on .NET 10, run on AWS Lambda (arm64) behind this same CloudFront distribution and reading a single DynamoDB table. The OpenAPI contract was written and committed before any code. Responses carry ETags and cache headers so CloudFront answers most requests itself, errors follow RFC 9457 problem details, and the function URL accepts only requests signed by CloudFront. Write endpoints are specified and stubbed for an admin API to come. The contract is public: <a href="https://github.com/mvcprogrammer/mvcprogrammer.com/blob/main/api/openapi.yaml" target="_blank" rel="noopener">OpenAPI spec</a>.</dd>
           </div>
           <div class="colophon-item">
             <dt>Deploys</dt>
@@ -628,7 +628,7 @@
             <dd>Written in JetBrains Rider with Claude Code as a pair programmer, and previewed locally with <code>python3 -m http.server</code> before each commit.</dd>
           </div>
         </dl>
-        <a class="card-link" href="https://github.com/mvcprogrammer/mvcprogrammer" target="_blank" rel="noopener">Read the source on GitHub</a>
+        <a class="card-link" href="https://github.com/mvcprogrammer/mvcprogrammer.com" target="_blank" rel="noopener">Read the source on GitHub</a>
       </div>
     </section>
   </main>

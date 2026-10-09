@@ -1,6 +1,6 @@
 # Deploying mvcprogrammer.com
 
-Plain HTML, CSS, and vanilla JavaScript. No framework, no build step, no backend. Hosted as static files on Amazon S3 behind CloudFront. This is the infrastructure walkthrough that used to live in the README.
+The site follows the KISS principle. Plain HTML, CSS, and vanilla JavaScript. No framework, no build step, no backend. Hosted as static files on Amazon S3 behind CloudFront. This is the infrastructure walkthrough that used to live in the README.
 
 ## Files
 
@@ -402,15 +402,15 @@ aws cloudfront get-distribution-config --id E23085GR2SZJHC --query 'Distribution
        "Condition": {
          "StringEquals": { "token.actions.githubusercontent.com:aud": "sts.amazonaws.com" },
          "StringLike": { "token.actions.githubusercontent.com:sub": [
-           "repo:mvcprogrammer@<OWNER_ID>/mvcprogrammer@<REPO_ID>:ref:refs/heads/main",
-           "repo:mvcprogrammer/mvcprogrammer:ref:refs/heads/main"
+           "repo:mvcprogrammer@<OWNER_ID>/mvcprogrammer.com@<REPO_ID>:ref:refs/heads/main",
+           "repo:mvcprogrammer/mvcprogrammer.com:ref:refs/heads/main"
          ] }
        }
      }]
    }
    ```
 
-   GitHub's OIDC token identifies the repository as `repo:<owner>@<owner id>/<repo>@<repo id>:ref:...`, so the trust policy lists that form first. The plain `owner/repo` form is kept as a fallback. Find the IDs with `curl -s https://api.github.com/repos/mvcprogrammer/mvcprogrammer | grep -E '"id"'` (the first `id` is the repo, the one under `owner` is the owner), or read the exact `sub` value from a failed `AssumeRoleWithWebIdentity` event in CloudTrail.
+   GitHub's OIDC token identifies the repository as `repo:<owner>@<owner id>/<repo>@<repo id>:ref:...`, so the trust policy lists that form first. The plain `owner/repo` form is kept as a fallback. Find the IDs with `curl -s https://api.github.com/repos/mvcprogrammer/mvcprogrammer.com | grep -E '"id"'` (the first `id` is the repo, the one under `owner` is the owner), or read the exact `sub` value from a failed `AssumeRoleWithWebIdentity` event in CloudTrail. The repo ID survives a rename but the name part of both forms does not, so update the trust policy whenever the repository is renamed.
 
 3. Attach a permissions policy to the role:
 

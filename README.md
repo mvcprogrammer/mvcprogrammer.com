@@ -1,52 +1,55 @@
 <div align="center">
 
-# Neal Thomas
+# mvcprogrammer.com
 
-**Senior full-stack engineer** &nbsp;·&nbsp; C# / .NET &nbsp;·&nbsp; Angular &nbsp;·&nbsp; React &nbsp;·&nbsp; SQL Server &nbsp;·&nbsp; AWS
-<br>Tampa Bay, Florida
+**The source for [mvcprogrammer.com](https://mvcprogrammer.com), the portfolio site of [Neal Thomas](https://github.com/mvcprogrammer).**
 
-[![mvcprogrammer.com](https://img.shields.io/badge/mvcprogrammer.com-2f62d9?style=flat-square&logo=googlechrome&logoColor=white)](https://mvcprogrammer.com)
-&nbsp;[![LinkedIn](https://img.shields.io/badge/LinkedIn-2f62d9?style=flat-square&logo=linkedin&logoColor=white)](https://www.linkedin.com/in/mvcprogrammer/)
-&nbsp;[![Email](https://img.shields.io/badge/Email-2f62d9?style=flat-square&logo=minutemailer&logoColor=white)](mailto:neal.thomas@mvcprogrammer.com)
+[![Live site](https://img.shields.io/badge/mvcprogrammer.com-2f62d9?style=flat-square&logo=googlechrome&logoColor=white)](https://mvcprogrammer.com)
+&nbsp;[![Deploy](https://github.com/mvcprogrammer/mvcprogrammer.com/actions/workflows/deploy.yml/badge.svg)](https://github.com/mvcprogrammer/mvcprogrammer.com/actions/workflows/deploy.yml)
 
 <br>
 
 <picture>
-  <source media="(prefers-color-scheme: dark)" srcset="https://raw.githubusercontent.com/mvcprogrammer/mvcprogrammer/main/docs/images/mvcprogrammer-com-dark.png">
-  <img alt="mvcprogrammer.com, the home page" src="https://raw.githubusercontent.com/mvcprogrammer/mvcprogrammer/main/docs/images/mvcprogrammer-com-light.png" width="920">
+  <source media="(prefers-color-scheme: dark)" srcset="https://raw.githubusercontent.com/mvcprogrammer/mvcprogrammer.com/main/docs/images/mvcprogrammer-com-dark.png">
+  <img alt="mvcprogrammer.com, the home page" src="https://raw.githubusercontent.com/mvcprogrammer/mvcprogrammer.com/main/docs/images/mvcprogrammer-com-light.png" width="920">
 </picture>
-
-<sub>**[mvcprogrammer.com](https://mvcprogrammer.com)** is my portfolio and the source in this repository. Plain HTML, CSS, and JavaScript on S3 and CloudFront, with a C# / .NET 10 API on Lambda and DynamoDB behind the same domain.<br>[How it is built and deployed](docs/DEPLOY.md) &nbsp;·&nbsp; [The Experience API](api/README.md)</sub>
 
 </div>
 
 <br>
 
-I build back ends that run around the clock and front ends people like using. Fifteen-plus years on C# / .NET and SQL Server, with Angular and React on top. Most recently I re-architected a polling Windows service into an event-driven **RabbitMQ** pipeline that processes **1M+ API requests, 24/7**. Before that I built and maintained a proprietary accounting system (general ledger, receivables, payables, bank reconciliation, financial reporting) on Angular and ASP.NET Core. AI-assisted tools like Claude Code are part of my daily workflow.
+The site follows the **KISS principle**: keep it simple, and add nothing that is not earning its place. It is plain HTML, CSS, and vanilla JavaScript with no framework, no build step, no bundler, no third-party scripts, and a strict Content Security Policy. One page, one stylesheet, one deferred script, shipped exactly as written. The static files sit in a private S3 bucket behind CloudFront, and three small Lambda functions do the only work that needs a server: the contact form, the resume download, and the Experience API.
 
-## Projects
+## What is in this repository
 
-All of my professional enterprise work lives in private repositories, so these three public sites stand in for it: they show how I write code and the stack I reach for. Each is mine end to end, design through deployment, and all three run serverless on AWS.
-
-| Project | What it is |
+| Path | What it is |
 | --- | --- |
-| **[mvcprogrammer.com](https://mvcprogrammer.com)**<br><sub>[source](https://github.com/mvcprogrammer/mvcprogrammer) · [API](api/README.md) · [deploy notes](docs/DEPLOY.md)</sub> | My portfolio. No framework, no build step, no third-party scripts, and a strict Content Security Policy. The Experience section is served by a read-only API on Lambda, spec-first with OpenAPI 3.1 and tested over the in-process host. GitHub Actions deploys every push with OIDC, so no AWS keys are stored anywhere.<br><sub>HTML · CSS · JavaScript · C# / .NET 10 · Lambda · DynamoDB · OpenAPI 3.1 · S3 · CloudFront · GitHub Actions</sub> |
-| **Property search kiosk**<br><sub>[screen](https://github.com/mvcprogrammer/sandkey-display-web) · [API](https://github.com/mvcprogrammer/sandkey) · [try it live](https://display.lightsplitters.com/)</sub> | A touch-screen MLS kiosk in the window of a Clearwater Beach real estate office, running since 2009 and rebuilt in 2026. A React screen that keeps the layout the office knows by heart, over a fully tested serverless .NET API with secrets in SSM, rate limiting on the one endpoint that sends email, and OpenTelemetry tracing.<br><sub>React 18 · TypeScript · Vite · ASP.NET Core on .NET 10 · Lambda · SAM / CloudFormation · OpenTelemetry · xUnit</sub> |
-| **[lightsplitters.com](https://lightsplitters.com)**<br><sub>[source](https://github.com/mvcprogrammer/lightsplitters.com)</sub> | The site for my photography studio, prerendered to static HTML. A second app in the same workspace is the template for every client's wedding site or family album, each served from its own S3 folder at its own subdomain with no AWS changes per client.<br><sub>Angular 22 · TypeScript · S3 · CloudFront Functions · Lambda + SES · Stripe</sub> |
+| `index.html`, `styles.css`, `main.js` | The site. The Experience timeline is in the HTML so it reads without JavaScript; when the API answers, the script re-renders it from JSON and reveals a skill filter. |
+| `404.html`, `privacy.html`, `terms.html` | The not-found page and the policies required for the toll-free SMS registration. |
+| `assets/` | Self-hosted fonts (Inter and JetBrains Mono as variable WOFF2 subsets) and images. Icons are an inline SVG sprite in the HTML. |
+| `api/` | The Experience API: C# on .NET 10, run on AWS Lambda (arm64) and reading a single DynamoDB table. Spec-first with OpenAPI 3.1, tested over the in-process host, deployed with SAM. See [api/README.md](api/README.md). |
+| `infra/` | The contact-form and resume-download Lambdas (Node.js 22 on arm64) and the SES DKIM change batch. |
+| `docs/` | [DEPLOY.md](docs/DEPLOY.md), the infrastructure walkthrough, and the screenshots above. |
+| `.github/workflows/` | The deploy: GitHub Actions authenticated with OIDC, so no AWS keys are stored anywhere. |
 
-## Tech stack
+## How it is served
 
-| Area | Tools |
-| --- | --- |
-| **Back end** | C# / .NET 10 and .NET Core, ASP.NET Core Web API and MVC, minimal APIs, EF Core, Dapper, MediatR, SignalR, OpenAPI, RabbitMQ, Hangfire, Polly |
-| **Front end** | Angular, React, TypeScript, vanilla JavaScript, HTML / CSS, Vite |
-| **Data** | SQL Server: complex queries, stored procedures, indexing, execution plans, performance tuning, deadlock diagnosis. DynamoDB single-table design |
-| **Cloud and delivery** | AWS Lambda, S3, CloudFront, Route 53, IAM, SSM, SAM / CloudFormation, GitHub Actions with OIDC, Azure DevOps, Docker |
-| **Quality** | xUnit, NUnit, NSubstitute, Moq, Telerik JustMock, WebApplicationFactory integration tests, analyzers as build errors, OpenTelemetry, Serilog, Datadog |
-| **Domains** | Accounting (GL, AR/AP, bank reconciliation, QuickBooks API) · Healthcare (HL7 v2, FHIR, HIPAA) · Real estate (Stellar MLS via the Bridge Data Output API) · Financial trading systems |
+- **Hosting.** A private S3 bucket that only CloudFront can read, through Origin Access Control. CloudFront serves over HTTP/2 and HTTP/3 with an ACM certificate, Route 53 aliases the domain, and a CloudFront Function redirects `www` to the apex.
+- **Security.** A response headers policy sets a same-origin Content Security Policy, two-year HSTS, `X-Frame-Options: DENY`, `nosniff`, and a locked-down Permissions-Policy. No cookies, no analytics.
+- **Experience API.** `/api/experience` and `/api/skills` on the same domain. Responses carry ETags and cache headers so CloudFront answers most requests itself, errors follow RFC 9457 problem details, and the function URL accepts only requests signed by CloudFront. The contract is [api/openapi.yaml](api/openapi.yaml).
+- **Deploys.** Every push to `main` assumes a least-privilege IAM role through OIDC, syncs the bucket in two passes (a week of browser caching for fonts and images, five minutes for pages), and invalidates the CloudFront cache. Third-party actions are pinned to commit hashes.
+
+## Preview locally
+
+```bash
+python3 -m http.server 8080
+# open http://localhost:8080
+```
+
+The full build-and-deploy walkthrough, including the IAM trust policy, the response headers policy, the contact form, and the resume download, is in [docs/DEPLOY.md](docs/DEPLOY.md).
 
 <br>
 
 <div align="center">
-<sub>Résumé, freelance, and contact: <a href="https://mvcprogrammer.com/#resume">mvcprogrammer.com</a></sub>
+<sub>Neal Thomas &nbsp;·&nbsp; <a href="https://github.com/mvcprogrammer">GitHub profile</a> &nbsp;·&nbsp; <a href="https://www.linkedin.com/in/mvcprogrammer/">LinkedIn</a> &nbsp;·&nbsp; <a href="https://mvcprogrammer.com/#resume">Résumé and contact</a></sub>
 </div>
