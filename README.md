@@ -26,7 +26,7 @@ I build back ends that run around the clock and front ends people like using. Fi
 
 ## Projects
 
-Most of my enterprise work lives in private repositories, so these three public sites stand in for it: they show how I write code and the stack I reach for. Each is mine end to end, design through deployment, and all three run serverless on AWS.
+All of my professional enterprise work lives in private repositories, so these three public sites stand in for it: they show how I write code and the stack I reach for. Each is mine end to end, design through deployment, and all three run serverless on AWS.
 
 | Project | What it is |
 | --- | --- |
