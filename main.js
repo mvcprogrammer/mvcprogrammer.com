@@ -248,8 +248,10 @@
     var jsonLink = skillFilter.querySelector(".skill-filter-link");
     var MONTHS = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
     var VISIBLE_CHIPS = 12;
-    /* Chips named here lead the row regardless of position count. */
-    var PINNED_SKILLS = ["Claude AI Pair Programming"];
+    /* Chips named here lead the row in this order, regardless of position
+       count; chips in DEMOTED_SKILLS go to the end of the row. */
+    var PINNED_SKILLS = ["ASP.NET Web API", "C#", "Claude AI Pair Programming", "Angular", "React"];
+    var DEMOTED_SKILLS = ["CloudWatch"];
     var allPositions = [];
     var chips = [];
 
@@ -361,11 +363,17 @@
     };
 
     var buildChips = function (skills) {
-      var items = skills.items.filter(function (s) {
-        return PINNED_SKILLS.indexOf(s.name) !== -1;
-      }).concat(skills.items.filter(function (s) {
-        return PINNED_SKILLS.indexOf(s.name) === -1;
-      }));
+      var byName = function (name) {
+        return skills.items.filter(function (s) {
+          return s.name === name;
+        });
+      };
+      var rest = skills.items.filter(function (s) {
+        return PINNED_SKILLS.indexOf(s.name) === -1 && DEMOTED_SKILLS.indexOf(s.name) === -1;
+      });
+      var items = [].concat.apply([], PINNED_SKILLS.map(byName))
+        .concat(rest)
+        .concat([].concat.apply([], DEMOTED_SKILLS.map(byName)));
       addChip("", "All");
       items.forEach(function (s, i) {
         var chip = addChip(s.name, s.name, i >= VISIBLE_CHIPS);
