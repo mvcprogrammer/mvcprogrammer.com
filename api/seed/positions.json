@@ -136,6 +136,7 @@
     "workMode": "on-site",
     "location": "Florida",
     "highlights": [
+      "Now freelance: rebuilt the office’s property search kiosk in 2026 as a .NET 10 Web API on AWS Lambda behind CloudFront with a React / TypeScript touch-screen front end, serving live Stellar MLS listings and photos.",
       "Developed SaaS real estate software using C# and C++.",
       "Integrated Stellar MLS listing data through the Bridge Data Output API: listing search and detail endpoints, field selection, paging, photo delivery from the Bridge media CDN, and access-token handling, feeding both the SaaS product and the kiosk.",
       "Managed API integrations with major external platforms including Google and Facebook.",
