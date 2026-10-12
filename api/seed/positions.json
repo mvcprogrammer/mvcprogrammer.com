@@ -13,7 +13,8 @@
       "Scaled parallel consumers with bounded concurrency, thread-safe shared state, and cooperative cancellation for long-running operations.",
       "Built and maintained HL7 v2 and FHIR integrations with external healthcare systems in a HIPAA-regulated environment.",
       "Tuned SQL Server at enterprise scale on high-write integration tables: execution plans, indexing strategy, and query rewrites.",
-      "Owned production incident response and root-cause analysis; instrumented services with Serilog, Seq, Datadog, and CloudWatch."
+      "Owned production incident response and root-cause analysis; instrumented services with Serilog, Seq, Datadog, and CloudWatch.",
+      "Served two years on the AI Transition Team, bringing Claude AI pair programming into day-to-day development."
     ],
     "skills": [
       "C#",
