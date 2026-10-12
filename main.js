@@ -248,6 +248,8 @@
     var jsonLink = skillFilter.querySelector(".skill-filter-link");
     var MONTHS = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
     var VISIBLE_CHIPS = 12;
+    /* Chips named here lead the row regardless of position count. */
+    var PINNED_SKILLS = ["Claude AI Pair Programming"];
     var allPositions = [];
     var chips = [];
 
@@ -359,12 +361,17 @@
     };
 
     var buildChips = function (skills) {
+      var items = skills.items.filter(function (s) {
+        return PINNED_SKILLS.indexOf(s.name) !== -1;
+      }).concat(skills.items.filter(function (s) {
+        return PINNED_SKILLS.indexOf(s.name) === -1;
+      }));
       addChip("", "All");
-      skills.items.forEach(function (s, i) {
+      items.forEach(function (s, i) {
         var chip = addChip(s.name, s.name, i >= VISIBLE_CHIPS);
         chip.title = s.positionCount + (s.positionCount === 1 ? " position" : " positions");
       });
-      var extra = skills.items.length - VISIBLE_CHIPS;
+      var extra = items.length - VISIBLE_CHIPS;
       if (extra > 0) {
         var more = el("button", "skill-chip skill-chip-more", "+" + extra + " more");
         more.type = "button";
