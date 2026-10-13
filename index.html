@@ -192,7 +192,7 @@
             <h3 class="aside-title">Core skills</h3>
             <ul class="tag-list" role="list" aria-label="Skills">
               <li class="tag">API First Design</li>
-              <li class="tag">C# / .NET Core</li>
+              <li class="tag">C# / .NET</li>
               <li class="tag">Claude AI Pair Programming</li>
               <li class="tag">Angular</li>
               <li class="tag">React</li>
@@ -265,7 +265,7 @@
               <svg class="icon" focusable="false"><use href="#icon-test"></use></svg>
             </div>
             <h3>Test</h3>
-            <p>Every feature ships with fully functional unit and integration tests in xUnit, NUnit, or Moq, covering the happy path, edge cases, and failure modes.</p>
+            <p>Every feature ships with fully functional unit and integration tests in xUnit or NUnit, with Moq for mocking, covering the happy path, edge cases, and failure modes.</p>
             <p>Tests run in the pipeline on every push, so refactoring stays safe and regressions surface before review rather than in production.</p>
             <p>Tests are the guardrails.</p>
           </article>
@@ -274,15 +274,15 @@
               <svg class="icon" focusable="false"><use href="#icon-deploy"></use></svg>
             </div>
             <h3>Deploy</h3>
-            <p>CI/CD pipelines in Azure DevOps and GitHub Actions that build, test, and ship Docker images, from GitOps deployments with ArgoCD on Kubernetes down to lean deploy scripts for small serverless projects on AWS.</p>
-            <p>Environments are reproducible, rollbacks are a single step, and every release leaves a trail from commit to running container.</p>
+            <p>CI/CD pipelines in Azure DevOps or GitHub Actions that build, test, and ship Docker images, from GitOps deployments with ArgoCD on Kubernetes down to lean deploy scripts for small serverless projects on AWS.</p>
+            <p>Environments are reproducible, rollbacks are a single step, and every release leaves a trail from commit to running service.</p>
           </article>
           <article class="card service-card">
             <div class="service-icon" aria-hidden="true">
               <svg class="icon" focusable="false"><use href="#icon-monitor"></use></svg>
             </div>
             <h3>Monitor &amp; Support</h3>
-            <p>Production is instrumented with structured logging through Serilog, Seq, Datadog, and CloudWatch, with dashboards and alarms tuned so problems surface before customers notice.</p>
+            <p>Production is instrumented with structured logging through Serilog, shipped to Seq, Datadog, or CloudWatch, with dashboards and alarms tuned so problems surface before customers notice.</p>
             <p>When something does slip through, I switch on debug-level logging for the affected component, trace the request through the logs, run the root-cause analysis, and ship the fix with a test that keeps it from coming back.</p>
           </article>
         </div>
@@ -374,7 +374,7 @@
             <div class="card-body">
               <h3>Interactive Property Search Window Display</h3>
               <p class="card-subtitle">Touch screen kiosk, React + .NET on AWS</p>
-              <p>A touch-screen kiosk behind the window of a Clearwater Beach real estate office, running since 2009. Visitors pick sales or rentals over an aerial photo of Sand Key, browse live Stellar MLS listings and photos pulled through the Bridge Data Output API, and ask to be emailed details or called back from an on-screen keyboard. The 2026 rebuild is a React and TypeScript screen built with Vite, pixel-matched to the original against captures of the live kiosk, in front of a .NET 10 API on AWS Lambda served through CloudFront.</p>
+              <p>A touch-screen kiosk behind the window of a Clearwater Beach real estate office, running since 2010. Visitors pick sales or rentals over an aerial photo of Sand Key, browse live Stellar MLS listings and photos pulled through the Bridge Data Output API, and ask to be emailed details or called back from an on-screen keyboard. The 2026 rebuild is a React and TypeScript screen built with Vite, pixel-matched to the original against captures of the live kiosk, in front of a .NET 10 API on AWS Lambda served through CloudFront.</p>
               <p><strong>Built for 1920&times;1080.</strong> The screen is pixel-matched to the kiosk's fixed full-HD display and runs full screen at that resolution. In any other window it scales itself to fit, letterboxed, so the live demo below looks like the kiosk on a laptop or a phone.</p>
               <ul class="tag-list card-tags" role="list" aria-label="Technologies used on the kiosk">
                 <li class="tag">React</li>
@@ -405,7 +405,7 @@
             <div class="card-body">
               <h3>lightsplitters.com</h3>
               <p class="card-subtitle">Photography studio, Angular on AWS</p>
-              <p>The website for LightSplitters Media, my photography studio in Tampa Bay: weddings, portraits, family albums, and archival prints. An Angular 22 workspace with standalone components and signals, prerendered to static HTML with no server. A second app in the same workspace is a template for client sites, so each couple's wedding site or family album lives at its own subdomain from one shared build plus a JSON file and a folder of photos. Masonry galleries with a native dialog lightbox, responsive WebP and JPEG images, a contact form that posts to a Lambda function sending through SES, and print orders through Stripe Payment Links. All of it served from a private S3 bucket through CloudFront, with a CloudFront Function routing each subdomain to its folder.</p>
+              <p>The website for LightSplitters Media, a Tampa Bay photography studio I have a vested interest in: weddings, portraits, family albums, and archival prints. An Angular 22 workspace with standalone components and signals, prerendered to static HTML with no server. A second app in the same workspace is a template for client sites, so each couple's wedding site or family album lives at its own subdomain from one shared build plus a JSON file and a folder of photos. Masonry galleries with a native dialog lightbox, responsive WebP and JPEG images, a contact form that posts to a Lambda function sending through SES, and print orders through Stripe Payment Links. All of it served from a private S3 bucket through CloudFront, with a CloudFront Function routing each subdomain to its folder.</p>
               <ul class="tag-list card-tags" role="list" aria-label="Technologies used on lightsplitters.com">
                 <li class="tag">Angular 22</li>
                 <li class="tag">TypeScript</li>
@@ -591,11 +591,11 @@
       <div class="container">
         <p class="eyebrow">07 / Colophon</p>
         <h2 id="colophon-title">How This Site Is Built</h2>
-        <p class="section-intro">A footnote for the curious. The whole site follows the KISS principle, keep it simple: there is no server behind this page, only static files on a CDN and three small functions.</p>
+        <p class="section-intro">A footnote for the curious. The whole site follows the KISS principle, keep it simple: there is no server behind this page, only static files on a CDN, three Lambdas, and a CloudFront Function.</p>
         <dl class="colophon-list">
           <div class="colophon-item">
             <dt>Front end</dt>
-            <dd>I kept the front end simple: plain HTML, CSS, and vanilla JavaScript. No framework, no build step, no bundler, and no dependencies: one stylesheet and one deferred script of about 450 lines, shipped exactly as written. The Experience timeline is in the HTML, so it reads without JavaScript; when the Experience API answers, the script re-renders it from the JSON and reveals a skill filter.</dd>
+            <dd>I kept the front end simple: plain HTML, CSS, and vanilla JavaScript. No framework, no build step, no bundler, and no dependencies: one stylesheet and one deferred script of under 500 lines, shipped exactly as written. The Experience timeline is in the HTML, so it reads without JavaScript; when the Experience API answers, the script re-renders it from the JSON and reveals a skill filter.</dd>
           </div>
           <div class="colophon-item">
             <dt>Styling</dt>
