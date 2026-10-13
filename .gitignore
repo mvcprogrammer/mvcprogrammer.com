@@ -16,3 +16,6 @@ bin/
 obj/
 *.user
 TestResults/
+
+# Claude Code project notes stay local
+CLAUDE.md
