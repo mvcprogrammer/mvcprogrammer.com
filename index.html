@@ -620,7 +620,7 @@
           </div>
           <div class="colophon-item">
             <dt>API integration</dt>
-            <dd>The work history above is also served by a small read-only API at <code>/api/experience</code>, with a skill filter and an aggregated <code>/api/skills</code> view. It is C# on .NET 10, run on AWS Lambda (arm64) behind this same CloudFront distribution and reading a single DynamoDB table. The OpenAPI contract was written and committed before any code. Responses carry ETags and cache headers so CloudFront answers most requests itself, errors follow RFC 9457 problem details, and the function URL accepts only requests signed by CloudFront. Write endpoints are specified and stubbed for an admin API to come. The contract is public: <a href="https://github.com/mvcprogrammer/mvcprogrammer.com/blob/main/api/openapi.yaml" target="_blank" rel="noopener">OpenAPI spec</a>.</dd>
+            <dd>The work history above is also served by an API at <code>/api/experience</code>, with a skill filter and an aggregated <code>/api/skills</code> view. It is C# on .NET 10, run on AWS Lambda (arm64) behind this same CloudFront distribution and reading a single DynamoDB table. The OpenAPI contract was written and committed before any code. Responses carry ETags and cache headers so CloudFront answers most requests itself, errors follow RFC 9457 problem details, and the function URL accepts only requests signed by CloudFront. Write endpoints are specified and stubbed for an admin API to come. The contract is public: <a href="https://github.com/mvcprogrammer/mvcprogrammer.com/blob/main/api/openapi.yaml" target="_blank" rel="noopener">OpenAPI spec</a>.</dd>
           </div>
           <div class="colophon-item">
             <dt>Deploys</dt>
