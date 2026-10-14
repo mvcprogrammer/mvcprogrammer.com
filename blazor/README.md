@@ -29,10 +29,14 @@ blazor/src/Portfolio.Blazor/
 The stylesheet, fonts, images, icons, and `api/seed/positions.json` are linked into `wwwroot`
 from the repository root by the project file, not copied, so the two editions cannot drift.
 
+The longer guideline, with the edition-by-edition comparison, the mirror rule, the test layout,
+and a change checklist, is [docs/BLAZOR-EDITION.pdf](../docs/BLAZOR-EDITION.pdf). It is built by
+the two scripts in `docs/pdf/` (see the docstring in `build_guide.py`).
+
 ## Run it
 
 ```bash
-dotnet run --project blazor/src/Portfolio.Blazor      # http://localhost:5215
+dotnet run --project blazor/src/Portfolio.Blazor      # http://localhost:5115
 dotnet publish blazor/src/Portfolio.Blazor -c Release -o publish
 ```
 
