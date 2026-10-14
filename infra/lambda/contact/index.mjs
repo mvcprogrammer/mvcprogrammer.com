@@ -5,7 +5,8 @@
 // Env vars (set on the function, never in code):
 //   TO_EMAIL        where messages are delivered
 //   FROM_EMAIL      a verified SES identity, e.g. website@mvcprogrammer.com
-//   ALLOWED_ORIGIN  https://mvcprogrammer.com
+//   ALLOWED_ORIGIN  comma-separated list of browser origins allowed to post,
+//                   e.g. https://mvcprogrammer.com,https://blazor.mvcprogrammer.com
 //
 // Spam defenses, cheapest first: the browser Origin must match, a hidden
 // "website" field must stay empty (honeypot), the form must have been open for
@@ -16,6 +17,7 @@ import { SESv2Client, SendEmailCommand } from "@aws-sdk/client-sesv2";
 
 const ses = new SESv2Client({});
 const { TO_EMAIL, FROM_EMAIL, ALLOWED_ORIGIN } = process.env;
+const ALLOWED_ORIGINS = new Set((ALLOWED_ORIGIN ?? "").split(",").map((o) => o.trim()).filter(Boolean));
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 const MIN_FILL_MS = 3000;            // humans take longer than this to write a message
@@ -47,7 +49,7 @@ export const handler = async (event) => {
   if (http.method !== "POST") return reply(405, { error: "method" });
 
   const origin = event.headers?.origin ?? "";
-  if (ALLOWED_ORIGIN && origin !== ALLOWED_ORIGIN) return reply(403, { error: "origin" });
+  if (ALLOWED_ORIGINS.size && !ALLOWED_ORIGINS.has(origin)) return reply(403, { error: "origin" });
 
   let data;
   try {

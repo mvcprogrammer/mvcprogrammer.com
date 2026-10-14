@@ -580,3 +580,37 @@ curl -s -w " [%{http_code} %{content_type}]\n" https://mvcprogrammer.com/api/exp
 ```bash
 aws logs tail /aws/lambda/mvcprogrammer-experience-api --since 1h --format short
 ```
+
+## Blazor edition (blazor.mvcprogrammer.com)
+
+Added 2026-10-14. The Blazor WebAssembly build in `blazor/` is published to the `blazor/` prefix of
+the same bucket and served by a second distribution. The `deploy-blazor` job in the workflow
+builds and syncs it on every push to `main`; nothing in the static site's job changed.
+
+| Piece | Value |
+| --- | --- |
+| CloudFront distribution | `E2NFN5MW02S8Y9` (d2tjmqaw33vtjp.cloudfront.net), origin path `/blazor`, same S3 OAC `E2KEES7ZY0UA4S`, `/api/*` to the Experience API with its OAC `EADX2EY7VKO1Y`, 403 → `/index.html` 200 |
+| Response headers policy | `mvcprogrammer-blazor-security-headers` (`a95f1577-4d06-445c-acd5-bd6763b5651b`): the static site's headers with `'wasm-unsafe-eval'` added to `script-src` |
+| ACM certificate | `arn:aws:acm:us-east-1:334383610383:certificate/f448d49f-3ad1-4ccd-a2ce-a9a367c48222` (blazor.mvcprogrammer.com, DNS-validated) |
+| Route 53 | A and AAAA aliases for `blazor.mvcprogrammer.com` to the distribution |
+| Bucket policy | the `AWS:SourceArn` condition lists both distributions |
+| Experience API | Lambda permission `blazor-cloudfront-invoke` lets the new distribution invoke the function URL. This is outside the SAM template; a `sam deploy` leaves it alone |
+| Contact Lambda | function URL CORS allows both origins; `ALLOWED_ORIGIN` is now a comma-separated list (code in `infra/lambda/contact/index.mjs`) |
+| GitHub variable | `BLAZOR_DISTRIBUTION_ID` = `E2NFN5MW02S8Y9` |
+| IAM | the deploy role's inline policy is kept at `infra/iam/github-actions-deploy-role-policy.json`; its `cloudfront:CreateInvalidation` lists both distributions. Apply with `aws iam put-role-policy --role-name github-actions-mvcprogrammer-deploy --policy-name deploy-static-site --policy-document file://infra/iam/github-actions-deploy-role-policy.json` |
+
+Manual deploy, the same two syncs the workflow runs (pre-compressed `.br`/`.gz` twins stay out;
+CloudFront compresses on the fly):
+
+```bash
+dotnet publish blazor/src/Portfolio.Blazor -c Release -o /tmp/blazor-publish
+cd /tmp/blazor-publish/wwwroot
+aws s3 sync _framework/ s3://mvcprogrammer.com/blazor/_framework/ --delete \
+  --cache-control "public, max-age=604800, s-maxage=31536000, immutable" \
+  --exclude "*.br" --exclude "*.gz" --exclude "blazor.webassembly.js" --exclude "dotnet.js"
+aws s3 sync . s3://mvcprogrammer.com/blazor/ --delete \
+  --cache-control "public, max-age=300, s-maxage=31536000" \
+  --exclude "*.br" --exclude "*.gz" --exclude "_framework/*" \
+  --include "_framework/blazor.webassembly.js" --include "_framework/dotnet.js"
+aws cloudfront create-invalidation --distribution-id E2NFN5MW02S8Y9 --paths "/*"
+```

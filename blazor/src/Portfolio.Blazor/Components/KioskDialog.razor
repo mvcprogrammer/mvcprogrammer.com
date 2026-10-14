@@ -1,0 +1,19 @@
+@* Live kiosk demo. The iframe is rendered only while the dialog is open, so the kiosk and its
+   Lambda load only for visitors who ask. The parent opens it through OpenAsync(). *@
+<dialog class="kiosk-dialog" id="kiosk-dialog" aria-labelledby="kiosk-dialog-title" @ref="_dialog">
+    <div class="kiosk-dialog-head">
+        <div>
+            <p class="eyebrow">Live demo</p>
+            <h2 id="kiosk-dialog-title">Interactive Property Search Window Display</h2>
+            <p class="kiosk-dialog-note">The real kiosk at display.lightsplitters.com, scaled to fit this window. Touch or click around; it returns to its lock screen after three minutes idle, like the one behind the glass.</p>
+        </div>
+        <button type="button" class="kiosk-dialog-close" aria-label="Close the demo" @onclick="CloseAsync">&times;</button>
+    </div>
+    <div class="kiosk-frame-slot">
+        @if (_open)
+        {
+            <iframe class="kiosk-frame" src="@Options.Value.KioskUrl" title="Interactive Property Search Window Display, live" loading="eager"></iframe>
+        }
+    </div>
+    <p class="kiosk-dialog-foot"><a href="@Options.Value.KioskUrl" target="_blank" rel="noopener">Open full size in a new tab</a></p>
+</dialog>

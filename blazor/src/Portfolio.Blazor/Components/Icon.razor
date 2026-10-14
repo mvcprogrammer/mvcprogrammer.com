@@ -1,0 +1,8 @@
+@* One icon from the sprite in IconSprite.razor. Decorative: labelled by the surrounding link or button. *@
+<svg class="icon" aria-hidden="true" focusable="false"><use href="#icon-@Name"></use></svg>
+
+@code {
+    /// <summary>Symbol id without the "icon-" prefix, e.g. "github".</summary>
+    [Parameter, EditorRequired]
+    public string Name { get; set; } = string.Empty;
+}

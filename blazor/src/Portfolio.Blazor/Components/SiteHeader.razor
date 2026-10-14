@@ -1,0 +1,29 @@
+@* Sticky header with the brand, the section nav, and the mobile menu toggle. The scroll state,
+   the section in view, and the open menu are component state; site.js reports the browser events. *@
+<header class="site-header @(_scrolled ? "is-scrolled" : null)" id="top" @ref="_header">
+    <div class="container header-inner">
+        <a class="brand" href="#top" aria-label="Neal Thomas, back to top">
+            <span class="brand-mark" aria-hidden="true"></span>
+            <span class="brand-name">Neal Thomas</span>
+        </a>
+
+        <button class="nav-toggle" type="button" aria-expanded="@(_menuOpen ? "true" : "false")" aria-controls="primary-nav"
+                aria-label="@(_menuOpen ? "Close menu" : "Open menu")" @onclick="ToggleMenu" @ref="_toggle">
+            <span class="nav-toggle-bar" aria-hidden="true"></span>
+            <span class="nav-toggle-bar" aria-hidden="true"></span>
+            <span class="nav-toggle-bar" aria-hidden="true"></span>
+        </button>
+
+        <nav class="site-nav @(_menuOpen ? "is-open" : null)" id="primary-nav" aria-label="Primary">
+            <ul class="nav-list" role="list">
+                @foreach (var link in SECTION_LINKS)
+                {
+                    <li>
+                        <a class="nav-link" href="#@link.Id" aria-current="@(IsCurrent(link.Id) ? "true" : null)" @onclick="() => CloseMenu(false)">@link.Label</a>
+                    </li>
+                }
+            </ul>
+            <SocialLinks />
+        </nav>
+    </div>
+</header>

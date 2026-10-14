@@ -1,0 +1,104 @@
+@* Selected work. The kiosk card opens the live demo dialog. *@
+<section class="section section-alt" id="portfolio" aria-labelledby="portfolio-title">
+  <div class="container">
+    <p class="eyebrow">04 / Portfolio</p>
+    <h2 id="portfolio-title">Selected Work</h2>
+    <p class="section-intro">Most of my career has gone into enterprise systems that belong to the companies I built them for, so that code stays behind their walls. The projects below are my own. They are here to show how I design, write, test, and ship software when every decision is mine.</p>
+    <div class="card-grid portfolio-grid">
+      <article class="card portfolio-card portfolio-card-featured">
+        <div class="card-media">
+          <img src="assets/images/portfolio/mvcprogrammer-com.jpg" alt="Neal Thomas, with C# service code from a .NET API in the background" width="1200" height="750" loading="lazy" decoding="async">
+        </div>
+        <div class="card-body">
+          <h3>mvcprogrammer.com</h3>
+          <p class="card-subtitle">The tech behind this site, in two editions</p>
+          <p>This site follows the KISS principle: keep it simple, and add nothing that is not earning its place. Plain HTML, CSS, and JavaScript with no framework, no build step, and no dependencies. The files live in a private S3 bucket that only CloudFront can read through Origin Access Control. CloudFront serves them worldwide over HTTPS with an ACM certificate, Route 53 points the domain at the distribution, and a GitHub Actions workflow authenticated with OIDC syncs the bucket and invalidates the cache on every push to main. No servers, no load balancer, no auto scaling group. The Experience section is also served by a small read-only C# API on Lambda and DynamoDB, with the HTML as its fallback. You are reading the second edition: the same page rebuilt as a Blazor WebAssembly app, C# in the browser, served the same way from a <code>blazor/</code> prefix of the same bucket. The colophon at the bottom has the details.</p>
+          <ul class="tag-list card-tags" role="list" aria-label="Technologies used on mvcprogrammer.com">
+            <li class="tag">HTML</li>
+            <li class="tag">CSS</li>
+            <li class="tag">Vanilla JavaScript</li>
+            <li class="tag">JSON-LD</li>
+            <li class="tag">C# / .NET 10 on Lambda</li>
+            <li class="tag">DynamoDB</li>
+            <li class="tag">OpenAPI 3.1</li>
+            <li class="tag">Amazon S3</li>
+            <li class="tag">CloudFront + OAC</li>
+            <li class="tag">CloudFront Functions</li>
+            <li class="tag">ACM</li>
+            <li class="tag">Route 53</li>
+            <li class="tag">IAM</li>
+            <li class="tag">GitHub Actions (OIDC)</li>
+            <li class="tag">Content Security Policy</li>
+            <li class="tag">Blazor WebAssembly</li>
+          </ul>
+          <a class="card-link" href="https://github.com/mvcprogrammer/mvcprogrammer.com" target="_blank" rel="noopener">View the source on GitHub</a>
+          <a class="card-link" href="https://mvcprogrammer.com/" rel="noopener">See the static edition at mvcprogrammer.com</a>
+        </div>
+      </article>
+
+      <article class="card portfolio-card">
+        <div class="card-media">
+          <img src="assets/images/portfolio/property-search-kiosk.jpg" alt="Interactive property search kiosk screen listing Clearwater Beach condos with touch controls" width="1200" height="750" loading="lazy" decoding="async">
+        </div>
+        <div class="card-body">
+          <h3>Interactive Property Search Window Display</h3>
+          <p class="card-subtitle">Touch screen kiosk, React + .NET on AWS</p>
+          <p>A touch-screen kiosk behind the window of a Clearwater Beach real estate office, running since 2010. Visitors pick sales or rentals over an aerial photo of Sand Key, browse live Stellar MLS listings and photos pulled through the Bridge Data Output API, and ask to be emailed details or called back from an on-screen keyboard. The 2026 rebuild is a React and TypeScript screen built with Vite, pixel-matched to the original against captures of the live kiosk, in front of a .NET 10 API on AWS Lambda served through CloudFront.</p>
+          <p><strong>Built for 1920&times;1080.</strong> The screen is pixel-matched to the kiosk's fixed full-HD display and runs full screen at that resolution. In any other window it scales itself to fit, letterboxed, so the live demo below looks like the kiosk on a laptop or a phone.</p>
+          <ul class="tag-list card-tags" role="list" aria-label="Technologies used on the kiosk">
+            <li class="tag">React</li>
+            <li class="tag">TypeScript</li>
+            <li class="tag">Vite</li>
+            <li class="tag">.NET 10</li>
+            <li class="tag">AWS Lambda</li>
+            <li class="tag">CloudFront</li>
+            <li class="tag">Stellar MLS</li>
+            <li class="tag">Bridge Data Output API</li>
+            <li class="tag">1920&times;1080</li>
+          </ul>
+          <div class="button-row card-actions">
+            <button type="button" class="button button-primary" @onclick="OpenKioskAsync">
+              <Icon Name="monitor" />
+              Try the live kiosk
+            </button>
+          </div>
+          <a class="card-link" href="https://github.com/mvcprogrammer/sandkey-display-web" target="_blank" rel="noopener">Kiosk screen on GitHub</a>
+          <a class="card-link" href="https://github.com/mvcprogrammer/sandkey-display-api" target="_blank" rel="noopener">API on GitHub</a>
+        </div>
+      </article>
+
+      <article class="card portfolio-card">
+        <div class="card-media">
+          <img src="assets/images/portfolio/lightsplitters-com.jpg" alt="Home page of lightsplitters.com showing the LightSplitters Media wedding, portrait, and pet photography galleries" width="1200" height="750" loading="lazy" decoding="async">
+        </div>
+        <div class="card-body">
+          <h3>lightsplitters.com</h3>
+          <p class="card-subtitle">Photography studio, Angular on AWS</p>
+          <p>The website for LightSplitters Media, a Tampa Bay photography studio I have a vested interest in: weddings, portraits, family albums, and archival prints. An Angular 22 workspace with standalone components and signals, prerendered to static HTML with no server. A second app in the same workspace is a template for client sites, so each couple's wedding site or family album lives at its own subdomain from one shared build plus a JSON file and a folder of photos. Masonry galleries with a native dialog lightbox, responsive WebP and JPEG images, a contact form that posts to a Lambda function sending through SES, and print orders through Stripe Payment Links. All of it served from a private S3 bucket through CloudFront, with a CloudFront Function routing each subdomain to its folder.</p>
+          <ul class="tag-list card-tags" role="list" aria-label="Technologies used on lightsplitters.com">
+            <li class="tag">Angular 22</li>
+            <li class="tag">TypeScript</li>
+            <li class="tag">Signals</li>
+            <li class="tag">Prerendered SSG</li>
+            <li class="tag">SCSS</li>
+            <li class="tag">Amazon S3</li>
+            <li class="tag">CloudFront Functions</li>
+            <li class="tag">Lambda + SES</li>
+            <li class="tag">Route 53</li>
+            <li class="tag">Stripe</li>
+          </ul>
+          <a class="card-link" href="https://lightsplitters.com" target="_blank" rel="noopener">Visit lightsplitters.com</a>
+          <a class="card-link" href="https://github.com/mvcprogrammer/lightsplitters.com" target="_blank" rel="noopener">Source on GitHub</a>
+        </div>
+      </article>
+    </div>
+  </div>
+</section>
+
+<KioskDialog @ref="_kiosk" />
+
+@code {
+    private KioskDialog? _kiosk;
+
+    private Task OpenKioskAsync() => _kiosk?.OpenAsync() ?? Task.CompletedTask;
+}

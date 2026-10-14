@@ -1,0 +1,56 @@
+@* Work history from the Experience API with a skill filter. If the API is unreachable the
+   timeline renders from the positions seed bundled with the site and the filter stays hidden. *@
+<div class="skill-filter" id="skill-filter" hidden="@(_skills is null)">
+    <p class="skill-filter-label" id="skill-filter-label">Filter by skill</p>
+    <div class="skill-filter-list" role="group" aria-labelledby="skill-filter-label">
+        <button type="button" class="skill-chip" aria-pressed="@Pressed(null)" @onclick="() => SelectAsync(null)">All</button>
+        @if (_skills is not null)
+        {
+            @for (var i = 0; i < _skills.Count; i++)
+            {
+                var skill = _skills[i];
+                <button type="button" class="skill-chip" title="@PositionsLabel(skill.PositionCount)" aria-pressed="@Pressed(skill.Name)"
+                        hidden="@(!_allChipsShown && i >= VISIBLE_CHIPS)" @onclick="() => SelectAsync(skill.Name)">@skill.Name</button>
+            }
+            @if (!_allChipsShown && _skills.Count > VISIBLE_CHIPS)
+            {
+                <button type="button" class="skill-chip skill-chip-more" aria-expanded="false" @onclick="ShowAllChips">+@(_skills.Count - VISIBLE_CHIPS) more</button>
+            }
+        }
+    </div>
+    <p class="skill-filter-status" aria-live="polite">
+        <span class="skill-filter-count">@CountLabel</span> &middot; live from <a class="skill-filter-link" href="@JsonPath" target="_blank" rel="noopener">@JsonPath</a>
+    </p>
+</div>
+
+<ol class="timeline @(_loading ? "is-loading" : null)" id="experience-timeline" role="list">
+    @foreach (var position in _positions)
+    {
+        <li class="timeline-item" @key="position.Id">
+            <p class="timeline-date">
+                <time datetime="@position.StartDate">@position.StartDate.ToMonthLabel()</time> &ndash;
+                @if (position.EndDate is null)
+                {
+                    <text>Present</text>
+                }
+                else
+                {
+                    <time datetime="@position.EndDate">@position.EndDate.ToMonthLabel()</time>
+                }
+                &middot; @position.ToPlaceLabel()
+            </p>
+            <h3>@position.Title</h3>
+            <p class="timeline-org">@position.Organization</p>
+            <ul class="timeline-points">
+                @foreach (var highlight in position.Highlights)
+                {
+                    <li>@highlight</li>
+                }
+            </ul>
+        </li>
+    }
+</ol>
+@if (_failed)
+{
+    <p class="form-status is-error" role="status">The work history could not be loaded right now. The <a href="@Options.Value.ResumeUrl" rel="noopener">resume PDF</a> has it all.</p>
+}
