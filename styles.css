@@ -592,6 +592,16 @@ img, svg {
   background: var(--surface);
 }
 
+/* A tag that links somewhere reads like the others until hovered. */
+.tag a {
+  color: inherit;
+}
+
+.tag a:hover,
+.tag a:focus-visible {
+  color: var(--hover);
+}
+
 @media (min-width: 48em) {
   .about-grid {
     grid-template-columns: minmax(0, 2fr) minmax(0, 1fr);
