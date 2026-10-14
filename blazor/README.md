@@ -36,6 +36,16 @@ dotnet run --project blazor/src/Portfolio.Blazor      # http://localhost:5215
 dotnet publish blazor/src/Portfolio.Blazor -c Release -o publish
 ```
 
+```bash
+dotnet test --project blazor/tests/Portfolio.Blazor.Tests
+```
+
+The tests are bUnit on xunit.v3. Components render against fakes of the two client interfaces
+and a bUnit JS module stub for `site.js`, so the skill filter, the seed fallback, the contact
+form's validation and status messages, the mobile menu, and the kiosk dialog are all exercised
+without a browser. The clients are tested over a stubbed `HttpMessageHandler`. The workflow runs
+the suite before every publish.
+
 The dev server has no `/api`, so the timeline falls back to the bundled seed and the skill
 filter stays hidden. Serve the publish output behind the real CloudFront behaviors (or any
 host that proxies `/api`) to see the filter.
