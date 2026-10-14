@@ -1,0 +1,59 @@
+@* Contact form. Browser constraint validation runs first (the required/minlength attributes),
+   then the data annotations on ContactForm, then the JSON goes to the contact Lambda. *@
+<section class="section section-alt" id="contact" aria-labelledby="contact-title">
+    <div class="container">
+        <p class="eyebrow">06 / Contact</p>
+        <h2 id="contact-title">Let's Talk</h2>
+        <p class="section-intro">Hiring, contract work, or a question about one of the projects above. Send a note, pick how you would like to hear back, and I will reply, usually within a day.</p>
+        <EditForm Model="_form" OnValidSubmit="SendAsync" OnInvalidSubmit="ShowInvalid" class="@FormClass" id="contact-form">
+            <DataAnnotationsValidator />
+            <div class="form-row">
+                <label class="field">
+                    <span class="field-label">Name</span>
+                    <InputText @bind-Value="_form.Name" autocomplete="name" required maxlength="120" />
+                </label>
+                <label class="field">
+                    <span class="field-label">Email</span>
+                    <InputText type="email" @bind-Value="_form.Email" autocomplete="email" required maxlength="200" />
+                </label>
+            </div>
+            <div class="form-row">
+                <label class="field">
+                    <span class="field-label">What is this about?</span>
+                    <InputSelect @bind-Value="_form.Topic">
+                        <option>Job opportunity</option>
+                        <option>Contract or consulting</option>
+                        <option>Freelance</option>
+                        <option>Something else</option>
+                    </InputSelect>
+                </label>
+                <label class="field">
+                    <span class="field-label">Preferred reply</span>
+                    <InputSelect @bind-Value="_form.Reply">
+                        <option>Email</option>
+                        <option>@ViewModels.ContactForm.REPLY_BY_PHONE</option>
+                    </InputSelect>
+                </label>
+            </div>
+            @* The phone field only shows, and is only required, when a call is requested. *@
+            <label class="field" hidden="@(!_form.WantsCall)">
+                <span class="field-label">Phone number</span>
+                <InputText type="tel" @bind-Value="_form.Phone" autocomplete="tel" minlength="7" maxlength="30" disabled="@(!_form.WantsCall)" required="@_form.WantsCall" />
+            </label>
+            <label class="field">
+                <span class="field-label">Message</span>
+                <InputTextArea @bind-Value="_form.Message" rows="6" required minlength="10" maxlength="5000" />
+            </label>
+            @* Honeypot: hidden from people, filled by bots. The Lambda drops any submission with a value here. *@
+            <label class="field field-trap" aria-hidden="true">
+                <span class="field-label">Website</span>
+                <InputText @bind-Value="_form.Website" tabindex="-1" autocomplete="off" />
+            </label>
+            <p class="form-status @_statusClass" role="status" aria-live="polite">@_status</p>
+            <button class="button button-primary" type="submit" disabled="@_sending">
+                <Icon Name="mail" />
+                Send message
+            </button>
+        </EditForm>
+    </div>
+</section>

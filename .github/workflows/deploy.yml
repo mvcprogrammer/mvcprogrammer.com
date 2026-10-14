@@ -68,3 +68,48 @@ jobs:
           aws cloudfront create-invalidation \
             --distribution-id "${CLOUDFRONT_DISTRIBUTION_ID}" \
             --paths "/*"
+
+  deploy-blazor:
+    name: Build and deploy the Blazor edition
+    runs-on: ubuntu-latest
+    env:
+      BLAZOR_DISTRIBUTION_ID: ${{ vars.BLAZOR_DISTRIBUTION_ID }}
+    steps:
+      - name: Check out
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+
+      - name: Set up .NET
+        uses: actions/setup-dotnet@d4c94342e560b34958eacfc5d055d21461ed1c5d # v5.0.0
+        with:
+          dotnet-version: 10.0.x
+
+      - name: Publish
+        run: dotnet publish blazor/src/Portfolio.Blazor -c Release -o publish
+
+      - name: Configure AWS credentials (OIDC)
+        uses: aws-actions/configure-aws-credentials@7474bc4690e29a8392af63c5b98e7449536d5c3a # v4.3.1
+        with:
+          role-to-assume: ${{ secrets.AWS_ROLE_ARN }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      # CloudFront compresses on the fly, so the pre-compressed .br/.gz twins stay out of the bucket.
+      # Framework files carry a content hash in their name and can be cached for a long time; the
+      # two loaders without one, plus everything outside _framework, get the short browser TTL.
+      - name: Sync fingerprinted framework files (long browser TTL)
+        run: |
+          aws s3 sync publish/wwwroot/_framework/ "s3://${S3_BUCKET}/blazor/_framework/" --delete \
+            --cache-control "public, max-age=604800, s-maxage=31536000, immutable" \
+            --exclude "*.br" --exclude "*.gz" --exclude "blazor.webassembly.js" --exclude "dotnet.js"
+
+      - name: Sync everything else (short browser TTL)
+        run: |
+          aws s3 sync publish/wwwroot/ "s3://${S3_BUCKET}/blazor/" --delete \
+            --cache-control "public, max-age=300, s-maxage=31536000" \
+            --exclude "*.br" --exclude "*.gz" --exclude "_framework/*" \
+            --include "_framework/blazor.webassembly.js" --include "_framework/dotnet.js"
+
+      - name: Invalidate CloudFront
+        run: |
+          aws cloudfront create-invalidation \
+            --distribution-id "${BLAZOR_DISTRIBUTION_ID}" \
+            --paths "/*"

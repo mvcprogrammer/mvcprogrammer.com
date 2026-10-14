@@ -1,0 +1,47 @@
+@* How this edition is built. The static site's colophon, rewritten for the Blazor build. *@
+<section class="section colophon" id="colophon" aria-labelledby="colophon-title">
+  <div class="container">
+    <p class="eyebrow">07 / Colophon</p>
+    <h2 id="colophon-title">How This Site Is Built</h2>
+    <p class="section-intro">A footnote for the curious. This is the Blazor WebAssembly edition of <a href="https://mvcprogrammer.com/">mvcprogrammer.com</a>: the same content and the same stylesheet, with the page rebuilt as C# components that run in the browser on the .NET runtime. There is still no server behind it, only static files on a CDN, three Lambdas, and the same API.</p>
+    <dl class="colophon-list">
+      <div class="colophon-item">
+        <dt>Front end</dt>
+        <dd>A standalone Blazor WebAssembly app on .NET 10. Each section of the page is a Razor component; the header, the skill filter, the kiosk demo, and the contact form hold their state in C#. The static edition's 470 lines of JavaScript became a 100-line ES module that only wraps what the browser alone can do: document-level events, <code>IntersectionObserver</code>, <code>matchMedia</code>, and the native <code>&lt;dialog&gt;</code>. Everything else is C#.</dd>
+      </div>
+      <div class="colophon-item">
+        <dt>Shared with the static site</dt>
+        <dd>The stylesheet, fonts, images, icons, and the Experience seed data are linked into this project from the repository root at build time rather than copied, so the two editions cannot drift. The markup is the static page's markup, section by section.</dd>
+      </div>
+      <div class="colophon-item">
+        <dt>API integration</dt>
+        <dd>The work history is read from the same Experience API (<code>/api/experience</code> and <code>/api/skills</code>) through a typed <code>HttpClient</code> created by <code>IHttpClientFactory</code>, with source-generated <code>System.Text.Json</code> serialisation so the trimmed build needs no reflection. CloudFront routes <code>/api</code> on this subdomain to the same Lambda, so the calls stay same-origin. If the API is unreachable the timeline renders from a bundled copy of the seed file.</dd>
+      </div>
+      <div class="colophon-item">
+        <dt>Configuration</dt>
+        <dd>The Lambda URLs and API paths live in <code>appsettings.json</code> and are bound through the Options pattern with data-annotation validation. Services are registered in one <code>AddPortfolioServices()</code> extension and depend on interfaces.</dd>
+      </div>
+      <div class="colophon-item">
+        <dt>Hosting</dt>
+        <dd>The published output sits under a <code>blazor/</code> prefix in the same private S3 bucket as the static site, read by a second CloudFront distribution through Origin Access Control at <code>blazor.mvcprogrammer.com</code>, with its own ACM certificate and Route 53 alias. Unknown paths fall back to <code>index.html</code> so the Blazor router answers them.</dd>
+      </div>
+      <div class="colophon-item">
+        <dt>Security</dt>
+        <dd>The same strict response headers as the static site, with one change to the Content Security Policy: <code>'wasm-unsafe-eval'</code>, which the WebAssembly runtime requires. There is still no inline script, nothing third-party, no cookies, and no analytics. Asset fingerprinting is switched off because its import map would need an inline script.</dd>
+      </div>
+      <div class="colophon-item">
+        <dt>Payload</dt>
+        <dd>The runtime, the framework, and the app download once, compressed by CloudFront, and are cached by the browser after that. Globalization data and time zone support are left out, since the site is English-only and shows no local times.</dd>
+      </div>
+      <div class="colophon-item">
+        <dt>Deploys</dt>
+        <dd>The GitHub Actions workflow that deploys the static site also runs <code>dotnet publish</code> for this project, syncs the output to the <code>blazor/</code> prefix, and invalidates this distribution. Same OIDC role, no stored AWS keys.</dd>
+      </div>
+      <div class="colophon-item">
+        <dt>Tooling</dt>
+        <dd>Written in JetBrains Rider with Claude Code as a pair programmer, and previewed locally with <code>dotnet run</code> before each commit.</dd>
+      </div>
+    </dl>
+    <a class="card-link" href="https://github.com/mvcprogrammer/mvcprogrammer.com/tree/main/blazor" target="_blank" rel="noopener">Read the source on GitHub</a>
+  </div>
+</section>

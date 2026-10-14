@@ -1,0 +1,30 @@
+@* Resume: the download link, then the API-backed timeline, then education. *@
+@inject IOptions<SiteOptions> Options
+<section class="section" id="resume" aria-labelledby="resume-title">
+  <div class="container">
+    <div class="section-head">
+      <div>
+        <p class="eyebrow">05 / Resume</p>
+        <h2 id="resume-title">Experience</h2>
+      </div>
+      <a class="button button-secondary" href="@Options.Value.ResumeUrl" rel="noopener">
+        <Icon Name="download" />
+        Download resume (PDF)
+      </a>
+    </div>
+
+    <ExperienceTimeline />
+
+    <h3 class="subsection-title">Education</h3>
+    <ol class="timeline timeline-compact" role="list">
+      <li class="timeline-item">
+        <h4>Massachusetts Institute of Technology (MIT)</h4>
+        <p class="timeline-org">Physics - OpenCourseWare</p>
+      </li>
+      <li class="timeline-item">
+        <h4>High School Diploma</h4>
+        <p class="timeline-org">Graduated at age 16</p>
+      </li>
+    </ol>
+  </div>
+</section>

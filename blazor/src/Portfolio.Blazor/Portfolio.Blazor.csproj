@@ -1,0 +1,35 @@
+<Project Sdk="Microsoft.NET.Sdk.BlazorWebAssembly">
+
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
+    <EnableNETAnalyzers>true</EnableNETAnalyzers>
+    <!-- Plain asset names, no fingerprint placeholders. The fingerprinted loader needs an inline
+         import map, which the site's Content Security Policy (script-src 'self') does not allow. -->
+    <OverrideHtmlAssetPlaceholders>false</OverrideHtmlAssetPlaceholders>
+    <!-- English-only site: the ICU data (about 1.5 MB) is not shipped. -->
+    <InvariantGlobalization>true</InvariantGlobalization>
+    <BlazorEnableTimeZoneSupport>false</BlazorEnableTimeZoneSupport>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.AspNetCore.Components.WebAssembly" Version="10.0.8" />
+    <PackageReference Include="Microsoft.AspNetCore.Components.WebAssembly.DevServer" Version="10.0.8" PrivateAssets="all" />
+    <PackageReference Include="Microsoft.Extensions.Http" Version="10.0.13" />
+    <PackageReference Include="Microsoft.Extensions.Options.DataAnnotations" Version="10.0.13" />
+  </ItemGroup>
+
+  <!-- Shared with the static site at the repository root, linked rather than copied so the two
+       editions cannot drift: the stylesheet, fonts, images, icons, and the Experience seed data. -->
+  <ItemGroup>
+    <Content Include="..\..\..\styles.css" Link="wwwroot\styles.css" />
+    <Content Include="..\..\..\favicon.svg" Link="wwwroot\favicon.svg" />
+    <Content Include="..\..\..\favicon.ico" Link="wwwroot\favicon.ico" />
+    <Content Include="..\..\..\apple-touch-icon.png" Link="wwwroot\apple-touch-icon.png" />
+    <Content Include="..\..\..\assets\**\*" Exclude="..\..\..\assets\**\README.md;..\..\..\assets\**\.gitkeep" Link="wwwroot\assets\%(RecursiveDir)%(Filename)%(Extension)" />
+    <Content Include="..\..\..\api\seed\positions.json" Link="wwwroot\data\positions.json" />
+  </ItemGroup>
+
+</Project>

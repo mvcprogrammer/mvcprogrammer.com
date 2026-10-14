@@ -1,0 +1,84 @@
+/* blazor.mvcprogrammer.com — blazor.css
+   Additions to the shared styles.css for the Blazor WebAssembly edition: the boot screen
+   shown while the runtime downloads, the framework's error bar, and form validation state.
+   The tokens (--bg, --text, --accent, ...) come from styles.css. */
+
+.app-loading {
+  min-height: 100vh;
+  display: grid;
+  place-content: center;
+  justify-items: center;
+  gap: 1rem;
+  text-align: center;
+  color: var(--text-muted);
+  font-family: var(--font-sans);
+}
+
+.app-loading .brand-mark {
+  width: 2.5rem;
+  height: 2.5rem;
+}
+
+.app-loading-text {
+  margin: 0;
+  font-size: 0.95rem;
+}
+
+/* The runtime reports download progress through --blazor-load-percentage on <html>. */
+.app-loading-bar {
+  width: 12rem;
+  height: 0.25rem;
+  border-radius: 999px;
+  background: var(--border);
+  overflow: hidden;
+}
+
+.app-loading-bar::after {
+  content: "";
+  display: block;
+  height: 100%;
+  width: var(--blazor-load-percentage, 0%);
+  background: var(--accent);
+  transition: width 200ms var(--ease);
+}
+
+#blazor-error-ui {
+  display: none;
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 1000;
+  padding: 0.75rem var(--gutter);
+  background: var(--surface);
+  color: var(--text);
+  border-top: 1px solid var(--border);
+  box-shadow: var(--shadow);
+  font-family: var(--font-sans);
+}
+
+#blazor-error-ui .reload {
+  margin-left: 0.75rem;
+}
+
+#blazor-error-ui .dismiss {
+  float: right;
+  border: 0;
+  background: none;
+  color: inherit;
+  font: inherit;
+  font-size: 1.25rem;
+  line-height: 1;
+  cursor: pointer;
+}
+
+/* Blazor's EditForm marks inputs it has validated; only a failed field needs a visible cue. */
+.contact-form .invalid.modified {
+  border-color: var(--hover);
+}
+
+.validation-message {
+  margin: 0.25rem 0 0;
+  color: var(--hover);
+  font-size: 0.9rem;
+}
