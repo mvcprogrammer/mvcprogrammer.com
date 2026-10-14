@@ -37,8 +37,17 @@ dotnet publish blazor/src/Portfolio.Blazor -c Release -o publish
 ```
 
 ```bash
-dotnet test --project blazor/tests/Portfolio.Blazor.Tests
+dotnet test --project blazor/tests/Portfolio.Blazor.Tests                       # run the suite
+dotnet test --project blazor/tests/Portfolio.Blazor.Tests --output Detailed     # print every test name
+dotnet test --project blazor/tests/Portfolio.Blazor.Tests --list-tests          # discover without running
+dotnet test --project blazor/tests/Portfolio.Blazor.Tests --filter-class "*ContactSectionTests"
+dotnet test --project blazor/tests/Portfolio.Blazor.Tests --filter-method "*SendAsync_ShouldShowTimeoutMessageOnCancellation"
 ```
+
+The root `global.json` opts `dotnet test` into Microsoft.Testing.Platform, so the switches above are
+the platform's, and `--filter-class` and `--filter-method` take a leading or trailing `*`. VSTest-era
+options such as `--logger "console;verbosity=normal"` are not understood: the run reports
+"Zero tests ran" and exits with code 5.
 
 The tests are bUnit on xunit.v3. Components render against fakes of the two client interfaces
 and a bUnit JS module stub for `site.js`, so the skill filter, the seed fallback, the contact
