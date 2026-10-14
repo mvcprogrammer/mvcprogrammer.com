@@ -597,7 +597,7 @@ builds and syncs it on every push to `main`; nothing in the static site's job ch
 | Experience API | Lambda permission `blazor-cloudfront-invoke` lets the new distribution invoke the function URL. This is outside the SAM template; a `sam deploy` leaves it alone |
 | Contact Lambda | function URL CORS allows both origins; `ALLOWED_ORIGIN` is now a comma-separated list (code in `infra/lambda/contact/index.mjs`) |
 | GitHub variable | `BLAZOR_DISTRIBUTION_ID` = `E2NFN5MW02S8Y9` |
-| IAM | the deploy role's `cloudfront:CreateInvalidation` must list both distribution ARNs |
+| IAM | the deploy role's inline policy is kept at `infra/iam/github-actions-deploy-role-policy.json`; its `cloudfront:CreateInvalidation` lists both distributions. Apply with `aws iam put-role-policy --role-name github-actions-mvcprogrammer-deploy --policy-name deploy-static-site --policy-document file://infra/iam/github-actions-deploy-role-policy.json` |
 
 Manual deploy, the same two syncs the workflow runs (pre-compressed `.br`/`.gz` twins stay out;
 CloudFront compresses on the fly):

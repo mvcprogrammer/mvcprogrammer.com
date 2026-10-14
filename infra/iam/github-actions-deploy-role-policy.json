@@ -1,0 +1,23 @@
+{
+  "Version": "2012-10-17",
+  "Statement": [
+    {
+      "Effect": "Allow",
+      "Action": ["s3:ListBucket"],
+      "Resource": "arn:aws:s3:::mvcprogrammer.com"
+    },
+    {
+      "Effect": "Allow",
+      "Action": ["s3:PutObject", "s3:DeleteObject"],
+      "Resource": "arn:aws:s3:::mvcprogrammer.com/*"
+    },
+    {
+      "Effect": "Allow",
+      "Action": ["cloudfront:CreateInvalidation"],
+      "Resource": [
+        "arn:aws:cloudfront::334383610383:distribution/E23085GR2SZJHC",
+        "arn:aws:cloudfront::334383610383:distribution/E2NFN5MW02S8Y9"
+      ]
+    }
+  ]
+}
