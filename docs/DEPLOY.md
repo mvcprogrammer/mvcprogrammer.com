@@ -181,7 +181,7 @@ aws cloudfront test-function --name mvcprogrammer-www-redirect --if-match "$ETAG
 aws cloudfront publish-function --name mvcprogrammer-www-redirect --if-match "$ETAG"
 ```
 
-A published function takes effect within a few seconds; no invalidation is needed. The Blazor and Angular distributions have no function attached (2026-10-15), so on those hosts the beacon's requests fall through to S3 and return 404 until the function is associated with their default behaviors.
+A published function takes effect within a few seconds; no invalidation is needed. The same function is associated with the default behavior of the Blazor and Angular distributions too (since 2026-10-15), so `/ping` is answered on every edition; the `www` branch never matches there.
 
 ### 5. Route 53 records
 
@@ -369,7 +369,7 @@ aws logs tail /aws/lambda/mvcprogrammer-resume-download --since 24h --format sho
 aws logs tail /aws/lambda/mvcprogrammer-contact --follow
 ```
 
-CloudFront access logs are separate and go to S3, not CloudWatch: standard logging on the distribution writes gzipped W3C files to `s3://mvcprogrammer-cf-logs-334383610383/cf/` (enabled 2026-10-07, bucket lifecycle expires them after 30 days). Sync the prefix locally and `gunzip` to analyse them. Logging itself is free; the only cost is S3 storage, so turn it off under the distribution's Logging settings once it has answered the question that prompted it.
+CloudFront access logs are separate and go to S3, not CloudWatch: standard logging on each distribution writes gzipped W3C files to `s3://mvcprogrammer-cf-logs-334383610383/` under `cf/` for mvcprogrammer.com (enabled 2026-10-07), `blazor/` and `angular/` for the two framework editions (enabled 2026-10-15); the bucket lifecycle expires them after 30 days. `tools/cf-stats.mjs` (see [Visitor stats](#visitor-stats)) reads all three. Logging itself is free; the only cost is S3 storage, well under a megabyte a day across the three.
 
 Reviewed 2026-10-08 over the first two days of logs (about 4,800 requests): every 4xx was scanner traffic (PHP and `.env`
 probes, WordPress paths, `POST /`), none of the old site's URLs (`/images/`, `/js/`, `/css/`, `single-blog.html`) arrived
@@ -392,9 +392,9 @@ node tools/cf-stats.mjs --days 30 --scanners              # a month, plus the 4x
 CF_STATS_EXCLUDE_IPS=203.0.113.7 node tools/cf-stats.mjs  # leave your own visits out
 ```
 
-The bucket defaults to `mvcprogrammer-cf-logs-<account id>` for the current AWS account (`--bucket` or `CF_LOG_BUCKET` override it) and files are cached under `~/.cache/mvcprogrammer-cf-stats/`, so a second run only downloads what is new. Unique visitors are IP address plus browser string, the best a server log can do; carrier NAT and office networks blur it.
+The bucket defaults to `mvcprogrammer-cf-logs-<account id>` for the current AWS account (`--bucket` or `CF_LOG_BUCKET` override it), all three prefixes are read unless `--prefix cf/` or `--prefix blazor/,angular/` narrows it, and files are cached under `~/.cache/mvcprogrammer-cf-stats/`, so a second run only downloads what is new. A "By edition" line splits the visits by host. Unique visitors are IP address plus browser string, the best a server log can do; carrier NAT and office networks blur it.
 
-The beacon itself is the last block of `main.js` (mirrored by `watchEngagement()` in the Blazor edition's `site.js` and `BeaconEngagementTracker` in the Angular edition). It sends `GET /ping?e=view&s=<section>` once per section that reaches the middle of the viewport and `GET /ping?e=leave&t=<seconds visible>` each time the tab is hidden, with `keepalive` so the last one survives the tab closing. The CloudFront Function answers 204 (section 4b), the request lands in the access log, and nothing is stored anywhere else. The beacon stays silent on `localhost` and when the browser sends Do Not Track or Global Privacy Control, and `privacy.html` describes it. Logging must stay on for the stats to exist; at about 0.4 MB a day of S3 storage, that is the whole cost.
+The beacon itself is the last block of `main.js` (mirrored by `watchEngagement()` in the Blazor edition's `site.js` and `BeaconEngagementTracker` in the Angular edition). It sends `GET /ping?e=view&s=<section>` once per section that reaches the middle of the viewport and `GET /ping?e=leave&t=<seconds visible>` each time the tab is hidden, with `keepalive` so the last one survives the tab closing. The CloudFront Function answers 204 (section 4b), the request lands in the access log, and nothing is stored anywhere else. The beacon stays silent on `localhost` and when the browser sends Do Not Track or Global Privacy Control, and `privacy.html` describes it. Logging must stay on for the stats to exist; at well under a megabyte a day of S3 storage across the three distributions, that is the whole cost.
 
 ## GitHub Actions (optional)
 

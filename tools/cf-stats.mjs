@@ -11,12 +11,17 @@
 //   node tools/cf-stats.mjs --exclude-ip 203.0.113.7  # leave your own visits out (or CF_STATS_EXCLUDE_IPS)
 //
 // The bucket defaults to mvcprogrammer-cf-logs-<account id> in the current AWS account; override
-// with --bucket or CF_LOG_BUCKET. Files are cached under ~/.cache/mvcprogrammer-cf-stats/.
+// with --bucket or CF_LOG_BUCKET. The three distributions log under cf/ (mvcprogrammer.com), blazor/,
+// and angular/; --prefix narrows the run to one or more of them (comma-separated). Files are cached
+// under ~/.cache/mvcprogrammer-cf-stats/.
 import { execFileSync } from 'node:child_process';
 import { existsSync, mkdirSync, readFileSync, readdirSync } from 'node:fs';
 import { homedir } from 'node:os';
 import { join } from 'node:path';
 import { gunzipSync } from 'node:zlib';
+
+/** Log prefixes in the bucket, one per distribution: the main site, then the two framework editions. */
+const DEFAULT_PREFIXES = ['cf/', 'blazor/', 'angular/'];
 
 /** A visitor that sends no further request within this many minutes has left. */
 const SESSION_GAP_MINUTES = 30;
@@ -37,14 +42,17 @@ function main() {
   since.setDate(since.getDate() - (options.days - 1));
 
   const bucket = options.bucket ?? process.env.CF_LOG_BUCKET ?? `mvcprogrammer-cf-logs-${accountId()}`;
-  const cacheDir = join(homedir(), '.cache', 'mvcprogrammer-cf-stats', bucket, options.prefix.replace(/\/+$/, ''));
-  if (!options.noSync) {
-    syncLogs(bucket, options.prefix, cacheDir, since);
+  const rows = [];
+  for (const prefix of options.prefixes) {
+    const cacheDir = join(homedir(), '.cache', 'mvcprogrammer-cf-stats', bucket, prefix.replace(/\/+$/, ''));
+    if (!options.noSync) {
+      syncLogs(bucket, prefix, cacheDir, since);
+    }
+    rows.push(...readLogs(cacheDir, since));
   }
-
-  const rows = readLogs(cacheDir, since);
+  rows.sort((a, b) => a.at - b.at);
   if (rows.length === 0) {
-    console.log(`No log lines since ${since.toDateString()} in ${cacheDir}.`);
+    console.log(`No log lines since ${since.toDateString()} under ${options.prefixes.join(', ')}.`);
     return;
   }
 
@@ -60,12 +68,12 @@ function main() {
   report(rows, visits, since, options, excluded);
 }
 
-/** --days N, --bucket B, --prefix P, --exclude-ip a,b, --no-sync, --scanners. */
+/** --days N, --bucket B, --prefix P[,P], --exclude-ip a,b, --no-sync, --scanners. */
 function parseArgs(argv) {
   const options = {
     days: 7,
     bucket: undefined,
-    prefix: 'cf/',
+    prefixes: DEFAULT_PREFIXES,
     excludeIps: (process.env.CF_STATS_EXCLUDE_IPS ?? '').split(',').map((ip) => ip.trim()).filter(Boolean),
     noSync: false,
     scanners: false,
@@ -89,7 +97,14 @@ function parseArgs(argv) {
         options.bucket = next();
         break;
       case '--prefix':
-        options.prefix = next().replace(/^\/+/, '');
+        options.prefixes = next()
+          .split(',')
+          .map((prefix) => prefix.trim().replace(/^\/+/, ''))
+          .filter(Boolean)
+          .map((prefix) => (prefix.endsWith('/') ? prefix : `${prefix}/`));
+        if (options.prefixes.length === 0) {
+          fail('--prefix needs at least one prefix');
+        }
         break;
       case '--exclude-ip':
         options.excludeIps.push(...next().split(',').map((ip) => ip.trim()).filter(Boolean));
@@ -125,7 +140,7 @@ function accountId() {
   }
 }
 
-/** Fetches only the files for the days in the window (names carry the UTC day: <dist>.YYYY-MM-DD-HH.<hash>.gz). */
+/** Fetches only the files for the days in the window (names carry the UTC day: <dist>.YYYY-MM-DD-HH.<hash>.gz). A prefix with no files yet is fine. */
 function syncLogs(bucket, prefix, cacheDir, since) {
   mkdirSync(cacheDir, { recursive: true });
   const includes = [];
@@ -184,7 +199,6 @@ function readLogs(cacheDir, since) {
       });
     }
   }
-  rows.sort((a, b) => a.at - b.at);
   return rows;
 }
 
@@ -211,6 +225,7 @@ function buildSessions(rows) {
           day: row.day,
           pop: row.pop,
           referrer: '',
+          hosts: new Set(),
           requests: 0,
           pages: 0,
           engaged: 0,
@@ -229,6 +244,7 @@ function buildSessions(rows) {
       }
       if (isPage(row)) {
         current.pages++;
+        current.hosts.add(row.host);
       }
       if (isAsset(row) || row.path.startsWith('/api/') || row.path === '/ping') {
         current.engaged++;
@@ -317,6 +333,8 @@ function report(rows, visits, since, options, excluded) {
   if (visits.length === 0) {
     return;
   }
+
+  console.log(`By edition:${top(visits.flatMap((visit) => [...visit.hosts]), 5)}.`);
 
   console.log(`Loaded the Experience API: ${percent(visits.filter((visit) => visit.api > 0).length, visits.length)} of visits.`);
   const clicks = visits.flatMap((visit) => visit.skillClicks);
