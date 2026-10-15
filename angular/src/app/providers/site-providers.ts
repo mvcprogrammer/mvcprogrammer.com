@@ -3,14 +3,16 @@ import { EnvironmentProviders, makeEnvironmentProviders } from '@angular/core';
 import { SITE_OPTIONS, SiteOptions } from '../configurations/site-options';
 import { ContactClient } from '../interfaces/contact-client';
 import { ContactTopicState } from '../interfaces/contact-topic-state';
+import { EngagementTracker } from '../interfaces/engagement-tracker';
 import { ExperienceClient } from '../interfaces/experience-client';
+import { BeaconEngagementTracker } from '../services/beacon-engagement-tracker';
 import { HttpContactClient } from '../services/http-contact-client';
 import { HttpExperienceClient } from '../services/http-experience-client';
 import { SubjectContactTopicState } from '../services/subject-contact-topic-state';
 
 /**
  * Registers the site's services: the options, HttpClient over fetch, the two clients behind their
- * abstract tokens, and the contact topic state. The Angular counterpart of AddPortfolioServices().
+ * abstract tokens, the contact topic state, and the engagement tracker. The Angular counterpart of AddPortfolioServices().
  * @param options Site endpoints. Validated up front so a misconfigured build fails at startup.
  */
 export function provideSite(options: SiteOptions): EnvironmentProviders {
@@ -22,6 +24,7 @@ export function provideSite(options: SiteOptions): EnvironmentProviders {
     { provide: ExperienceClient, useClass: HttpExperienceClient },
     { provide: ContactClient, useClass: HttpContactClient },
     { provide: ContactTopicState, useClass: SubjectContactTopicState },
+    { provide: EngagementTracker, useClass: BeaconEngagementTracker },
   ]);
 }
 
@@ -31,7 +34,13 @@ export function provideSite(options: SiteOptions): EnvironmentProviders {
  */
 export function validateSiteOptions(options: SiteOptions): void {
   const problems: string[] = [];
-  const keys: readonly (keyof SiteOptions)[] = ['contactEndpoint', 'experienceApiBase', 'experienceSeedPath', 'kioskUrl', 'resumeUrl'];
+  const keys: readonly (keyof SiteOptions)[] = [
+    'contactEndpoint',
+    'experienceApiBase',
+    'experienceSeedPath',
+    'kioskUrl',
+    'resumeUrl',
+  ];
   for (const key of keys) {
     if (typeof options[key] !== 'string' || options[key].trim() === '') {
       problems.push(`${key} is required`);
@@ -40,7 +49,11 @@ export function validateSiteOptions(options: SiteOptions): void {
 
   const urls: readonly (keyof SiteOptions)[] = ['contactEndpoint', 'kioskUrl', 'resumeUrl'];
   for (const key of urls) {
-    if (typeof options[key] === 'string' && options[key].trim() !== '' && !URL.canParse(options[key])) {
+    if (
+      typeof options[key] === 'string' &&
+      options[key].trim() !== '' &&
+      !URL.canParse(options[key])
+    ) {
       problems.push(`${key} must be an absolute URL`);
     }
   }

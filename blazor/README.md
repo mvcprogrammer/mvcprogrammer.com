@@ -12,7 +12,8 @@ blazor/src/Portfolio.Blazor/
   Program.cs                  Host builder; services come from AddPortfolioServices().
   App.razor                   Router. No FocusOnNavigate: in-page links are hash navigations.
   Layout/MainLayout.razor     Skip link, icon sprite, header, <main>, footer.
-  Pages/Home.razor            The one page: a list of section components.
+  Pages/Home.razor            The one page: a list of section components. Its code-behind starts
+                              the engagement beacon in site.js once the sections are rendered.
   Sections/                   One component per section of the page, markup lifted from ../index.html.
   Components/                 Header (menu, scroll state, current section), footer, icon sprite,
                               experience timeline with skill filter, kiosk demo dialog.
@@ -22,7 +23,8 @@ blazor/src/Portfolio.Blazor/
   Models/, Requests/          Records matching api/openapi.yaml and the contact Lambda's body.
   ViewModels/ContactForm.cs   Mutable, data-annotated model bound to the EditForm.
   Serialization/              System.Text.Json source generator context (no reflection in the trimmed build).
-  wwwroot/js/site.js          The only JavaScript: document events, IntersectionObserver, matchMedia, <dialog>.
+  wwwroot/js/site.js          The only JavaScript: document events, IntersectionObserver, matchMedia,
+                              <dialog>, and the engagement beacon (GET /ping, mirrored from ../main.js).
   wwwroot/blazor.css          Boot screen and error bar; everything else is the shared styles.css.
 ```
 

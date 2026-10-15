@@ -168,23 +168,20 @@ Attach the returned policy ID to the default cache behavior (console: Behaviors 
 
 ### 4b. Redirect www to the apex (optional)
 
-Both hostnames point at the same distribution, so without a redirect the site is reachable at two URLs. A CloudFront Function on viewer-request fixes that:
+Both hostnames point at the same distribution, so without a redirect the site is reachable at two URLs. A CloudFront Function on viewer-request fixes that. The same function answers the engagement beacon (`GET /ping`, see [Visitor stats](#visitor-stats)) with an empty 204 at the edge, so those requests are logged but never reach S3. The code is checked in at [infra/cloudfront/www-redirect.js](../infra/cloudfront/www-redirect.js).
 
-```js
-function handler(event) {
-  var request = event.request;
-  if (request.headers.host && request.headers.host.value === 'www.mvcprogrammer.com') {
-    return {
-      statusCode: 301,
-      statusDescription: 'Moved Permanently',
-      headers: { location: { value: 'https://mvcprogrammer.com' + request.uri } }
-    };
-  }
-  return request;
-}
+Create it under CloudFront > Functions as `mvcprogrammer-www-redirect` (runtime `cloudfront-js-2.0`), publish it, and associate it with the viewer request event of the default behavior and of the `/api/*` behavior. To change it later, update the DEVELOPMENT stage, test it, then publish; each call needs the stage's current ETag:
+
+```sh
+ETAG=$(aws cloudfront describe-function --name mvcprogrammer-www-redirect --stage DEVELOPMENT --query ETag --output text)
+ETAG=$(aws cloudfront update-function --name mvcprogrammer-www-redirect --if-match "$ETAG" \
+  --function-config '{"Comment":"301 www to apex; 204 for the /ping engagement beacon","Runtime":"cloudfront-js-2.0"}' \
+  --function-code fileb://infra/cloudfront/www-redirect.js --query ETag --output text)
+aws cloudfront test-function --name mvcprogrammer-www-redirect --if-match "$ETAG" --stage DEVELOPMENT --event-object fileb://event.json
+aws cloudfront publish-function --name mvcprogrammer-www-redirect --if-match "$ETAG"
 ```
 
-Create it under CloudFront > Functions, publish it, and associate it with the default behavior's viewer request event.
+A published function takes effect within a few seconds; no invalidation is needed. The Blazor and Angular distributions have no function attached (2026-10-15), so on those hosts the beacon's requests fall through to S3 and return 404 until the function is associated with their default behaviors.
 
 ### 5. Route 53 records
 
@@ -384,6 +381,20 @@ a day. To stop logging:
 # Logging lives in DistributionConfig.Logging; set Enabled to false and update with the current ETag
 aws cloudfront get-distribution-config --id E23085GR2SZJHC --query 'DistributionConfig.Logging'
 ```
+
+### Visitor stats
+
+`tools/cf-stats.mjs` turns those access logs into the few numbers worth knowing: visits and unique visitors per day, where they came from, which edge locations served them, how many loaded the Experience API or clicked a skill chip, how many downloaded the resume, and, from the engagement beacon, which sections visitors reached and how long the page stayed visible. Scanners and known crawlers are dropped, and a visit only counts when a browser loaded the page plus at least one asset, API call, or ping. It needs Node 22+ and the AWS CLI, nothing else.
+
+```sh
+node tools/cf-stats.mjs                                   # the last 7 days
+node tools/cf-stats.mjs --days 30 --scanners              # a month, plus the 4xx and bot breakdown
+CF_STATS_EXCLUDE_IPS=203.0.113.7 node tools/cf-stats.mjs  # leave your own visits out
+```
+
+The bucket defaults to `mvcprogrammer-cf-logs-<account id>` for the current AWS account (`--bucket` or `CF_LOG_BUCKET` override it) and files are cached under `~/.cache/mvcprogrammer-cf-stats/`, so a second run only downloads what is new. Unique visitors are IP address plus browser string, the best a server log can do; carrier NAT and office networks blur it.
+
+The beacon itself is the last block of `main.js` (mirrored by `watchEngagement()` in the Blazor edition's `site.js` and `BeaconEngagementTracker` in the Angular edition). It sends `GET /ping?e=view&s=<section>` once per section that reaches the middle of the viewport and `GET /ping?e=leave&t=<seconds visible>` each time the tab is hidden, with `keepalive` so the last one survives the tab closing. The CloudFront Function answers 204 (section 4b), the request lands in the access log, and nothing is stored anywhere else. The beacon stays silent on `localhost` and when the browser sends Do Not Track or Global Privacy Control, and `privacy.html` describes it. Logging must stay on for the stats to exist; at about 0.4 MB a day of S3 storage, that is the whole cost.
 
 ## GitHub Actions (optional)
 

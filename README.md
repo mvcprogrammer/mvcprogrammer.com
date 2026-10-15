@@ -30,14 +30,15 @@ The site follows the **KISS principle**: keep it simple, and add nothing that is
 | `angular/` | The Angular edition: an Angular 22 workspace with Vitest tests. See [angular/README.md](angular/README.md) and [docs/ANGULAR-EDITION.pdf](docs/ANGULAR-EDITION.pdf). |
 | `blazor/` | The Blazor edition: a Blazor WebAssembly app on .NET 10 with bUnit tests. See [blazor/README.md](blazor/README.md) and [docs/BLAZOR-EDITION.pdf](docs/BLAZOR-EDITION.pdf). |
 | `api/` | The Experience API: C# on .NET 10, run on AWS Lambda (arm64) and reading a single DynamoDB table. Spec-first with OpenAPI 3.1, tested over the in-process host, deployed with SAM. See [api/README.md](api/README.md). |
-| `infra/` | The contact-form and resume-download Lambdas (Node.js 22 on arm64) and the SES DKIM change batch. |
+| `infra/` | The contact-form and resume-download Lambdas (Node.js 22 on arm64), the CloudFront Function that redirects `www` and answers the engagement beacon, and the SES DKIM change batch. |
+| `tools/` | `cf-stats.mjs`, which reads the CloudFront access logs and prints visits, unique visitors, referrers, and what the beacon recorded. See [Visitor stats](docs/DEPLOY.md#visitor-stats). |
 | `docs/` | [DEPLOY.md](docs/DEPLOY.md), the infrastructure walkthrough; the two edition guidelines; and the screenshots above. |
 | `.github/workflows/` | The deploy: GitHub Actions authenticated with OIDC, so no AWS keys are stored anywhere. |
 
 ## How it is served
 
 - **Hosting.** A private S3 bucket that only CloudFront can read, through Origin Access Control. CloudFront serves over HTTP/2 and HTTP/3 with an ACM certificate, Route 53 aliases the domain, and a CloudFront Function redirects `www` to the apex.
-- **Security.** A response headers policy sets a same-origin Content Security Policy, two-year HSTS, `X-Frame-Options: DENY`, `nosniff`, and a locked-down Permissions-Policy. No cookies, no analytics.
+- **Security.** A response headers policy sets a same-origin Content Security Policy, two-year HSTS, `X-Frame-Options: DENY`, `nosniff`, and a locked-down Permissions-Policy. No cookies and no third-party analytics: the only measurement is a first-party beacon (`GET /ping`) that the CloudFront edge answers with 204 and that leaves nothing but a line in the access logs, which `tools/cf-stats.mjs` reads. It stays silent when the browser sends Do Not Track or Global Privacy Control.
 - **Experience API.** `/api/experience` and `/api/skills` on the same domain. Responses carry ETags and cache headers so CloudFront answers most requests itself, errors follow RFC 9457 problem details, and the function URL accepts only requests signed by CloudFront. The contract is [api/openapi.yaml](api/openapi.yaml).
 - **Deploys.** Every push to `main` assumes a least-privilege IAM role through OIDC, syncs the bucket in two passes (a week of browser caching for fonts and images, five minutes for pages), and invalidates the CloudFront cache. Third-party actions are pinned to commit hashes.
 

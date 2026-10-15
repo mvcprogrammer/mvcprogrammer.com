@@ -16,14 +16,15 @@ angular/
   src/app/app.ts                Layout: skip link, icon sprite, header, <main> with the router outlet, footer.
   src/app/app.config.ts         Router, global error listeners, and provideSite() with the endpoints.
   src/app/app.routes.ts         "" is Home; everything else is NotFound.
-  src/app/pages/                Home (the sections in order) and NotFound.
+  src/app/pages/                Home (the sections in order; starts the engagement tracker) and NotFound.
   src/app/sections/             One component per section of the page, markup lifted from ../index.html.
   src/app/components/           Header (menu, scroll state, current section), footer, icon and sprite,
                                 social links, the experience timeline with its skill filter, the kiosk dialog.
   src/app/configurations/       SiteOptions and its injection token.
-  src/app/interfaces/           ExperienceClient, ContactClient, ContactTopicState: abstract classes that
-                                double as injection tokens, so components depend on the contract.
-  src/app/services/             The HttpClient implementations and the Subject-backed topic state.
+  src/app/interfaces/           ExperienceClient, ContactClient, ContactTopicState, EngagementTracker: abstract
+                                classes that double as injection tokens, so components depend on the contract.
+  src/app/services/             The HttpClient implementations, the Subject-backed topic state, and the
+                                beacon tracker (GET /ping, mirrored from ../main.js).
   src/app/providers/            provideSite(): validates the options and registers everything above.
   src/app/models/, requests/    Interfaces matching api/openapi.yaml and the contact Lambda's body.
   src/app/enumerations/         WorkMode.

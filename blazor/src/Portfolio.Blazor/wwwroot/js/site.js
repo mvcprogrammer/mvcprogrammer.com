@@ -100,3 +100,58 @@ export function showModal(dialog, dotnet) {
 export function closeDialog(dialog) {
   if (dialog.open) dialog.close();
 }
+
+/**
+ * The engagement beacon, mirroring main.js: GET /ping?e=view&s=<id> once per section that reaches
+ * the middle of the viewport, and GET /ping?e=leave&t=<seconds visible> each time the tab is hidden.
+ * CloudFront answers 204 at the edge and the access logs feed tools/cf-stats.mjs. Returns null, so
+ * nothing to dispose, when the browser asks not to be tracked or the page runs locally.
+ */
+export function watchEngagement() {
+  const LOCAL_HOSTS = ["localhost", "127.0.0.1", "[::1]"];
+  const optedOut = navigator.doNotTrack === "1" || navigator.globalPrivacyControl === true;
+  if (!window.fetch || optedOut || LOCAL_HOSTS.includes(location.hostname)) return null;
+
+  const ping = (query) => {
+    fetch(`/ping?${query}`, { keepalive: true, credentials: "omit", cache: "no-store" }).catch(() => {});
+  };
+
+  let observer = null;
+  const sections = document.querySelectorAll("main .section[id]");
+  if ("IntersectionObserver" in window && sections.length) {
+    observer = new IntersectionObserver(
+      (entries) => {
+        entries.forEach((entry) => {
+          if (!entry.isIntersecting) return;
+          observer.unobserve(entry.target);
+          ping(`e=view&s=${encodeURIComponent(entry.target.id)}`);
+        });
+      },
+      // The middle fifth of the viewport: the section was scrolled to, not just past.
+      { rootMargin: "-40% 0px -40% 0px" }
+    );
+    sections.forEach((section) => observer.observe(section));
+  }
+
+  let visibleSince = document.visibilityState === "hidden" ? null : Date.now();
+  let visibleMs = 0;
+  const onVisibility = () => {
+    if (document.visibilityState === "hidden") {
+      if (visibleSince !== null) {
+        visibleMs += Date.now() - visibleSince;
+        visibleSince = null;
+      }
+      ping(`e=leave&t=${Math.round(visibleMs / 1000)}`);
+    } else if (visibleSince === null) {
+      visibleSince = Date.now();
+    }
+  };
+  document.addEventListener("visibilitychange", onVisibility);
+
+  return {
+    dispose: () => {
+      observer?.disconnect();
+      document.removeEventListener("visibilitychange", onVisibility);
+    },
+  };
+}

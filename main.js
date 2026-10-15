@@ -412,6 +412,52 @@
       });
   }
 
+  /* ---------- Engagement beacon ----------
+     Two kinds of GET /ping, answered at the CloudFront edge with 204 and read back
+     from the access logs by tools/cf-stats.mjs: "view" when a section reaches the
+     middle of the viewport (once per section) and "leave" with the seconds the page
+     has been visible, each time the tab is hidden. No cookies and no identifiers;
+     skipped when the browser asks not to be tracked and when the page runs locally. */
+  var LOCAL_HOSTS = ["localhost", "127.0.0.1", "[::1]"];
+  var optedOut = navigator.doNotTrack === "1" || navigator.globalPrivacyControl === true;
+  if (window.fetch && !optedOut && LOCAL_HOSTS.indexOf(location.hostname) === -1) {
+    var ping = function (query) {
+      fetch("/ping?" + query, { keepalive: true, credentials: "omit", cache: "no-store" }).catch(function () {});
+    };
+
+    var pageSections = document.querySelectorAll("main .section[id]");
+    if ("IntersectionObserver" in window && pageSections.length) {
+      var viewObserver = new IntersectionObserver(
+        function (entries) {
+          entries.forEach(function (entry) {
+            if (!entry.isIntersecting) return;
+            viewObserver.unobserve(entry.target);
+            ping("e=view&s=" + encodeURIComponent(entry.target.id));
+          });
+        },
+        // The middle fifth of the viewport: the section was scrolled to, not just past.
+        { rootMargin: "-40% 0px -40% 0px" }
+      );
+      Array.prototype.forEach.call(pageSections, function (section) {
+        viewObserver.observe(section);
+      });
+    }
+
+    var visibleSince = document.visibilityState === "hidden" ? null : Date.now();
+    var visibleMs = 0;
+    document.addEventListener("visibilitychange", function () {
+      if (document.visibilityState === "hidden") {
+        if (visibleSince !== null) {
+          visibleMs += Date.now() - visibleSince;
+          visibleSince = null;
+        }
+        ping("e=leave&t=" + Math.round(visibleMs / 1000));
+      } else if (visibleSince === null) {
+        visibleSince = Date.now();
+      }
+    });
+  }
+
   /* ---------- Live kiosk demo ----------
      The dialog is in the HTML; the iframe is not. It is created when the demo opens
      and removed when it closes, so the kiosk and its Lambda only load on request. */
