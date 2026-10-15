@@ -18,7 +18,7 @@
 
 <br>
 
-The site follows the **KISS principle**: keep it simple, and add nothing that is not earning its place. It is plain HTML, CSS, and vanilla JavaScript with no framework, no build step, no bundler, no third-party scripts, and a strict Content Security Policy. One page, one stylesheet, one deferred script, shipped exactly as written. The static files sit in a private S3 bucket behind CloudFront, and three small Lambda functions do the only work that needs a server: the contact form, the resume download, and the Experience API.
+The site follows the **KISS principle**: keep it simple, and add nothing that is not earning its place. It is plain HTML, CSS, and vanilla JavaScript with no framework, no build step, no bundler, no third-party scripts, and a strict Content Security Policy. One page, one stylesheet, one deferred script, shipped exactly as written. The static files sit in a private S3 bucket behind CloudFront, and three small Lambda functions do the only work that needs a server: the contact form, the resume download, and the Experience API. The same page is also built twice more, with Blazor WebAssembly and with Angular, as a side-by-side comparison; see [Three editions](#three-editions).
 
 ## What is in this repository
 
@@ -27,9 +27,11 @@ The site follows the **KISS principle**: keep it simple, and add nothing that is
 | `index.html`, `styles.css`, `main.js` | The site. The Experience timeline is in the HTML so it reads without JavaScript; when the API answers, the script re-renders it from JSON and reveals a skill filter. |
 | `404.html`, `privacy.html`, `terms.html` | The not-found page and the policies required for the toll-free SMS registration. |
 | `assets/` | Self-hosted fonts (Inter and JetBrains Mono as variable WOFF2 subsets) and images. Icons are an inline SVG sprite in the HTML. |
+| `blazor/` | The Blazor edition: a Blazor WebAssembly app on .NET 10 with bUnit tests. See [blazor/README.md](blazor/README.md) and [docs/BLAZOR-EDITION.pdf](docs/BLAZOR-EDITION.pdf). |
+| `angular/` | The Angular edition: an Angular 22 workspace with Vitest tests. See [angular/README.md](angular/README.md) and [docs/ANGULAR-EDITION.pdf](docs/ANGULAR-EDITION.pdf). |
 | `api/` | The Experience API: C# on .NET 10, run on AWS Lambda (arm64) and reading a single DynamoDB table. Spec-first with OpenAPI 3.1, tested over the in-process host, deployed with SAM. See [api/README.md](api/README.md). |
 | `infra/` | The contact-form and resume-download Lambdas (Node.js 22 on arm64) and the SES DKIM change batch. |
-| `docs/` | [DEPLOY.md](docs/DEPLOY.md), the infrastructure walkthrough, and the screenshots above. |
+| `docs/` | [DEPLOY.md](docs/DEPLOY.md), the infrastructure walkthrough; the two edition guidelines; and the screenshots above. |
 | `.github/workflows/` | The deploy: GitHub Actions authenticated with OIDC, so no AWS keys are stored anywhere. |
 
 ## How it is served
@@ -38,6 +40,18 @@ The site follows the **KISS principle**: keep it simple, and add nothing that is
 - **Security.** A response headers policy sets a same-origin Content Security Policy, two-year HSTS, `X-Frame-Options: DENY`, `nosniff`, and a locked-down Permissions-Policy. No cookies, no analytics.
 - **Experience API.** `/api/experience` and `/api/skills` on the same domain. Responses carry ETags and cache headers so CloudFront answers most requests itself, errors follow RFC 9457 problem details, and the function URL accepts only requests signed by CloudFront. The contract is [api/openapi.yaml](api/openapi.yaml).
 - **Deploys.** Every push to `main` assumes a least-privilege IAM role through OIDC, syncs the bucket in two passes (a week of browser caching for fonts and images, five minutes for pages), and invalidates the CloudFront cache. Third-party actions are pinned to commit hashes.
+
+## Three editions
+
+The same page is built three ways from this repository. Every edition shows the same content, loads the same stylesheet, and reads the same Experience API; what differs is how the page reaches the browser.
+
+| Edition | Built with | Source | Live |
+| --- | --- | --- | --- |
+| Default | HTML, CSS, and vanilla JavaScript. No framework, no build step. | repository root | [mvcprogrammer.com](https://mvcprogrammer.com) |
+| Blazor | Blazor WebAssembly on .NET 10: Razor components and C# running in the browser. | [`blazor/`](blazor/) | [blazor.mvcprogrammer.com](https://blazor.mvcprogrammer.com) |
+| Angular | Angular 22: standalone components, signals, and a reactive form in TypeScript. | [`angular/`](angular/) | [angular.mvcprogrammer.com](https://angular.mvcprogrammer.com) |
+
+Each framework edition has its own test suite, README, and guideline PDF, its own CloudFront distribution and certificate under the same bucket, and its own job in the deploy workflow. The editions mirror each other: a change to one is made to the others in the same commit, and the stylesheet, fonts, images, icons, and seed data are shared from the root rather than copied by hand. The skill chips in the About section and the hero highlights link between the editions, so each one is a click away from the others.
 
 ## Preview locally
 
