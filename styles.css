@@ -602,6 +602,16 @@ img, svg {
   color: var(--hover);
 }
 
+/* The hero highlights that have an edition of this site link to it, styled like the chips. */
+.highlight-value a {
+  color: inherit;
+}
+
+.highlight-value a:hover,
+.highlight-value a:focus-visible {
+  color: var(--hover);
+}
+
 @media (min-width: 48em) {
   .about-grid {
     grid-template-columns: minmax(0, 2fr) minmax(0, 1fr);

@@ -38,12 +38,12 @@ story += [
     p("<b>Every content, markup, behavior, or styling change made to one edition is made to the other two in the same "
       "commit.</b> Before finishing any change to the site, check the other editions for the same change. Section 4 "
       "lists which files are shared by linking (one edit) and which are duplicated (three edits)."),
-    p("The deliberate exception", "h2"),
-    p("The editions cross-link only through the core-skill chips in the About section; the portfolio card carries "
-      "no edition links. On every edition the <b>Angular</b> and <b>Blazor</b> chips link to their editions with a "
-      "title hint (<i>See the Angular edition of this site</i>). The two framework editions add a <b>JavaScript</b> "
-      "chip after Blazor that leads back to the static edition; the default edition has no JavaScript chip. Keep that "
-      "asymmetry. A bUnit test, " + c("AboutSection_ShouldLinkEditionTagsWithHints") + ", pins the Blazor side of it."),
+    p("No exceptions", "h2"),
+    p("Content is identical on every edition. The editions cross-link through the About core-skill chips "
+      "(<b>Angular</b>, <b>Blazor</b>, <b>JavaScript</b>, each with a title hint such as <i>See the Angular edition of "
+      "this site</i>) and the hero highlights (<b>C# / .NET</b> to the Blazor edition, <b>Angular / React</b> to the "
+      "Angular edition). A link to the edition already open simply reloads it. The portfolio card carries no edition "
+      "links. The bUnit tests, " + c("AboutSection_ShouldLinkEditionTagsWithHints") + " and " + c("HeroSection_ShouldLinkHighlightsToEditions") + ", pin the Blazor side of it."),
     p("The Blazor and Angular editions stay off the GitHub profile README until the owner decides otherwise."),
 ]
 
@@ -226,7 +226,7 @@ story += [
             ["3", "If the Blazor behavior changed, add or update the bUnit test that proves it. Follow the naming and layout conventions in section 6."],
             ["4", "Run " + c("dotnet test --project blazor/tests/Portfolio.Blazor.Tests") + " and make it green. Run " + c("dotnet build") + " on the app; warnings are errors."],
             ["5", "Preview the editions locally: " + c("python3 -m http.server 8080") + " at the root, " + c("dotnet run --project blazor/src/Portfolio.Blazor") + ", and " + c("npm start") + " in " + c("angular/") + "."],
-            ["6", "Check the About chips survived: Angular and Blazor linked with their hints everywhere, JavaScript only on the framework editions, no edition links in the portfolio card."],
+            ["6", "Check the cross-links survived: the three About chips and the two hero highlights, identical on every edition, with their hints."],
             ["7", "Commit all editions together. No AI attribution trailers in the message."],
             ["8", "Push to " + c("main") + " only when asked. The workflow tests, publishes, and deploys every edition."],
         ],

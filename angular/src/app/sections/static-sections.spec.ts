@@ -22,11 +22,16 @@ describe('static sections', () => {
       expect(host.querySelectorAll('.highlights li').length).toBe(3);
       const hrefs = Array.from(host.querySelectorAll('.button-row a')).map((a) => a.getAttribute('href'));
       expect(hrefs).toEqual(['#portfolio', '#contact']);
+      const highlights = Array.from(host.querySelectorAll<HTMLAnchorElement>('.highlight-value a')).map((a) => [a.textContent, a.getAttribute('href'), a.getAttribute('title')]);
+      expect(highlights).toEqual([
+        ['C# / .NET', 'https://blazor.mvcprogrammer.com/', 'See the C# / .NET edition of this site'],
+        ['Angular / React', 'https://angular.mvcprogrammer.com/', 'See the Angular edition of this site'],
+      ]);
     });
   });
 
   describe('AboutSection', () => {
-    it('should link the Angular and Blazor tags to their editions with a hint, and JavaScript back to the static edition', async () => {
+    it('should link the Angular, Blazor, and JavaScript tags to the three editions with a hint', async () => {
       // Arrange
       const fixture = TestBed.createComponent(AboutSection);
 
@@ -43,6 +48,7 @@ describe('static sections', () => {
       ]);
       const tags = Array.from(host.querySelectorAll('ul[aria-label="Skills"] .tag')).map((tag) => tag.textContent?.trim());
       expect(tags.length).toBe(12);
+      expect(tags).toContain('Claude Pair Programming');
       expect(tags).not.toContain('RabbitMQ');
     });
   });

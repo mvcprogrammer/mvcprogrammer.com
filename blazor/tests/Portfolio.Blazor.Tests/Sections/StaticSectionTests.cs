@@ -9,7 +9,7 @@ public sealed class StaticSectionTests : BunitContext
 {
     #region AboutSection Tests
 
-    /// <summary>The Angular and Blazor tags lead to their editions with a hint, and the JavaScript tag leads back to the static edition.</summary>
+    /// <summary>The Angular, Blazor, and JavaScript tags lead to the three editions with a hint; the list is the same on every edition.</summary>
     [Fact]
     public void AboutSection_ShouldLinkEditionTagsWithHints()
     {
@@ -25,7 +25,29 @@ public sealed class StaticSectionTests : BunitContext
             ("JavaScript", "https://mvcprogrammer.com/", "See the plain JavaScript edition of this site"),
         ], links);
         Assert.Equal(12, cut.FindAll("ul[aria-label=Skills] .tag").Count);
+        Assert.Contains(cut.FindAll(".tag"), t => t.TextContent == "Claude Pair Programming");
         Assert.DoesNotContain(cut.FindAll(".tag"), t => t.TextContent == "RabbitMQ");
+    }
+
+    #endregion
+
+    #region HeroSection Tests
+
+    /// <summary>The C# / .NET and Angular / React highlights link to the matching editions with a hint; the database one stays plain.</summary>
+    [Fact]
+    public void HeroSection_ShouldLinkHighlightsToEditions()
+    {
+        // Arrange and Act
+        var cut = Render<HeroSection>();
+
+        // Assert
+        var links = cut.FindAll(".highlight-value a").Select(a => (a.TextContent, a.GetAttribute("href"), a.GetAttribute("title"))).ToList();
+        Assert.Equal(
+        [
+            ("C# / .NET", "https://blazor.mvcprogrammer.com/", "See the C# / .NET edition of this site"),
+            ("Angular / React", "https://angular.mvcprogrammer.com/", "See the Angular edition of this site"),
+        ], links);
+        Assert.Equal(3, cut.FindAll(".highlights li").Count);
     }
 
     #endregion
