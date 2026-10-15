@@ -17,7 +17,7 @@ public sealed partial class ExperienceTimeline : IDisposable
     private const int VISIBLE_CHIPS = 12;
 
     /// <summary>Chips named here lead the row in this order, regardless of position count.</summary>
-    private static readonly string[] PINNED_SKILLS = ["ASP.NET Web API", "C#", "Claude AI Pair Programming", "Angular", "React"];
+    private static readonly string[] PINNED_SKILLS = ["ASP.NET Web API", "C#", "Claude Pair Programming", "Angular", "React"];
 
     /// <summary>Chips named here go to the end of the row.</summary>
     private static readonly string[] DEMOTED_SKILLS = ["CloudWatch"];

@@ -18,7 +18,7 @@ export class ExperienceTimeline implements OnInit, OnDestroy {
   static readonly VISIBLE_CHIPS = 12;
 
   /** Chips named here lead the row in this order, regardless of position count. */
-  static readonly PINNED_SKILLS: readonly string[] = ['ASP.NET Web API', 'C#', 'Claude AI Pair Programming', 'Angular', 'React'];
+  static readonly PINNED_SKILLS: readonly string[] = ['ASP.NET Web API', 'C#', 'Claude Pair Programming', 'Angular', 'React'];
 
   /** Chips named here go to the end of the row. */
   static readonly DEMOTED_SKILLS: readonly string[] = ['CloudWatch'];
