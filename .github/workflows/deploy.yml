@@ -116,3 +116,58 @@ jobs:
           aws cloudfront create-invalidation \
             --distribution-id "${BLAZOR_DISTRIBUTION_ID}" \
             --paths "/*"
+
+  deploy-angular:
+    name: Build and deploy the Angular edition
+    runs-on: ubuntu-latest
+    env:
+      ANGULAR_DISTRIBUTION_ID: ${{ vars.ANGULAR_DISTRIBUTION_ID }}
+    defaults:
+      run:
+        working-directory: angular
+    steps:
+      - name: Check out
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+
+      - name: Set up Node
+        uses: actions/setup-node@a0853c24544627f65ddf259abe73b1d18a591444 # v5.0.0
+        with:
+          node-version: 24
+          cache: npm
+          cache-dependency-path: angular/package-lock.json
+
+      - name: Install
+        run: npm ci
+
+      - name: Test
+        run: npm test
+
+      # The prebuild script copies the shared stylesheet, icons, images, and seed from the repository root.
+      - name: Build
+        run: npm run build
+
+      - name: Configure AWS credentials (OIDC)
+        uses: aws-actions/configure-aws-credentials@7474bc4690e29a8392af63c5b98e7449536d5c3a # v4.3.1
+        with:
+          role-to-assume: ${{ secrets.AWS_ROLE_ARN }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      # The bundles carry a content hash in their names and can be cached for a long time; index.html,
+      # the shared files, and the seed get the short browser TTL. CloudFront compresses on the fly.
+      - name: Sync fingerprinted bundles (long browser TTL)
+        run: |
+          aws s3 sync dist/portfolio-angular/browser/ "s3://${S3_BUCKET}/angular/" --delete \
+            --cache-control "public, max-age=604800, s-maxage=31536000, immutable" \
+            --exclude "*" --include "main-*.js" --include "polyfills-*.js" --include "chunk-*.js" --include "styles-*.css"
+
+      - name: Sync everything else (short browser TTL)
+        run: |
+          aws s3 sync dist/portfolio-angular/browser/ "s3://${S3_BUCKET}/angular/" --delete \
+            --cache-control "public, max-age=300, s-maxage=31536000" \
+            --exclude "main-*.js" --exclude "polyfills-*.js" --exclude "chunk-*.js" --exclude "styles-*.css"
+
+      - name: Invalidate CloudFront
+        run: |
+          aws cloudfront create-invalidation \
+            --distribution-id "${ANGULAR_DISTRIBUTION_ID}" \
+            --paths "/*"

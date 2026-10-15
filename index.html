@@ -194,7 +194,7 @@
               <li class="tag">API First Design</li>
               <li class="tag">C# / .NET</li>
               <li class="tag">Claude AI Pair Programming</li>
-              <li class="tag">Angular</li>
+              <li class="tag"><a href="https://angular.mvcprogrammer.com/" title="This site, rebuilt with Angular">Angular</a></li>
               <li class="tag">React</li>
               <li class="tag">SQL Server</li>
               <li class="tag">AWS</li>
@@ -344,8 +344,8 @@
             </div>
             <div class="card-body">
               <h3>mvcprogrammer.com</h3>
-              <p class="card-subtitle">The tech behind this site</p>
-              <p>This site follows the KISS principle: keep it simple, and add nothing that is not earning its place. Plain HTML, CSS, and JavaScript with no framework, no build step, and no dependencies. The files live in a private S3 bucket that only CloudFront can read through Origin Access Control. CloudFront serves them worldwide over HTTPS with an ACM certificate, Route 53 points the domain at the distribution, and a GitHub Actions workflow authenticated with OIDC syncs the bucket and invalidates the cache on every push to main. No servers, no load balancer, no auto scaling group. The Experience section is also served by a small read-only C# API on Lambda and DynamoDB, with the HTML as its fallback.</p>
+              <p class="card-subtitle">The tech behind this site, in three editions</p>
+              <p>This site follows the KISS principle: keep it simple, and add nothing that is not earning its place. Plain HTML, CSS, and JavaScript with no framework, no build step, and no dependencies. The files live in a private S3 bucket that only CloudFront can read through Origin Access Control. CloudFront serves them worldwide over HTTPS with an ACM certificate, Route 53 points the domain at the distribution, and a GitHub Actions workflow authenticated with OIDC syncs the bucket and invalidates the cache on every push to main. No servers, no load balancer, no auto scaling group. The Experience section is also served by a small read-only C# API on Lambda and DynamoDB, with the HTML as its fallback. Two more editions rebuild the same page, with Blazor WebAssembly and with Angular; the links below lead to them.</p>
               <ul class="tag-list card-tags" role="list" aria-label="Technologies used on mvcprogrammer.com">
                 <li class="tag">HTML</li>
                 <li class="tag">CSS</li>
@@ -365,6 +365,7 @@
               </ul>
               <a class="card-link" href="https://github.com/mvcprogrammer/mvcprogrammer.com" target="_blank" rel="noopener">View the source on GitHub</a>
               <a class="card-link" href="https://blazor.mvcprogrammer.com/" rel="noopener">See the same site built with Blazor WebAssembly</a>
+              <a class="card-link" href="https://angular.mvcprogrammer.com/" rel="noopener">See the same site built with Angular</a>
             </div>
           </article>
 

@@ -1,0 +1,28 @@
+<!-- Sticky header with the brand, the section nav, and the mobile menu toggle. The scroll state, the
+     section in view, and the open menu are signals; the browser events feed them directly. -->
+<header class="site-header" [class.is-scrolled]="scrolled()" id="top" #header>
+  <div class="container header-inner">
+    <a class="brand" href="#top" aria-label="Neal Thomas, back to top">
+      <span class="brand-mark" aria-hidden="true"></span>
+      <span class="brand-name">Neal Thomas</span>
+    </a>
+
+    <button class="nav-toggle" type="button" [attr.aria-expanded]="menuOpen()" aria-controls="primary-nav"
+            [attr.aria-label]="menuOpen() ? 'Close menu' : 'Open menu'" (click)="toggleMenu()" #toggle>
+      <span class="nav-toggle-bar" aria-hidden="true"></span>
+      <span class="nav-toggle-bar" aria-hidden="true"></span>
+      <span class="nav-toggle-bar" aria-hidden="true"></span>
+    </button>
+
+    <nav class="site-nav" [class.is-open]="menuOpen()" id="primary-nav" aria-label="Primary">
+      <ul class="nav-list" role="list">
+        @for (link of links; track link.id) {
+          <li>
+            <a class="nav-link" href="#{{ link.id }}" [attr.aria-current]="isCurrent(link.id) ? 'true' : null" (click)="closeMenu(false)">{{ link.label }}</a>
+          </li>
+        }
+      </ul>
+      <app-social-links />
+    </nav>
+  </div>
+</header>

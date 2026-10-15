@@ -2,115 +2,17 @@
 
     python3 -m venv .venv && .venv/bin/pip install reportlab fonttools brotli
     .venv/bin/python docs/pdf/build_fonts.py /tmp/pdf-fonts
-    .venv/bin/python docs/pdf/build_guide.py /tmp/pdf-fonts docs/BLAZOR-EDITION.pdf
+    .venv/bin/python docs/pdf/build_blazor_guide.py /tmp/pdf-fonts docs/BLAZOR-EDITION.pdf
+
+The styling and helpers are shared with build_angular_guide.py through guide_common.py.
 """
 import sys
-from reportlab.lib import colors
-from reportlab.lib.enums import TA_LEFT
-from reportlab.lib.pagesizes import letter
-from reportlab.lib.styles import ParagraphStyle
 from reportlab.lib.units import inch
-from reportlab.pdfbase import pdfmetrics
-from reportlab.pdfbase.ttfonts import TTFont
-from reportlab.platypus import (
-    KeepTogether, PageBreak, Paragraph, Preformatted, SimpleDocTemplate, Spacer, Table, TableStyle,
-)
+from reportlab.platypus import KeepTogether, Spacer
+from guide_common import BLOB, REPO, TREE, b, build, c, code_block, link, p, register_fonts, table
 
 FONT_DIR, OUT = sys.argv[1], sys.argv[2]
-
-pdfmetrics.registerFont(TTFont("Inter", f"{FONT_DIR}/Inter-Regular.ttf"))
-pdfmetrics.registerFont(TTFont("Inter-SemiBold", f"{FONT_DIR}/Inter-SemiBold.ttf"))
-pdfmetrics.registerFont(TTFont("Inter-Bold", f"{FONT_DIR}/Inter-Bold.ttf"))
-pdfmetrics.registerFont(TTFont("Mono", f"{FONT_DIR}/JetBrainsMono-Regular.ttf"))
-pdfmetrics.registerFontFamily("Inter", normal="Inter", bold="Inter-SemiBold", italic="Inter", boldItalic="Inter-SemiBold")
-
-INK = colors.HexColor("#1e1f22")
-BODY = colors.HexColor("#33363b")
-MUTED = colors.HexColor("#6b7079")
-ACCENT = colors.HexColor("#2f62d9")
-RULE = colors.HexColor("#d9dce2")
-CODE_BG = colors.HexColor("#f3f4f7")
-HEAD_BG = colors.HexColor("#eef2fb")
-
-REPO = "https://github.com/mvcprogrammer/mvcprogrammer.com"
-BLOB = f"{REPO}/blob/main/"
-TREE = f"{REPO}/tree/main/"
-
-S = {
-    "title": ParagraphStyle("title", fontName="Inter-Bold", fontSize=24, leading=30, textColor=INK, spaceAfter=4),
-    "subtitle": ParagraphStyle("subtitle", fontName="Inter", fontSize=11, leading=15, textColor=MUTED, spaceAfter=18),
-    "h1": ParagraphStyle("h1", keepWithNext=1, fontName="Inter-SemiBold", fontSize=14.5, leading=19, textColor=INK, spaceBefore=18, spaceAfter=6),
-    "h2": ParagraphStyle("h2", keepWithNext=1, fontName="Inter-SemiBold", fontSize=11, leading=15, textColor=INK, spaceBefore=10, spaceAfter=3),
-    "body": ParagraphStyle("body", fontName="Inter", fontSize=9.4, leading=13.6, textColor=BODY, spaceAfter=6),
-    "bullet": ParagraphStyle("bullet", fontName="Inter", fontSize=9.4, leading=13.6, textColor=BODY, leftIndent=14, bulletIndent=3, spaceAfter=3),
-    "cell": ParagraphStyle("cell", fontName="Inter", fontSize=8.6, leading=12, textColor=BODY),
-    "cellsmall": ParagraphStyle("cellsmall", fontName="Inter", fontSize=8, leading=11.5, textColor=BODY),
-    "cellhead": ParagraphStyle("cellhead", fontName="Inter-SemiBold", fontSize=8.6, leading=12, textColor=INK),
-    "code": ParagraphStyle("code", fontName="Mono", fontSize=7.9, leading=11.2, textColor=INK, alignment=TA_LEFT),
-    "caption": ParagraphStyle("caption", fontName="Inter", fontSize=8.2, leading=11, textColor=MUTED, spaceBefore=2, spaceAfter=8),
-}
-
-
-def p(text, style="body"):
-    return Paragraph(text, S[style])
-
-
-def b(text):
-    return Paragraph(text, S["bullet"], bulletText="•")
-
-
-def c(text):
-    """Inline code."""
-    return f'<font name="Mono" size="8.3" color="#1e1f22">{text}</font>'
-
-
-def link(text, url):
-    return f'<a href="{url}" color="#2f62d9"><u>{text}</u></a>'
-
-
-def code_block(lines):
-    t = Table([[Preformatted("\n".join(lines), S["code"])]], colWidths=[7.0 * inch])
-    t.setStyle(TableStyle([
-        ("BACKGROUND", (0, 0), (-1, -1), CODE_BG),
-        ("LEFTPADDING", (0, 0), (-1, -1), 10),
-        ("RIGHTPADDING", (0, 0), (-1, -1), 10),
-        ("TOPPADDING", (0, 0), (-1, -1), 7),
-        ("BOTTOMPADDING", (0, 0), (-1, -1), 7),
-        ("LINEBEFORE", (0, 0), (0, -1), 2, ACCENT),
-    ]))
-    return [t, Spacer(1, 8)]
-
-
-def table(head, rows, widths, first_style="cell"):
-    data = [[Paragraph(h, S["cellhead"]) for h in head]]
-    data += [[Paragraph(cell, S[first_style] if i == 0 else S["cell"]) for i, cell in enumerate(row)] for row in rows]
-    t = Table(data, colWidths=widths, repeatRows=1)
-    t.setStyle(TableStyle([
-        ("BACKGROUND", (0, 0), (-1, 0), HEAD_BG),
-        ("LINEBELOW", (0, 0), (-1, 0), 0.8, ACCENT),
-        ("LINEBELOW", (0, 1), (-1, -1), 0.4, RULE),
-        ("VALIGN", (0, 0), (-1, -1), "TOP"),
-        ("LEFTPADDING", (0, 0), (-1, -1), 6),
-        ("RIGHTPADDING", (0, 0), (-1, -1), 6),
-        ("TOPPADDING", (0, 0), (-1, -1), 4),
-        ("BOTTOMPADDING", (0, 0), (-1, -1), 4),
-    ]))
-    return t
-
-
-def on_page(canvas, doc):
-    canvas.saveState()
-    w, h = letter
-    canvas.setFont("Inter", 8)
-    canvas.setFillColor(MUTED)
-    canvas.drawString(0.75 * inch, h - 0.5 * inch, "mvcprogrammer.com  ·  The Blazor edition")
-    canvas.drawRightString(w - 0.75 * inch, h - 0.5 * inch, "Guideline, October 2026")
-    canvas.setStrokeColor(RULE)
-    canvas.setLineWidth(0.5)
-    canvas.line(0.75 * inch, h - 0.58 * inch, w - 0.75 * inch, h - 0.58 * inch)
-    canvas.drawCentredString(w / 2, 0.5 * inch, f"{doc.page}")
-    canvas.restoreState()
-
+register_fonts(FONT_DIR)
 
 story = []
 
@@ -123,23 +25,27 @@ story += [
 
 # ---------------------------------------------------------------- 1
 story += [
-    p("1. Why there are two editions", "h1"),
-    p("The portfolio ships twice. The default edition is plain HTML, CSS, and JavaScript at the repository root, "
+    p("1. Why there are three editions", "h1"),
+    p("The portfolio ships three times. The default edition is plain HTML, CSS, and JavaScript at the repository root, "
       "served at " + link("mvcprogrammer.com", "https://mvcprogrammer.com") + ". The Blazor edition is a standalone "
       "Blazor WebAssembly app on .NET 10 under " + c("blazor/") + ", served at "
-      + link("blazor.mvcprogrammer.com", "https://blazor.mvcprogrammer.com") + ". Both show the same content, load the "
-      "same stylesheet, and call the same Experience API. The Blazor edition exists to show that content consumed from "
-      "C# running in the browser, not to replace the static site."),
+      + link("blazor.mvcprogrammer.com", "https://blazor.mvcprogrammer.com") + ". The Angular edition is an Angular 22 "
+      "app under " + c("angular/") + ", served at " + link("angular.mvcprogrammer.com", "https://angular.mvcprogrammer.com")
+      + " and documented in its own guideline, " + link("docs/ANGULAR-EDITION.pdf", BLOB + "docs/ANGULAR-EDITION.pdf")
+      + ". All three show the same content, load the same stylesheet, and call the same Experience API. The Blazor "
+      "edition exists to show that content consumed from C# running in the browser, not to replace the static site."),
     p("The one rule that matters", "h2"),
-    p("<b>Every content, markup, behavior, or styling change made to one edition is made to the other in the same "
-      "commit.</b> Before finishing any change to the site, check the other edition for the same change. Section 4 "
-      "lists which files are shared by linking (one edit) and which are duplicated (two edits)."),
+    p("<b>Every content, markup, behavior, or styling change made to one edition is made to the other two in the same "
+      "commit.</b> Before finishing any change to the site, check the other editions for the same change. Section 4 "
+      "lists which files are shared by linking (one edit) and which are duplicated (three edits)."),
     p("The deliberate exception", "h2"),
-    p("The linked tag in the About section's core skills differs on purpose. The default edition shows "
-      "<b>Blazor</b> linking to blazor.mvcprogrammer.com; the Blazor edition shows <b>JavaScript</b> linking to "
-      "mvcprogrammer.com. Each edition points at the other. Keep that asymmetry. A bUnit test, "
-      + c("AboutSection_ShouldLinkJavaScriptTagToStaticEdition") + ", pins the Blazor side of it."),
-    p("The Blazor edition stays off the GitHub profile README until the owner decides otherwise."),
+    p("The linked tags in the About section's core skills differ on purpose. Each edition links the other two and "
+      "swaps its own tag for the <b>JavaScript</b> link to the static edition, so every edition shows eleven skills. "
+      "The default edition links <b>Blazor</b> and <b>Angular</b>; the Blazor edition links <b>JavaScript</b> (in "
+      "Blazor's slot) and <b>Angular</b>; the Angular edition links <b>JavaScript</b> (in Angular's slot) and "
+      "<b>Blazor</b>. Keep that asymmetry. A bUnit test, "
+      + c("AboutSection_ShouldLinkAngularAndJavaScriptTagsToOtherEditions") + ", pins the Blazor side of it."),
+    p("The Blazor and Angular editions stay off the GitHub profile README until the owner decides otherwise."),
 ]
 
 # ---------------------------------------------------------------- 2
@@ -194,7 +100,7 @@ story += [
             ["Kiosk demo", "Button opens a native dialog; the iframe is cleared on close.", c("KioskDialog") + " renders the iframe only while open and tears it down on " + c("OnClosed") + "."],
             ["Build output", "The files as committed.", c("dotnet publish") + ": trimmed, invariant globalization, no time zone data, no fingerprint placeholders (the import map would be an inline script, which the CSP forbids)."],
             ["Hosting", "Root of the private S3 bucket, distribution for mvcprogrammer.com.", c("blazor/") + " prefix of the same bucket, distribution " + c("E2NFN5MW02S8Y9") + ", own ACM certificate, CSP with " + c("'wasm-unsafe-eval'") + ", S3 403 rewritten to " + c("index.html") + " so deep links reach the router."],
-            ["Tests", "None in the repo for the static page.", "111 bUnit and xUnit cases, run before every publish."],
+            ["Tests", "None in the repo for the static page.", "111 bUnit and xUnit cases, run before every publish. (The Angular edition has its own Vitest suite.)"],
         ],
         [1.15 * inch, 2.85 * inch, 3.0 * inch],
     ),
@@ -204,18 +110,19 @@ story += [
 story += [
     p("4. Shared by linking versus duplicated by hand", "h1"),
     p("The Blazor project file pulls the shared assets from the repository root with " + c("&lt;Content Link=...&gt;")
-      + " items, so they are one file on disk and cannot drift. Everything else is written twice."),
+      + " items, so they are one file on disk and cannot drift. (The Angular edition copies the same files with a script "
+      "before each build.) Everything else is written once per edition."),
     p("Edit once (linked into wwwroot)", "h2"),
     b(c("styles.css") + ", the whole stylesheet."),
     b(c("assets/**") + ": fonts (Inter and JetBrains Mono as variable WOFF2 subsets) and images."),
     b(c("favicon.svg") + ", " + c("favicon.ico") + ", " + c("apple-touch-icon.png") + "."),
     b(c("api/seed/positions.json") + ", served to the Blazor edition as " + c("data/positions.json") + "."),
     p("Edit twice (one copy per edition)", "h2"),
-    b("Markup: " + c("index.html") + " and again in " + c("blazor/.../Sections/*.razor") + " and " + c("Components/*.razor") + "."),
-    b("Behavior: " + c("main.js") + " and again in the Razor code-behind files plus " + c("wwwroot/js/site.js") + "."),
+    b("Markup: " + c("index.html") + ", again in " + c("blazor/.../Sections/*.razor") + " and " + c("Components/*.razor") + ", and again in the Angular edition's " + c("sections/") + " and " + c("components/") + " templates."),
+    b("Behavior: " + c("main.js") + ", again in the Razor code-behind files plus " + c("wwwroot/js/site.js") + ", and again in the Angular component classes."),
     b("Constants that shape the page: pinned and demoted skills, the visible chip count, status messages, section ids and labels."),
     b("Endpoints: " + c("data-") + " attributes in " + c("index.html") + " and " + c("wwwroot/appsettings.json") + "."),
-    p("When a change touches a duplicated file, the commit is not finished until both copies match. When the Blazor "
+    p("When a change touches a duplicated file, the commit is not finished until all three copies match. When the Blazor "
       "copy changes behavior, add or update the bUnit test that proves it."),
 ]
 
@@ -316,13 +223,13 @@ story += [
         ["Step", "Do"],
         [
             ["1", "Make the change in the edition you started with."],
-            ["2", "If the file is shared by linking (section 4), you are done with content. If it is duplicated, make the matching change in the other edition."],
+            ["2", "If the file is shared by linking (section 4), you are done with content. If it is duplicated, make the matching change in the other two editions."],
             ["3", "If the Blazor behavior changed, add or update the bUnit test that proves it. Follow the naming and layout conventions in section 6."],
             ["4", "Run " + c("dotnet test --project blazor/tests/Portfolio.Blazor.Tests") + " and make it green. Run " + c("dotnet build") + " on the app; warnings are errors."],
-            ["5", "Preview both editions locally: " + c("python3 -m http.server 8080") + " at the root and " + c("dotnet run --project blazor/src/Portfolio.Blazor") + "."],
-            ["6", "Check the About tag asymmetry survived: Blazor on the static site, JavaScript on the Blazor site, each linking to the other."],
-            ["7", "Commit both editions together. No AI attribution trailers in the message."],
-            ["8", "Push to " + c("main") + " only when asked. The workflow tests, publishes, and deploys both editions."],
+            ["5", "Preview the editions locally: " + c("python3 -m http.server 8080") + " at the root, " + c("dotnet run --project blazor/src/Portfolio.Blazor") + ", and " + c("npm start") + " in " + c("angular/") + "."],
+            ["6", "Check the About tag asymmetry survived: each edition links the other two, with JavaScript standing in for its own tag."],
+            ["7", "Commit all editions together. No AI attribution trailers in the message."],
+            ["8", "Push to " + c("main") + " only when asked. The workflow tests, publishes, and deploys every edition."],
         ],
         [0.5 * inch, 6.5 * inch],
     )]),
@@ -337,6 +244,8 @@ story += [
         [
             ["Live, Blazor edition", link("https://blazor.mvcprogrammer.com", "https://blazor.mvcprogrammer.com")],
             ["Live, vanilla edition", link("https://mvcprogrammer.com", "https://mvcprogrammer.com")],
+            ["Live, Angular edition", link("https://angular.mvcprogrammer.com", "https://angular.mvcprogrammer.com")],
+            ["Angular guideline", link("docs/ANGULAR-EDITION.pdf", BLOB + "docs/ANGULAR-EDITION.pdf")],
             ["Repository", link(REPO, REPO)],
             ["Blazor app source", link("blazor/src/Portfolio.Blazor", TREE + "blazor/src/Portfolio.Blazor")],
             ["Blazor tests", link("blazor/tests/Portfolio.Blazor.Tests", TREE + "blazor/tests/Portfolio.Blazor.Tests")],
@@ -352,11 +261,10 @@ story += [
     )]),
 ]
 
-doc = SimpleDocTemplate(
-    OUT, pagesize=letter,
-    leftMargin=0.75 * inch, rightMargin=0.75 * inch, topMargin=0.85 * inch, bottomMargin=0.8 * inch,
-    title="The Blazor edition of mvcprogrammer.com", author="Neal Thomas",
+build(
+    OUT, story,
+    title="The Blazor edition of mvcprogrammer.com",
     subject="Guideline for building, testing, and deploying the Blazor edition",
+    running_title="mvcprogrammer.com  ·  The Blazor edition",
+    dated="Guideline, October 2026",
 )
-doc.build(story, onFirstPage=on_page, onLaterPages=on_page)
-print("wrote", OUT)

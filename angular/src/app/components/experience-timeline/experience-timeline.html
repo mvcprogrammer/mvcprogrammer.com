@@ -1,0 +1,44 @@
+<!-- Work history from the Experience API with a skill filter. If the API is unreachable the
+     timeline renders from the positions seed bundled with the site and the filter stays hidden. -->
+<div class="skill-filter" id="skill-filter" [hidden]="skills() === null">
+  <p class="skill-filter-label" id="skill-filter-label">Filter by skill</p>
+  <div class="skill-filter-list" role="group" aria-labelledby="skill-filter-label">
+    <button type="button" class="skill-chip" [attr.aria-pressed]="isPressed(null)" (click)="select(null)">All</button>
+    @for (skill of skills() ?? []; track skill.name; let i = $index) {
+      <button type="button" class="skill-chip" [title]="positionsLabel(skill.positionCount)" [attr.aria-pressed]="isPressed(skill.name)"
+              [hidden]="isChipHidden(i)" (click)="select(skill.name)">{{ skill.name }}</button>
+    }
+    @if (hiddenChipCount() > 0) {
+      <button type="button" class="skill-chip skill-chip-more" aria-expanded="false" (click)="showAllChips()">+{{ hiddenChipCount() }} more</button>
+    }
+  </div>
+  <p class="skill-filter-status" aria-live="polite">
+    <span class="skill-filter-count">{{ countLabel() }}</span> &middot; live from <a class="skill-filter-link" [href]="jsonPath()" target="_blank" rel="noopener">{{ jsonPath() }}</a>
+  </p>
+</div>
+
+<ol class="timeline" [class.is-loading]="loading()" id="experience-timeline" role="list">
+  @for (position of positions(); track position.id) {
+    <li class="timeline-item">
+      <p class="timeline-date">
+        <time [attr.datetime]="position.startDate">{{ position.startDate | monthLabel }}</time> &ndash;
+        @if (position.endDate) {
+          <time [attr.datetime]="position.endDate">{{ position.endDate | monthLabel }}</time>
+        } @else {
+          Present
+        }
+        &middot; {{ position | placeLabel }}
+      </p>
+      <h3>{{ position.title }}</h3>
+      <p class="timeline-org">{{ position.organization }}</p>
+      <ul class="timeline-points">
+        @for (highlight of position.highlights; track $index) {
+          <li>{{ highlight }}</li>
+        }
+      </ul>
+    </li>
+  }
+</ol>
+@if (failed()) {
+  <p class="form-status is-error" role="status">The work history could not be loaded right now. The <a [href]="options.resumeUrl" rel="noopener">resume PDF</a> has it all.</p>
+}

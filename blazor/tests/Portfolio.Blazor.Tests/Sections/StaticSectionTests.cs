@@ -9,17 +9,17 @@ public sealed class StaticSectionTests : BunitContext
 {
     #region AboutSection Tests
 
-    /// <summary>The linked core-skill tag is this edition's exception to the mirror rule: "JavaScript" pointing at the static site.</summary>
+    /// <summary>The linked core-skill tags are this edition's side of the mirror rule: "Angular" and "JavaScript" point at the other two editions, and there is no "Blazor" tag.</summary>
     [Fact]
-    public void AboutSection_ShouldLinkJavaScriptTagToStaticEdition()
+    public void AboutSection_ShouldLinkAngularAndJavaScriptTagsToOtherEditions()
     {
         // Arrange and Act
         var cut = Render<AboutSection>();
 
         // Assert
-        var link = cut.Find(".tag a");
-        Assert.Equal("JavaScript", link.TextContent);
-        Assert.Equal("https://mvcprogrammer.com/", link.GetAttribute("href"));
+        var links = cut.FindAll(".tag a").Select(a => (a.TextContent, a.GetAttribute("href"))).ToList();
+        Assert.Equal([("Angular", "https://angular.mvcprogrammer.com/"), ("JavaScript", "https://mvcprogrammer.com/")], links);
+        Assert.DoesNotContain(cut.FindAll(".tag"), t => t.TextContent == "Blazor");
         Assert.DoesNotContain(cut.FindAll(".tag"), t => t.TextContent == "RabbitMQ");
     }
 

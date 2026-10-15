@@ -1,0 +1,58 @@
+<!-- Contact form. Reactive-forms validation runs on submit (the same required and length rules as
+     the static edition's HTML attributes, plus the phone rule), then the JSON goes to the contact Lambda. -->
+<section class="section section-alt" id="contact" aria-labelledby="contact-title">
+  <div class="container">
+    <p class="eyebrow">06 / Contact</p>
+    <h2 id="contact-title">Let's Talk</h2>
+    <p class="section-intro">Hiring, contract work, or a question about one of the projects above. Send a note, pick how you would like to hear back, and I will reply, usually within a day.</p>
+    <form class="contact-form" [class.is-sent]="sent()" id="contact-form" [formGroup]="form" (ngSubmit)="send()">
+      <div class="form-row">
+        <label class="field">
+          <span class="field-label">Name</span>
+          <input type="text" formControlName="name" autocomplete="name" required maxlength="120">
+        </label>
+        <label class="field">
+          <span class="field-label">Email</span>
+          <input type="email" formControlName="email" autocomplete="email" required maxlength="200">
+        </label>
+      </div>
+      <div class="form-row">
+        <label class="field">
+          <span class="field-label">What is this about?</span>
+          <select formControlName="topic">
+            <option value="Job opportunity">Job opportunity</option>
+            <option value="Contract or consulting">Contract or consulting</option>
+            <option value="Freelance">Freelance</option>
+            <option value="Something else">Something else</option>
+          </select>
+        </label>
+        <label class="field">
+          <span class="field-label">Preferred reply</span>
+          <select formControlName="reply">
+            <option value="Email">Email</option>
+            <option [value]="replyByPhone">{{ replyByPhone }}</option>
+          </select>
+        </label>
+      </div>
+      <!-- The phone field only shows, and is only required, when a call is requested. -->
+      <label class="field" [hidden]="!wantsCall()">
+        <span class="field-label">Phone number</span>
+        <input type="tel" formControlName="phone" autocomplete="tel" minlength="7" maxlength="30" [attr.required]="wantsCall() ? '' : null">
+      </label>
+      <label class="field">
+        <span class="field-label">Message</span>
+        <textarea formControlName="message" rows="6" required minlength="10" maxlength="5000"></textarea>
+      </label>
+      <!-- Honeypot: hidden from people, filled by bots. The Lambda drops any submission with a value here. -->
+      <label class="field field-trap" aria-hidden="true">
+        <span class="field-label">Website</span>
+        <input type="text" formControlName="website" tabindex="-1" autocomplete="off">
+      </label>
+      <p class="form-status" [class]="statusClass()" role="status" aria-live="polite">{{ status() }}</p>
+      <button class="button button-primary" type="submit" [disabled]="sending()">
+        <app-icon name="mail" />
+        Send message
+      </button>
+    </form>
+  </div>
+</section>
