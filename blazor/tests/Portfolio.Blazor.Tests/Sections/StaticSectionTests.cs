@@ -9,17 +9,22 @@ public sealed class StaticSectionTests : BunitContext
 {
     #region AboutSection Tests
 
-    /// <summary>The linked core-skill tags are this edition's side of the mirror rule: "Angular" and "JavaScript" point at the other two editions, and there is no "Blazor" tag.</summary>
+    /// <summary>The Angular and Blazor tags lead to their editions with a hint, and the JavaScript tag leads back to the static edition.</summary>
     [Fact]
-    public void AboutSection_ShouldLinkAngularAndJavaScriptTagsToOtherEditions()
+    public void AboutSection_ShouldLinkEditionTagsWithHints()
     {
         // Arrange and Act
         var cut = Render<AboutSection>();
 
         // Assert
-        var links = cut.FindAll(".tag a").Select(a => (a.TextContent, a.GetAttribute("href"))).ToList();
-        Assert.Equal([("Angular", "https://angular.mvcprogrammer.com/"), ("JavaScript", "https://mvcprogrammer.com/")], links);
-        Assert.DoesNotContain(cut.FindAll(".tag"), t => t.TextContent == "Blazor");
+        var links = cut.FindAll(".tag a").Select(a => (a.TextContent, a.GetAttribute("href"), a.GetAttribute("title"))).ToList();
+        Assert.Equal(
+        [
+            ("Angular", "https://angular.mvcprogrammer.com/", "See the Angular edition of this site"),
+            ("Blazor", "https://blazor.mvcprogrammer.com/", "See the Blazor edition of this site"),
+            ("JavaScript", "https://mvcprogrammer.com/", "See the plain JavaScript edition of this site"),
+        ], links);
+        Assert.Equal(12, cut.FindAll("ul[aria-label=Skills] .tag").Count);
         Assert.DoesNotContain(cut.FindAll(".tag"), t => t.TextContent == "RabbitMQ");
     }
 

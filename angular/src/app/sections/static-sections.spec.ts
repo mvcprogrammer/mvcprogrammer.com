@@ -26,7 +26,7 @@ describe('static sections', () => {
   });
 
   describe('AboutSection', () => {
-    it('should link the JavaScript and Blazor tags to the other editions in place of an Angular tag', async () => {
+    it('should link the Angular and Blazor tags to their editions with a hint, and JavaScript back to the static edition', async () => {
       // Arrange
       const fixture = TestBed.createComponent(AboutSection);
 
@@ -35,14 +35,14 @@ describe('static sections', () => {
 
       // Assert
       const host = fixture.nativeElement as HTMLElement;
-      const links = Array.from(host.querySelectorAll<HTMLAnchorElement>('.tag a')).map((a) => [a.textContent, a.getAttribute('href')]);
+      const links = Array.from(host.querySelectorAll<HTMLAnchorElement>('.tag a')).map((a) => [a.textContent, a.getAttribute('href'), a.getAttribute('title')]);
       expect(links).toEqual([
-        ['JavaScript', 'https://mvcprogrammer.com/'],
-        ['Blazor', 'https://blazor.mvcprogrammer.com/'],
+        ['Angular', 'https://angular.mvcprogrammer.com/', 'See the Angular edition of this site'],
+        ['Blazor', 'https://blazor.mvcprogrammer.com/', 'See the Blazor edition of this site'],
+        ['JavaScript', 'https://mvcprogrammer.com/', 'See the plain JavaScript edition of this site'],
       ]);
       const tags = Array.from(host.querySelectorAll('ul[aria-label="Skills"] .tag')).map((tag) => tag.textContent?.trim());
-      expect(tags.length).toBe(11);
-      expect(tags).not.toContain('Angular');
+      expect(tags.length).toBe(12);
       expect(tags).not.toContain('RabbitMQ');
     });
   });
@@ -61,7 +61,7 @@ describe('static sections', () => {
   });
 
   describe('PortfolioSection', () => {
-    it('should link to the other two editions and open the kiosk from the card button', async () => {
+    it('should link only to the source and open the kiosk from the card button', async () => {
       // Arrange
       const services = createSiteTestServices();
       await TestBed.configureTestingModule({ imports: [PortfolioSection], providers: services.providers }).compileComponents();
@@ -78,8 +78,8 @@ describe('static sections', () => {
 
       // Assert
       expect(host.querySelector('iframe')?.getAttribute('src')).toBe('https://kiosk.example.test/');
-      const editions = Array.from(host.querySelectorAll('.portfolio-card-featured .card-link')).map((a) => a.getAttribute('href'));
-      expect(editions).toEqual(['https://github.com/mvcprogrammer/mvcprogrammer.com', 'https://mvcprogrammer.com/', 'https://blazor.mvcprogrammer.com/']);
+      const links = Array.from(host.querySelectorAll('.portfolio-card-featured .card-link')).map((a) => a.getAttribute('href'));
+      expect(links).toEqual(['https://github.com/mvcprogrammer/mvcprogrammer.com']);
       expect(host.querySelectorAll('.portfolio-card').length).toBe(3);
     });
   });
