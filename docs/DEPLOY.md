@@ -624,17 +624,17 @@ the other two jobs changed.
 
 | Piece | Value |
 | --- | --- |
-| CloudFront distribution | `<ANGULAR_DISTRIBUTION_ID>` (`<domain>.cloudfront.net`), origin path `/angular`, same S3 OAC `E2KEES7ZY0UA4S`, `/api/*` to the Experience API with its OAC `EADX2EY7VKO1Y`, 403 → `/index.html` 200 |
+| CloudFront distribution | `E33NA2ZQ9O29DK` (dkysvm4o06d9w.cloudfront.net), origin path `/angular`, same S3 OAC `E2KEES7ZY0UA4S`, `/api/*` to the Experience API with its OAC `EADX2EY7VKO1Y`, 403 → `/index.html` 200 |
 | Response headers policy | the static site's `mvcprogrammer-security-headers` (`28b549c3-c562-418c-a803-abe16efe78eb`), unchanged: Angular needs no `'wasm-unsafe-eval'` and nothing inline |
-| ACM certificate | `<ANGULAR_CERTIFICATE_ARN>` (angular.mvcprogrammer.com, DNS-validated, us-east-1) |
+| ACM certificate | `arn:aws:acm:us-east-1:334383610383:certificate/fab70e2b-d72f-4c74-b3c8-2bcdcc89bc89` (angular.mvcprogrammer.com, DNS-validated) |
 | Route 53 | A and AAAA aliases for `angular.mvcprogrammer.com` to the distribution |
 | Bucket policy | the `AWS:SourceArn` condition lists all three distributions |
 | Experience API | Lambda permission `angular-cloudfront-invoke` lets the new distribution invoke the function URL. Outside the SAM template, like the Blazor one |
 | Contact Lambda | function URL CORS and `ALLOWED_ORIGIN` list all three origins |
-| GitHub variable | `ANGULAR_DISTRIBUTION_ID` = the distribution id |
+| GitHub variable | `ANGULAR_DISTRIBUTION_ID` = `E33NA2ZQ9O29DK` |
 | IAM | `infra/iam/github-actions-deploy-role-policy.json` lists the distribution under `cloudfront:CreateInvalidation`; apply with the `put-role-policy` command in the Blazor section |
 
-Fill in the three placeholders above once the resources exist.
+All of it was created 2026-10-15 with the commands below, which are kept for the next edition.
 
 ### Create the resources
 
@@ -644,7 +644,7 @@ certificate, and the response headers policy (the static site's, since there is 
 ```bash
 # 1. Certificate (us-east-1), then add the CNAME it asks for to the hosted zone and wait for ISSUED
 aws acm request-certificate --region us-east-1 --domain-name angular.mvcprogrammer.com --validation-method DNS
-aws acm describe-certificate --region us-east-1 --certificate-arn <ANGULAR_CERTIFICATE_ARN> \
+aws acm describe-certificate --region us-east-1 --certificate-arn arn:aws:acm:us-east-1:334383610383:certificate/fab70e2b-d72f-4c74-b3c8-2bcdcc89bc89 \
   --query 'Certificate.DomainValidationOptions[0].ResourceRecord'
 
 # 2. Distribution, cloned from the Blazor edition's config
@@ -655,8 +655,8 @@ c = json.load(open('/tmp/blazor-config.json'))
 c['CallerReference'] = f'angular-{int(time.time())}'
 c['Comment'] = 'angular.mvcprogrammer.com (Angular edition)'
 c['Aliases'] = {'Quantity': 1, 'Items': ['angular.mvcprogrammer.com']}
-c['ViewerCertificate']['ACMCertificateArn'] = '<ANGULAR_CERTIFICATE_ARN>'
-c['ViewerCertificate']['Certificate'] = '<ANGULAR_CERTIFICATE_ARN>'
+c['ViewerCertificate']['ACMCertificateArn'] = 'arn:aws:acm:us-east-1:334383610383:certificate/fab70e2b-d72f-4c74-b3c8-2bcdcc89bc89'
+c['ViewerCertificate']['Certificate'] = 'arn:aws:acm:us-east-1:334383610383:certificate/fab70e2b-d72f-4c74-b3c8-2bcdcc89bc89'
 for origin in c['Origins']['Items']:
     if origin.get('OriginPath') == '/blazor':
         origin['OriginPath'] = '/angular'
@@ -668,12 +668,12 @@ aws cloudfront create-distribution --distribution-config file:///tmp/angular-con
 
 # 3. Let the new distribution read the bucket and call the API
 aws s3api get-bucket-policy --bucket mvcprogrammer.com --query Policy --output text > /tmp/bucket-policy.json
-#    add "arn:aws:cloudfront::334383610383:distribution/<ANGULAR_DISTRIBUTION_ID>" to the AWS:SourceArn list, then
+#    add "arn:aws:cloudfront::334383610383:distribution/E33NA2ZQ9O29DK" to the AWS:SourceArn list, then
 aws s3api put-bucket-policy --bucket mvcprogrammer.com --policy file:///tmp/bucket-policy.json
 aws lambda add-permission --function-name mvcprogrammer-experience-api \
   --statement-id angular-cloudfront-invoke --action lambda:InvokeFunctionUrl \
   --principal cloudfront.amazonaws.com \
-  --source-arn arn:aws:cloudfront::334383610383:distribution/<ANGULAR_DISTRIBUTION_ID>
+  --source-arn arn:aws:cloudfront::334383610383:distribution/E33NA2ZQ9O29DK
 
 # 4. DNS: A and AAAA aliases, the same change batch shape as the apex (CloudFront zone Z2FDTNDATAQYW2)
 aws route53 change-resource-record-sets --hosted-zone-id Z02467662SJ3B6YDOZKEF --change-batch file://records.json
@@ -686,7 +686,7 @@ aws lambda update-function-configuration --function-name mvcprogrammer-contact \
 
 # 6. Deploy role and GitHub: add the distribution ARN to infra/iam/github-actions-deploy-role-policy.json,
 #    apply it with put-role-policy, and set the repository variable
-gh variable set ANGULAR_DISTRIBUTION_ID --body <ANGULAR_DISTRIBUTION_ID>
+gh variable set ANGULAR_DISTRIBUTION_ID --body E33NA2ZQ9O29DK
 ```
 
 Manual deploy, the same two syncs the workflow runs:
@@ -699,5 +699,5 @@ aws s3 sync . s3://mvcprogrammer.com/angular/ --delete \
 aws s3 sync . s3://mvcprogrammer.com/angular/ --delete \
   --cache-control "public, max-age=300, s-maxage=31536000" \
   --exclude "main-*.js" --exclude "polyfills-*.js" --exclude "chunk-*.js" --exclude "styles-*.css"
-aws cloudfront create-invalidation --distribution-id <ANGULAR_DISTRIBUTION_ID> --paths "/*"
+aws cloudfront create-invalidation --distribution-id E33NA2ZQ9O29DK --paths "/*"
 ```
