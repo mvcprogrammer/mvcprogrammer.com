@@ -33,7 +33,7 @@ public sealed class StaticSectionTests : BunitContext
 
     #region HeroSection Tests
 
-    /// <summary>The C# / .NET and Angular / React highlights link to the matching editions with a hint; the database one stays plain.</summary>
+    /// <summary>The C# / .NET and Angular highlights link to the matching editions with a hint; React and the database one stay plain.</summary>
     [Fact]
     public void HeroSection_ShouldLinkHighlightsToEditions()
     {
@@ -45,9 +45,10 @@ public sealed class StaticSectionTests : BunitContext
         Assert.Equal(
         [
             ("C# / .NET", "https://blazor.mvcprogrammer.com/", "See the C# / .NET edition of this site"),
-            ("Angular / React", "https://angular.mvcprogrammer.com/", "See the Angular edition of this site"),
+            ("Angular", "https://angular.mvcprogrammer.com/", "See the Angular edition of this site"),
         ], links);
         Assert.Equal(3, cut.FindAll(".highlights li").Count);
+        Assert.Equal("Angular / React", cut.FindAll(".highlight-value")[1].TextContent);
     }
 
     #endregion

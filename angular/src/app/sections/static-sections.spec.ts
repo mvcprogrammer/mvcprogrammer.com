@@ -25,8 +25,9 @@ describe('static sections', () => {
       const highlights = Array.from(host.querySelectorAll<HTMLAnchorElement>('.highlight-value a')).map((a) => [a.textContent, a.getAttribute('href'), a.getAttribute('title')]);
       expect(highlights).toEqual([
         ['C# / .NET', 'https://blazor.mvcprogrammer.com/', 'See the C# / .NET edition of this site'],
-        ['Angular / React', 'https://angular.mvcprogrammer.com/', 'See the Angular edition of this site'],
+        ['Angular', 'https://angular.mvcprogrammer.com/', 'See the Angular edition of this site'],
       ]);
+      expect(host.querySelectorAll('.highlight-value')[1].textContent).toBe('Angular / React');
     });
   });
 

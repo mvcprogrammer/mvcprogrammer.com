@@ -42,7 +42,7 @@ story += [
     p("No exceptions", "h2"),
     p("Content is identical on every edition. The editions cross-link through the About core-skill chips "
       "(<b>Angular</b>, <b>Blazor</b>, <b>JavaScript</b>, each with a title hint such as <i>See the Angular edition of "
-      "this site</i>) and the hero highlights (<b>C# / .NET</b> to the Blazor edition, <b>Angular / React</b> to the "
+      "this site</i>) and the hero highlights (<b>C# / .NET</b> to the Blazor edition, <b>Angular</b> (of <i>Angular / React</i>) to the "
       "Angular edition). A link to the edition already open simply reloads it. The portfolio card carries no edition "
       "links. The spec in " + c("sections/static-sections.spec.ts") + " pins the Angular side of it."),
     p("The Blazor and Angular editions stay off the GitHub profile README until the owner decides otherwise."),
