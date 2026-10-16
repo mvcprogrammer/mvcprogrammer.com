@@ -722,14 +722,14 @@ nothing in the other three jobs changed.
 
 | Piece | Value |
 | --- | --- |
-| CloudFront distribution | `<REACT_DISTRIBUTION_ID>` (`<REACT_DISTRIBUTION_DOMAIN>`), origin path `/react`, same S3 OAC `E2KEES7ZY0UA4S`, `/api/*` to the Experience API with its OAC `EADX2EY7VKO1Y`, 403 → `/index.html` 200, the `mvcprogrammer-www-redirect` function on the default behavior, access logs under `react/` |
+| CloudFront distribution | `E2C51AKAKJUCBO` (d16qoactawb5x7.cloudfront.net), origin path `/react`, same S3 OAC `E2KEES7ZY0UA4S`, `/api/*` to the Experience API with its OAC `EADX2EY7VKO1Y`, 403 → `/index.html` 200, the `mvcprogrammer-www-redirect` function on the default behavior, access logs under `react/` |
 | Response headers policy | the static site's `mvcprogrammer-security-headers` (`28b549c3-c562-418c-a803-abe16efe78eb`), unchanged: React needs no `'wasm-unsafe-eval'` and nothing inline |
-| ACM certificate | `<REACT_CERTIFICATE_ARN>` (react.mvcprogrammer.com, DNS-validated) |
+| ACM certificate | `arn:aws:acm:us-east-1:334383610383:certificate/ed06510b-294a-4f56-9852-634dec4c2528` (react.mvcprogrammer.com, DNS-validated) |
 | Route 53 | A and AAAA aliases for `react.mvcprogrammer.com` to the distribution |
 | Bucket policy | the `AWS:SourceArn` condition lists all four distributions |
 | Experience API | Lambda permission `react-cloudfront-invoke` lets the new distribution invoke the function URL. Outside the SAM template, like the other two |
 | Contact Lambda | function URL CORS and `ALLOWED_ORIGIN` list all four origins |
-| GitHub variable | `REACT_DISTRIBUTION_ID` = `<REACT_DISTRIBUTION_ID>` |
+| GitHub variable | `REACT_DISTRIBUTION_ID` = `E2C51AKAKJUCBO` |
 | IAM | `infra/iam/github-actions-deploy-role-policy.json` lists the distribution under `cloudfront:CreateInvalidation`; apply with the `put-role-policy` command in the Blazor section |
 
 The resources were created with the Angular edition's commands above, with `angular` replaced by
@@ -746,5 +746,5 @@ aws s3 sync bundles/ s3://mvcprogrammer.com/react/bundles/ --delete \
 aws s3 sync . s3://mvcprogrammer.com/react/ --delete \
   --cache-control "public, max-age=300, s-maxage=31536000" \
   --exclude "bundles/*"
-aws cloudfront create-invalidation --distribution-id <REACT_DISTRIBUTION_ID> --paths "/*"
+aws cloudfront create-invalidation --distribution-id E2C51AKAKJUCBO --paths "/*"
 ```
