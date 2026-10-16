@@ -263,20 +263,25 @@ The resume is deliberately kept out of this public repo. The PDF lives in the si
 
 | Piece | Name |
 | --- | --- |
-| PDF object | `s3://mvcprogrammer.com/resume/Neal_Thomas_Resume.pdf`, served at `https://mvcprogrammer.com/resume/Neal_Thomas_Resume.pdf` |
-| Lambda | `mvcprogrammer-resume-download` (Node 22, arm64), public function URL referenced from the Resume button in `index.html` |
+| PDF objects | `s3://mvcprogrammer.com/resume/Neal_Thomas_Resume.pdf` (default) plus one variant per edition, `Neal_Thomas_Resume-{vanilla,blazor,angular,react}.pdf`, served under `https://mvcprogrammer.com/resume/` |
+| Lambda | `mvcprogrammer-resume-download` (Node 22, arm64), public function URL referenced from each edition's Resume button with its edition tag (`?edition=vanilla`, `blazor`, `angular`, `react`) |
 | Role | `mvcprogrammer-resume-download-lambda` (basic execution + `sns:Publish` on the topic) |
 | SNS topic | `mvcprogrammer-resume-downloads` (subscribe a phone number for SMS, an email address for a copy) |
 
-The Lambda publishes one message per visitor IP per 15 minutes, skips link-preview bots and `HEAD` requests, and always answers `302` to the PDF even if SNS fails. It publishes with `MessageStructure: json`, so each protocol gets its own body. SMS receives the short line filed with the toll-free registration (device, IP, source, "Reply STOP to end."). Email receives a report with the device, IP, reverse DNS host, network owner and approximate city from a keyless ipinfo.io lookup (capped at 1.5 s, skipped silently on failure), links to look the IP up at ipinfo, ARIN RDAP and AbuseIPDB, and the full user agent. Append `?src=linkedin` (or any tag) to the function URL to see where a download came from. `privacy.html` discloses the lookup; keep it in step if the data collected changes.
+The Lambda publishes one message per visitor IP per 15 minutes, skips link-preview bots and `HEAD` requests, and always answers `302` to the PDF even if SNS fails. It publishes with `MessageStructure: json`, so each protocol gets its own body. SMS receives the short line filed with the toll-free registration (device, IP, source, "Reply STOP to end."). Email receives a report with the device, IP, reverse DNS host, network owner and approximate city from a keyless ipinfo.io lookup (capped at 1.5 s, skipped silently on failure), links to look the IP up at ipinfo, ARIN RDAP and AbuseIPDB, and the full user agent. The `edition` query tag selects the variant PDF (the Lambda rewrites `Neal_Thomas_Resume.pdf` to `Neal_Thomas_Resume-<edition>.pdf` in `PDF_URL`; unknown tags get the default) and is named in the alert. Append `?src=linkedin` (or any tag) to the function URL to see where a download came from. `privacy.html` discloses the lookup; keep it in step if the data collected changes.
 
-**Update the PDF** (export from Word or Pages first):
+**Update the PDF.** The master (no Portfolio section) is the base; `docs/pdf/build_resume_variants.py` stamps a Portfolio section onto it once per edition, each linking to and describing that edition. Edit the base, rebuild the variants, then upload all five. Every variant downloads under the same `Neal_Thomas_Resume.pdf` filename.
 
 ```bash
-aws s3 cp ~/Downloads/Neal_Thomas_Resume.pdf s3://mvcprogrammer.com/resume/Neal_Thomas_Resume.pdf \
-  --content-type application/pdf \
-  --content-disposition 'attachment; filename="Neal_Thomas_Resume.pdf"' \
-  --cache-control "public, max-age=300, s-maxage=3600"
+python3 -m venv /tmp/pdfenv && /tmp/pdfenv/bin/pip install pymupdf fonttools brotli
+/tmp/pdfenv/bin/python docs/pdf/build_fonts.py /tmp/pdffonts
+/tmp/pdfenv/bin/python docs/pdf/build_resume_variants.py "/Volumes/Storage Hot/Job Shopping/Neal_Thomas_Resume.pdf" /tmp/pdffonts "/Volumes/Storage Hot/Job Shopping"
+for f in Neal_Thomas_Resume Neal_Thomas_Resume-vanilla Neal_Thomas_Resume-blazor Neal_Thomas_Resume-angular Neal_Thomas_Resume-react; do
+  aws s3 cp "/Volumes/Storage Hot/Job Shopping/$f.pdf" "s3://mvcprogrammer.com/resume/$f.pdf" \
+    --content-type application/pdf \
+    --content-disposition 'attachment; filename="Neal_Thomas_Resume.pdf"' \
+    --cache-control "public, max-age=300, s-maxage=3600"
+done
 aws cloudfront create-invalidation --distribution-id E23085GR2SZJHC --paths "/resume/*"
 ```
 

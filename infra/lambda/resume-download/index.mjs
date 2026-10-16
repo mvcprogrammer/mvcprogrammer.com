@@ -10,6 +10,11 @@ import { promises as dns } from "node:dns";
 const sns = new SNSClient({});
 const TOPIC_ARN = process.env.TOPIC_ARN;
 const PDF_URL = process.env.PDF_URL;
+// Each site edition's Resume button tags its edition (?edition=react). The matching
+// resume variant sits beside the default PDF in S3 as Neal_Thomas_Resume-<edition>.pdf
+// and carries a Portfolio section that links to that edition. Unknown or missing
+// tags fall back to the default PDF.
+const EDITIONS = new Set(["vanilla", "blazor", "angular", "react"]);
 const QUIET_MS = 15 * 60 * 1000; // one alert per visitor IP per 15 minutes (per warm container)
 const LOOKUP_MS = 1500;          // cap on how long the IP lookup may delay the redirect
 const recent = new Map();
@@ -102,6 +107,8 @@ export const handler = async (event) => {
   const ua = headers["user-agent"] ?? "";
   const ref = host(headers.referer ?? headers.referrer ?? "");
   const src = event.queryStringParameters?.src ?? "";
+  const edition = EDITIONS.has(event.queryStringParameters?.edition) ? event.queryStringParameters.edition : "";
+  const pdfUrl = edition ? PDF_URL.replace(/\.pdf$/i, `-${edition}.pdf`) : PDF_URL;
 
   const now = Date.now();
   for (const [k, t] of recent) if (now - t > QUIET_MS) recent.delete(k);
@@ -112,7 +119,7 @@ export const handler = async (event) => {
     recent.set(ip, now);
     const when = stamp();
     const device = browser(ua);
-    const source = src ? `src ${src}` : ref ? `via ${ref}` : "";
+    const source = [edition && `${edition} edition`, src ? `src ${src}` : ref ? `via ${ref}` : ""].filter(Boolean).join(", ");
     const info = await lookup(ip);
 
     // SMS body must keep the shape filed in the toll-free registration.
@@ -130,18 +137,18 @@ export const handler = async (event) => {
         MessageStructure: "json",
         Message: JSON.stringify({ default: email, email, sms }),
       }));
-      console.log(JSON.stringify({ notified: true, ip, ua, ref, src, info }));
+      console.log(JSON.stringify({ notified: true, ip, ua, ref, src, edition, info }));
     } catch (err) {
       console.error("SNS publish failed", err);
     }
   } else {
-    console.log(JSON.stringify({ notified: false, quiet, isBot, ip, ua }));
+    console.log(JSON.stringify({ notified: false, quiet, isBot, ip, ua, edition }));
   }
 
   return {
     statusCode: 302,
     headers: {
-      Location: PDF_URL,
+      Location: pdfUrl,
       "Cache-Control": "no-store",
       "Referrer-Policy": "strict-origin-when-cross-origin"
     },

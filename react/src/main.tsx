@@ -15,7 +15,7 @@ const siteOptions: SiteOptions = {
   experienceApiBase: 'api',
   experienceSeedPath: 'data/positions.json',
   kioskUrl: 'https://display.lightsplitters.com/',
-  resumeUrl: 'https://mbm35w76dfwyr3sg45ez5p4oma0aqtta.lambda-url.us-east-1.on.aws/',
+  resumeUrl: 'https://mbm35w76dfwyr3sg45ez5p4oma0aqtta.lambda-url.us-east-1.on.aws/?edition=react',
 };
 
 const root = document.getElementById('root');
