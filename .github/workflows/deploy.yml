@@ -27,7 +27,7 @@ env:
 jobs:
   deploy:
     name: Sync and invalidate
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     steps:
       - name: Check out
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
@@ -71,7 +71,7 @@ jobs:
 
   deploy-blazor:
     name: Build and deploy the Blazor edition
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     env:
       BLAZOR_DISTRIBUTION_ID: ${{ vars.BLAZOR_DISTRIBUTION_ID }}
     steps:
@@ -119,7 +119,7 @@ jobs:
 
   deploy-angular:
     name: Build and deploy the Angular edition
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     env:
       ANGULAR_DISTRIBUTION_ID: ${{ vars.ANGULAR_DISTRIBUTION_ID }}
     defaults:
@@ -174,7 +174,7 @@ jobs:
 
   deploy-react:
     name: Build and deploy the React edition
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     env:
       REACT_DISTRIBUTION_ID: ${{ vars.REACT_DISTRIBUTION_ID }}
     defaults:
