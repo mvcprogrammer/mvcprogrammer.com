@@ -142,7 +142,7 @@ export function SiteHeader() {
   }, [menuOpen, closeMenu]);
 
   return (
-    <header className={scrolled ? 'site-header is-scrolled' : 'site-header'} id="top" ref={header}>
+    <header className={scrolled ? 'site-header is-scrolled' : 'site-header'} ref={header}>
       <div className="container header-inner">
         <a className="brand" href="#top" aria-label="Neal Thomas, back to top">
           <span className="brand-mark" aria-hidden="true"></span>

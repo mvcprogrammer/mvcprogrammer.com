@@ -11,7 +11,7 @@ describe('Layout', () => {
     const children = Array.from(document.querySelector('#root, body > div')!.children).map(
       (child) => child.tagName.toLowerCase() + (child.id ? `#${child.id}` : ''),
     );
-    expect(children).toEqual(['a', 'svg', 'header#top', 'main#main', 'footer']);
+    expect(children).toEqual(['a', 'svg', 'header', 'main#main', 'footer']);
     expect(document.querySelector('.skip-link')?.getAttribute('href')).toBe('#main');
     expect(document.querySelector('main')?.getAttribute('tabindex')).toBe('-1');
     expect(document.querySelector('main section.hero')).not.toBeNull();

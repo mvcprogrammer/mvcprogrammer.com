@@ -1,6 +1,6 @@
 @* Sticky header with the brand, the section nav, and the mobile menu toggle. The scroll state,
    the section in view, and the open menu are component state; site.js reports the browser events. *@
-<header class="site-header @(_scrolled ? "is-scrolled" : null)" id="top" @ref="_header">
+<header class="site-header @(_scrolled ? "is-scrolled" : null)" @ref="_header">
     <div class="container header-inner">
         <a class="brand" href="#top" aria-label="Neal Thomas, back to top">
             <span class="brand-mark" aria-hidden="true"></span>
