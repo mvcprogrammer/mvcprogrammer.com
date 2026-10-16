@@ -24,14 +24,10 @@ describe('static sections', () => {
         container.querySelectorAll<HTMLAnchorElement>('.highlight-value a'),
       ).map((a) => [a.textContent, a.getAttribute('href'), a.getAttribute('title')]);
       expect(highlights).toEqual([
-        [
-          'C# / .NET',
-          'https://blazor.mvcprogrammer.com/',
-          'See the C# / .NET edition of this site',
-        ],
         ['Angular', 'https://angular.mvcprogrammer.com/', 'See the Angular edition of this site'],
         ['React', 'https://react.mvcprogrammer.com/', 'See the React edition of this site'],
       ]);
+      expect(container.querySelectorAll('.highlight-value')[0]?.textContent).toBe('C# / .NET');
       expect(container.querySelectorAll('.highlight-value')[1]?.textContent).toBe(
         'Angular / React',
       );

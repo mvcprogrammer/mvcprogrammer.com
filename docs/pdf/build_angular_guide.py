@@ -45,7 +45,7 @@ story += [
     p("No exceptions", "h2"),
     p("Content is identical on every edition. The editions cross-link through the About core-skill chips "
       "(<b>Angular</b>, <b>React</b>, <b>Blazor</b>, <b>JavaScript</b>, each with a title hint such as <i>See the Angular edition of "
-      "this site</i>) and the hero highlights (<b>C# / .NET</b> to the Blazor edition, <b>Angular</b> and <b>React</b> of <i>Angular / React</i> to "
+      "this site</i>) and the hero highlights (<b>Angular</b> and <b>React</b> of <i>Angular / React</i> to "
       "their editions). A link to the edition already open simply reloads it. The portfolio card carries no edition "
       "links. The spec in " + c("sections/static-sections.spec.ts") + " pins the Angular side of it."),
     p("The Blazor, Angular, and React editions stay off the GitHub profile README until the owner decides otherwise."),
@@ -233,7 +233,7 @@ story += [
             ["3", "If the Angular behavior changed, add or update the spec that proves it. Follow the conventions in section 6."],
             ["4", "Run " + c("npm test") + " and " + c("npm run build") + " in " + c("angular/") + " and make both green. Warnings in the build are errors in review."],
             ["5", "Preview the editions locally: " + c("python3 -m http.server 8080") + " at the root, " + c("dotnet run --project blazor/src/Portfolio.Blazor") + ", and " + c("npm start") + " in " + c("angular/") + " and in " + c("react/") + "."],
-            ["6", "Check the cross-links survived: the four About chips and the three hero highlights, identical on every edition, with their hints."],
+            ["6", "Check the cross-links survived: the four About chips and the two hero highlights, identical on every edition, with their hints."],
             ["7", "If you added a component, add its selector to the " + c("display: contents") + " list in " + c("angular.css") + ". Never add component styles."],
             ["8", "Commit all editions together. No AI attribution trailers in the message."],
             ["9", "Push to " + c("main") + " only when asked. The workflow tests, builds, and deploys every edition."],

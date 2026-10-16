@@ -12,14 +12,7 @@ export function HeroSection() {
 
         <ul className="highlights" role="list" aria-label="Highlights">
           <li>
-            <span className="highlight-value">
-              <a
-                href="https://blazor.mvcprogrammer.com/"
-                title="See the C# / .NET edition of this site"
-              >
-                C# / .NET
-              </a>
-            </span>
+            <span className="highlight-value">C# / .NET</span>
             <span className="highlight-label">15+ Years Backend</span>
           </li>
           <li>
