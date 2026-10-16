@@ -1,6 +1,7 @@
 # Editors / IDEs
 .idea/
 .vscode/
+.vs/
 *.swp
 
 # OS
@@ -15,6 +16,7 @@ Thumbs.db
 bin/
 obj/
 *.user
+launchSettings.json
 TestResults/
 
 # Claude Code project notes stay local
