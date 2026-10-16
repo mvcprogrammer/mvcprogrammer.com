@@ -9,7 +9,7 @@ import { createSiteTestServices } from '../../testing/site-testing';
 
 describe('static sections', () => {
   describe('HeroSection', () => {
-    it('should render the name, the three highlights, and both calls to action', async () => {
+    it('should render the name, the three highlights with the edition links, and both calls to action', async () => {
       // Arrange
       const fixture = TestBed.createComponent(HeroSection);
 
@@ -26,13 +26,14 @@ describe('static sections', () => {
       expect(highlights).toEqual([
         ['C# / .NET', 'https://blazor.mvcprogrammer.com/', 'See the C# / .NET edition of this site'],
         ['Angular', 'https://angular.mvcprogrammer.com/', 'See the Angular edition of this site'],
+        ['React', 'https://react.mvcprogrammer.com/', 'See the React edition of this site'],
       ]);
       expect(host.querySelectorAll('.highlight-value')[1].textContent).toBe('Angular / React');
     });
   });
 
   describe('AboutSection', () => {
-    it('should link the Angular, Blazor, and JavaScript tags to the three editions with a hint', async () => {
+    it('should link the Angular, React, Blazor, and JavaScript tags to the four editions with a hint', async () => {
       // Arrange
       const fixture = TestBed.createComponent(AboutSection);
 
@@ -44,6 +45,7 @@ describe('static sections', () => {
       const links = Array.from(host.querySelectorAll<HTMLAnchorElement>('.tag a')).map((a) => [a.textContent, a.getAttribute('href'), a.getAttribute('title')]);
       expect(links).toEqual([
         ['Angular', 'https://angular.mvcprogrammer.com/', 'See the Angular edition of this site'],
+        ['React', 'https://react.mvcprogrammer.com/', 'See the React edition of this site'],
         ['Blazor', 'https://blazor.mvcprogrammer.com/', 'See the Blazor edition of this site'],
         ['JavaScript', 'https://mvcprogrammer.com/', 'See the plain JavaScript edition of this site'],
       ]);

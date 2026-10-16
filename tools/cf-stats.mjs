@@ -11,17 +11,17 @@
 //   node tools/cf-stats.mjs --exclude-ip 203.0.113.7  # leave your own visits out (or CF_STATS_EXCLUDE_IPS)
 //
 // The bucket defaults to mvcprogrammer-cf-logs-<account id> in the current AWS account; override
-// with --bucket or CF_LOG_BUCKET. The three distributions log under cf/ (mvcprogrammer.com), blazor/,
-// and angular/; --prefix narrows the run to one or more of them (comma-separated). Files are cached
-// under ~/.cache/mvcprogrammer-cf-stats/.
+// with --bucket or CF_LOG_BUCKET. The four distributions log under cf/ (mvcprogrammer.com), blazor/,
+// angular/, and react/; --prefix narrows the run to one or more of them (comma-separated). Files are
+// cached under ~/.cache/mvcprogrammer-cf-stats/.
 import { execFileSync } from 'node:child_process';
 import { existsSync, mkdirSync, readFileSync, readdirSync } from 'node:fs';
 import { homedir } from 'node:os';
 import { join } from 'node:path';
 import { gunzipSync } from 'node:zlib';
 
-/** Log prefixes in the bucket, one per distribution: the main site, then the two framework editions. */
-const DEFAULT_PREFIXES = ['cf/', 'blazor/', 'angular/'];
+/** Log prefixes in the bucket, one per distribution: the main site, then the three framework editions. */
+const DEFAULT_PREFIXES = ['cf/', 'blazor/', 'angular/', 'react/'];
 
 /** A visitor that sends no further request within this many minutes has left. */
 const SESSION_GAP_MINUTES = 30;

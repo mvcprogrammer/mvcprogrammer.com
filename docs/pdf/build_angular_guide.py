@@ -4,7 +4,7 @@
     .venv/bin/python docs/pdf/build_fonts.py /tmp/pdf-fonts
     .venv/bin/python docs/pdf/build_angular_guide.py /tmp/pdf-fonts docs/ANGULAR-EDITION.pdf
 
-The styling and helpers are shared with build_blazor_guide.py through guide_common.py.
+The styling and helpers are shared with build_blazor_guide.py and build_react_guide.py through guide_common.py.
 """
 import sys
 from reportlab.lib.units import inch
@@ -20,32 +20,35 @@ story = []
 # ---------------------------------------------------------------- Title
 story += [
     p("The Angular edition", "title"),
-    p("How angular.mvcprogrammer.com is built, how it differs from the vanilla edition at mvcprogrammer.com and the "
-      "Blazor edition at blazor.mvcprogrammer.com, and the rules for changing, testing, and deploying it.", "subtitle"),
+    p("How angular.mvcprogrammer.com is built, how it differs from the vanilla edition at mvcprogrammer.com, the "
+      "Blazor edition at blazor.mvcprogrammer.com, and the React edition at react.mvcprogrammer.com, and the rules for "
+      "changing, testing, and deploying it.", "subtitle"),
 ]
 
 # ---------------------------------------------------------------- 1
 story += [
-    p("1. Why there are three editions", "h1"),
-    p("The portfolio ships three times. The default edition is plain HTML, CSS, and JavaScript at the repository root, "
+    p("1. Why there are four editions", "h1"),
+    p("The portfolio ships four times. The default edition is plain HTML, CSS, and JavaScript at the repository root, "
       "served at " + link("mvcprogrammer.com", "https://mvcprogrammer.com") + ". The Blazor edition is a Blazor "
       "WebAssembly app under " + c("blazor/") + ", served at " + link("blazor.mvcprogrammer.com", "https://blazor.mvcprogrammer.com")
       + " and documented in " + link("docs/BLAZOR-EDITION.pdf", BLOB + "docs/BLAZOR-EDITION.pdf") + ". The Angular edition "
       "is an Angular 22 workspace under " + c("angular/") + ", served at "
-      + link("angular.mvcprogrammer.com", "https://angular.mvcprogrammer.com") + ". All three show the same content, load "
-      "the same stylesheet, and call the same Experience API. The Angular edition exists to show that content consumed "
-      "from standalone components, signals, and a reactive form, next to the C# and the vanilla versions."),
+      + link("angular.mvcprogrammer.com", "https://angular.mvcprogrammer.com") + ". The React edition is a React 19 app "
+      "built with Vite under " + c("react/") + ", served at " + link("react.mvcprogrammer.com", "https://react.mvcprogrammer.com")
+      + " and documented in " + link("docs/REACT-EDITION.pdf", BLOB + "docs/REACT-EDITION.pdf") + ". All four show the "
+      "same content, load the same stylesheet, and call the same Experience API. The Angular edition exists to show that "
+      "content consumed from standalone components, signals, and a reactive form, next to the React, C#, and vanilla versions."),
     p("The one rule that matters", "h2"),
-    p("<b>Every content, markup, behavior, or styling change made to one edition is made to the other two in the same "
+    p("<b>Every content, markup, behavior, or styling change made to one edition is made to the other three in the same "
       "commit.</b> Before finishing any change to the site, check the other editions for the same change. Section 4 "
-      "lists which files are shared (one edit) and which are duplicated (three edits)."),
+      "lists which files are shared (one edit) and which are duplicated (four edits)."),
     p("No exceptions", "h2"),
     p("Content is identical on every edition. The editions cross-link through the About core-skill chips "
-      "(<b>Angular</b>, <b>Blazor</b>, <b>JavaScript</b>, each with a title hint such as <i>See the Angular edition of "
-      "this site</i>) and the hero highlights (<b>C# / .NET</b> to the Blazor edition, <b>Angular</b> (of <i>Angular / React</i>) to the "
-      "Angular edition). A link to the edition already open simply reloads it. The portfolio card carries no edition "
+      "(<b>Angular</b>, <b>React</b>, <b>Blazor</b>, <b>JavaScript</b>, each with a title hint such as <i>See the Angular edition of "
+      "this site</i>) and the hero highlights (<b>C# / .NET</b> to the Blazor edition, <b>Angular</b> and <b>React</b> of <i>Angular / React</i> to "
+      "their editions). A link to the edition already open simply reloads it. The portfolio card carries no edition "
       "links. The spec in " + c("sections/static-sections.spec.ts") + " pins the Angular side of it."),
-    p("The Blazor and Angular editions stay off the GitHub profile README until the owner decides otherwise."),
+    p("The Blazor, Angular, and React editions stay off the GitHub profile README until the owner decides otherwise."),
 ]
 
 # ---------------------------------------------------------------- 2
@@ -86,8 +89,8 @@ story += [
 
 # ---------------------------------------------------------------- 3
 story += [
-    p("3. How the Angular edition differs from the other two", "h1"),
-    p("The visible page is the same. The differences are in how it gets there."),
+    p("3. How the Angular edition differs from the others", "h1"),
+    p("The visible page is the same. The differences are in how it gets there. The React edition is compared column by column in its own guideline."),
     table(
         ["Concern", "Vanilla edition (root)", "Blazor edition (blazor/)", "Angular edition (angular/)"],
         [
@@ -95,7 +98,7 @@ story += [
             ["Where state lives", "DOM attributes and closures in " + c("main.js") + ".", "C# fields in the code-behinds.", "Signals on the components; the templates read them, " + c("computed()") + " derives labels and paths."],
             ["JavaScript", c("main.js") + ", about 470 lines.", c("site.js") + ", about 100 lines of browser APIs behind JS interop.", "None outside the components. They call " + c("IntersectionObserver") + ", " + c("matchMedia") + ", and " + c("&lt;dialog&gt;") + " directly, cleaning up through " + c("DestroyRef") + " and effect cleanups."],
             ["Experience timeline", "In the HTML; re-rendered from the API when it answers, HTML stays on failure.", c("ExperienceTimeline") + " loads from the API, falls back to the bundled seed.", "Same component and same fallback, written with " + c("async/await") + " over Promise-returning clients and wrapped in " + c("PendingTasks") + " so tests and the router can wait on it."],
-            ["Skill chips", "Pinned, rest, demoted; twelve before the more button.", "Same constants in C#.", "Same constants as statics on " + c("ExperienceTimeline") + ". Pinning a different skill means editing all three."],
+            ["Skill chips", "Pinned, rest, demoted; twelve before the more button.", "Same constants in C#.", "Same constants as statics on " + c("ExperienceTimeline") + ". Pinning a different skill means editing all four."],
             ["Contact form", "HTML5 validation plus " + c("checkValidity()") + "; fetch.", c("EditForm") + " with data annotations; typed HttpClient.", "A typed " + c("FormBuilder") + " group with the same rules; the phone control is enabled only for a call, so a hidden field never validates. Same status messages, including the timeout one."],
             ["Topic preselection", "Buttons set the select's value.", c("IContactTopicState") + " singleton.", c("ContactTopicState") + ", a Subject the buttons push to and the form subscribes to with " + c("takeUntilDestroyed()") + "."],
             ["Configuration", c("data-") + " attributes in the HTML.", c("appsettings.json") + " bound to " + c("SiteOptions") + ".", "A " + c("SiteOptions") + " literal in " + c("app.config.ts") + ", validated by " + c("provideSite()") + " and injected through " + c("SITE_OPTIONS") + "."],
@@ -104,7 +107,7 @@ story += [
             ["Styling", "One stylesheet.", "Shared stylesheet plus " + c("blazor.css") + ".", "Shared stylesheet plus " + c("angular.css") + ". <b>No component styles</b>: Angular injects them inline, which the CSP forbids. Host elements get " + c("display: contents") + " so the sticky header and the grids are unaffected."],
             ["Build output", "The files as committed.", c("dotnet publish") + ", trimmed.", c("ng build") + ": esbuild, fingerprinted bundles, critical-CSS inlining off (it would be an inline " + c("&lt;style&gt;") + ")."],
             ["Hosting", "Bucket root, distribution for mvcprogrammer.com.", c("blazor/") + " prefix, own distribution, CSP with " + c("'wasm-unsafe-eval'") + ".", c("angular/") + " prefix, own distribution, the static site's response headers policy unchanged, S3 403 rewritten to " + c("index.html") + "."],
-            ["Tests", "None for the static page.", "111 bUnit and xUnit cases.", "122 Vitest cases on jsdom, run before every build."],
+            ["Tests", "None for the static page.", "111 bUnit and xUnit cases.", "133 Vitest cases on jsdom, run before every build."],
         ],
         [0.95 * inch, 1.75 * inch, 2.0 * inch, 2.3 * inch],
         first_style="cellsmall",
@@ -123,12 +126,12 @@ story += [
     b(c("assets/**") + ": fonts (Inter and JetBrains Mono as variable WOFF2 subsets) and images."),
     b(c("favicon.svg") + ", " + c("favicon.ico") + ", " + c("apple-touch-icon.png") + "."),
     b(c("api/seed/positions.json") + ", served to the Angular edition as " + c("data/positions.json") + "."),
-    p("Edit three times (one copy per edition)", "h2"),
-    b("Markup: " + c("index.html") + ", the Razor sections and components, and the templates under " + c(SRC + "sections/") + " and " + c(SRC + "components/") + "."),
-    b("Behavior: " + c("main.js") + ", the Razor code-behinds plus " + c("site.js") + ", and the Angular component classes."),
+    p("Edit four times (one copy per edition)", "h2"),
+    b("Markup: " + c("index.html") + ", the Razor sections and components, the templates under " + c(SRC + "sections/") + " and " + c(SRC + "components/") + ", and the React edition's JSX under the same folder names."),
+    b("Behavior: " + c("main.js") + ", the Razor code-behinds plus " + c("site.js") + ", the Angular component classes, and the React components and hooks."),
     b("Constants that shape the page: pinned and demoted skills, the visible chip count, status messages, section ids and labels."),
-    b("Endpoints: " + c("data-") + " attributes in " + c("index.html") + ", " + c("wwwroot/appsettings.json") + ", and the " + c("siteOptions") + " literal in " + c("app.config.ts") + "."),
-    p("When a change touches a duplicated file, the commit is not finished until all three copies match. When the "
+    b("Endpoints: " + c("data-") + " attributes in " + c("index.html") + ", " + c("wwwroot/appsettings.json") + ", the " + c("siteOptions") + " literal in " + c("app.config.ts") + ", and the one in the React edition's " + c("main.tsx") + "."),
+    p("When a change touches a duplicated file, the commit is not finished until all four copies match. When the "
       "Angular copy changes behavior, add or update the spec that proves it."),
 ]
 
@@ -175,19 +178,20 @@ story += [
     b("Zoneless rules: every async step is followed by " + c("await fixture.whenStable()") + ". The components wrap their loads in " + c("PendingTasks") + ", which is what makes that wait reliable."),
     b("jsdom has no " + c("IntersectionObserver") + ", no " + c("matchMedia") + ", and no modal dialogs. The components guard for that; the specs stub the observer and the dialog methods where the behavior matters."),
     p("Test layout", "h2"),
-    p("Files mirror the app. The counts are test cases as Vitest reports them (122 in all)."),
+    p("Files mirror the app. The counts are test cases as Vitest reports them (133 in all)."),
     table(
         ["File", "Tests", "What it proves"],
         [
-            [link("components/experience-timeline/experience-timeline.spec.ts", BLOB + SRC + "components/experience-timeline/experience-timeline.spec.ts"), "17", "API render, date and place labels, every fallback path (error, empty, not a list, seed failure, empty seed, skills failure), chip order, the more button, chip titles, filtering, restore without refetch, filter failure, late response after destroy."],
-            [link("components/site-header/site-header.spec.ts", BLOB + SRC + "components/site-header/site-header.spec.ts"), "13", "Nav links and initial state, menu toggle, close on nav click, Escape with focus return, outside and inside clicks, listeners released, scrolled class, section observer after navigation, current link set and cleared, observer replaced and disconnected, no observer in the browser."],
+            [link("components/experience-timeline/experience-timeline.spec.ts", BLOB + SRC + "components/experience-timeline/experience-timeline.spec.ts"), "16", "API render, date and place labels, every fallback path (error, empty, not a list, seed failure, empty seed, skills failure), chip order, the more button, chip titles, filtering, restore without refetch, filter failure, late response after destroy."],
+            [link("components/site-header/site-header.spec.ts", BLOB + SRC + "components/site-header/site-header.spec.ts"), "14", "Nav links and initial state, menu toggle, close on nav click, Escape with focus return, outside and inside clicks, listeners released, scrolled class, section observer after navigation, current link set and cleared, observer replaced and disconnected, no observer in the browser."],
             [link("components/kiosk-dialog/kiosk-dialog.spec.ts", BLOB + SRC + "components/kiosk-dialog/kiosk-dialog.spec.ts"), "7", "No iframe while closed, show renders the configured kiosk and opens modally, show is idempotent, close button, close before open, backdrop versus inside click, close event removes the iframe."],
             [link("components/icon-sprite/icon-sprite.spec.ts", BLOB + SRC + "components/icon-sprite/icon-sprite.spec.ts"), "14", "Every symbol the page references exists in the sprite."],
             [link("components/icon, social-links, site-footer", TREE + SRC + "components"), "3", "Icon references a sprite symbol, three social profiles, footer year and legal links."],
             [link("sections/contact-section/contact-section.spec.ts", BLOB + SRC + "sections/contact-section/contact-section.spec.ts"), "15", "Phone field hidden and disabled by default, topic preselection and unsubscribe, phone reveal and hide, post and confirmations, honeypot forwarded, 429, generic failure, timeout, non-HTTP error, no post when invalid, when a call has no number, or the message is too short."],
             [link("sections/static-sections.spec.ts", BLOB + SRC + "sections/static-sections.spec.ts"), "6", "Hero, the About tag exception, the quote, the portfolio links and kiosk button, the resume URL and education, the colophon."],
             [link("sections/call-to-action.spec.ts", BLOB + SRC + "sections/call-to-action.spec.ts"), "2", "The Services and Freelance buttons select their contact topic."],
-            [link("pages/home, pages/not-found, app.spec.ts", TREE + SRC), "4", "Home renders every section in order, NotFound, the layout around the routed page, an unknown path routes to NotFound."],
+            [link("pages/home, pages/not-found, app.spec.ts", TREE + SRC), "5", "Home renders every section in order, NotFound, the layout around the routed page, an unknown path routes to NotFound."],
+            [link("services/beacon-engagement-tracker.spec.ts", BLOB + SRC + "services/beacon-engagement-tracker.spec.ts"), "10", "View pings once per section, leave pings with the visible seconds, silence on localhost and under Do Not Track or Global Privacy Control, no observer in the browser, failed pings ignored, restart and stop."],
             [link("services/http-experience-client.spec.ts", BLOB + SRC + "services/http-experience-client.spec.ts"), "9", "Paths, timeout option, query-string escaping, blank skill ignored, error status, null bodies, skills, seed."],
             [link("services/http-contact-client.spec.ts", BLOB + SRC + "services/http-contact-client.spec.ts"), "3", "JSON post to the endpoint with the Accept header and timeout, empty success body, status code on rejection."],
             [link("services/subject-contact-topic-state.spec.ts", BLOB + SRC + "services/subject-contact-topic-state.spec.ts"), "4", "Notify every subscriber, no subscribers, unsubscribe stops notifications, no replay."],
@@ -204,7 +208,7 @@ story += [
 story += [
     p("7. Deploying", "h1"),
     p("The " + c("deploy-angular") + " job in " + link(".github/workflows/deploy.yml", BLOB + ".github/workflows/deploy.yml")
-      + " runs on every push to " + c("main") + ", in parallel with the other two jobs. It sets up Node 24 with the npm "
+      + " runs on every push to " + c("main") + ", in parallel with the other three jobs. It sets up Node 24 with the npm "
       "cache, runs " + c("npm ci") + ", " + c("npm test") + ", and " + c("npm run build") + " (which copies the shared "
       "files first), assumes the deploy role through OIDC, and syncs the output in two passes before invalidating the "
       "distribution."),
@@ -225,11 +229,11 @@ story += [
         ["Step", "Do"],
         [
             ["1", "Make the change in the edition you started with."],
-            ["2", "If the file is shared (section 4), you are done with content. If it is duplicated, make the matching change in the other two editions."],
+            ["2", "If the file is shared (section 4), you are done with content. If it is duplicated, make the matching change in the other three editions."],
             ["3", "If the Angular behavior changed, add or update the spec that proves it. Follow the conventions in section 6."],
             ["4", "Run " + c("npm test") + " and " + c("npm run build") + " in " + c("angular/") + " and make both green. Warnings in the build are errors in review."],
-            ["5", "Preview the editions locally: " + c("python3 -m http.server 8080") + " at the root, " + c("dotnet run --project blazor/src/Portfolio.Blazor") + ", and " + c("npm start") + " in " + c("angular/") + "."],
-            ["6", "Check the cross-links survived: the three About chips and the two hero highlights, identical on every edition, with their hints."],
+            ["5", "Preview the editions locally: " + c("python3 -m http.server 8080") + " at the root, " + c("dotnet run --project blazor/src/Portfolio.Blazor") + ", and " + c("npm start") + " in " + c("angular/") + " and in " + c("react/") + "."],
+            ["6", "Check the cross-links survived: the four About chips and the three hero highlights, identical on every edition, with their hints."],
             ["7", "If you added a component, add its selector to the " + c("display: contents") + " list in " + c("angular.css") + ". Never add component styles."],
             ["8", "Commit all editions together. No AI attribution trailers in the message."],
             ["9", "Push to " + c("main") + " only when asked. The workflow tests, builds, and deploys every edition."],
@@ -253,6 +257,8 @@ story += [
             ["Angular app source", link("angular/src/app", TREE + "angular/src/app")],
             ["Angular README", link("angular/README.md", BLOB + "angular/README.md")],
             ["Blazor guideline", link("docs/BLAZOR-EDITION.pdf", BLOB + "docs/BLAZOR-EDITION.pdf")],
+            ["Live, React edition", link("https://react.mvcprogrammer.com", "https://react.mvcprogrammer.com")],
+            ["React guideline", link("docs/REACT-EDITION.pdf", BLOB + "docs/REACT-EDITION.pdf")],
             ["Deploy walkthrough", link("docs/DEPLOY.md", BLOB + "docs/DEPLOY.md")],
             ["Deploy workflow", link(".github/workflows/deploy.yml", BLOB + ".github/workflows/deploy.yml")],
             ["Experience API spec", link("api/openapi.yaml", BLOB + "api/openapi.yaml")],

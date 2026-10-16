@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="color-scheme" content="light dark">
+  <meta name="theme-color" content="#f7f8fa" media="(prefers-color-scheme: light)">
+  <meta name="theme-color" content="#1e1f22" media="(prefers-color-scheme: dark)">
+
+  <title>Neal Thomas | Senior Full-Stack Software Engineer | .NET, Angular, SQL Server</title>
+  <meta name="description" content="Neal Thomas is a senior full-stack software engineer in Tampa Bay, Florida, building enterprise API applications with C#/.NET Core, Angular, and SQL Server. This is the React edition of mvcprogrammer.com.">
+  <meta name="author" content="Neal Thomas">
+  <!-- The static site is the canonical edition; this one is the same content built with React. -->
+  <link rel="canonical" href="https://mvcprogrammer.com/">
+  <base href="/">
+
+  <!-- Open Graph -->
+  <meta property="og:type" content="website">
+  <meta property="og:url" content="https://react.mvcprogrammer.com/">
+  <meta property="og:title" content="Neal Thomas | Senior Full-Stack Software Engineer">
+  <meta property="og:description" content="Enterprise business applications on C#/.NET Core, Angular, and SQL Server. 15+ years of experience. Tampa Bay, Florida.">
+  <meta property="og:site_name" content="react.mvcprogrammer.com">
+  <meta property="og:locale" content="en_US">
+  <meta property="og:image" content="https://mvcprogrammer.com/assets/images/og-image.jpg">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta property="og:image:alt" content="Neal Thomas, senior full-stack software engineer. .NET, Angular, SQL Server.">
+
+  <!-- Icons -->
+  <link rel="icon" href="/favicon.svg" type="image/svg+xml">
+  <link rel="icon" href="/favicon.ico" sizes="16x16 32x32 48x48">
+  <link rel="apple-touch-icon" href="/apple-touch-icon.png">
+
+  <!-- Fonts are self-hosted (SIL Open Font License, see assets/fonts/). Preloaded so text renders in the right face on first paint. -->
+  <link rel="preload" href="/assets/fonts/inter-latin.woff2" as="font" type="font/woff2" crossorigin>
+  <link rel="preload" href="/assets/fonts/jetbrains-mono-latin.woff2" as="font" type="font/woff2" crossorigin>
+
+  <!-- styles.css is the static site's stylesheet, copied into this build unchanged. The build appends
+       its own link for react.css (the boot screen and form validation) and its script tag. -->
+  <link rel="stylesheet" href="/styles.css">
+</head>
+
+<body>
+  <div id="root">
+    <div class="app-loading" role="status" aria-live="polite">
+      <span class="brand-mark" aria-hidden="true"></span>
+      <p class="app-loading-text">Loading</p>
+    </div>
+  </div>
+  <script type="module" src="/src/main.tsx"></script>
+</body>
+</html>

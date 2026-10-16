@@ -18,7 +18,7 @@
 
 <br>
 
-The site follows the **KISS principle**: keep it simple, and add nothing that is not earning its place. It is plain HTML, CSS, and vanilla JavaScript with no framework, no build step, no bundler, no third-party scripts, and a strict Content Security Policy. One page, one stylesheet, one deferred script, shipped exactly as written. The static files sit in a private S3 bucket behind CloudFront, and three small Lambda functions do the only work that needs a server: the contact form, the resume download, and the Experience API. The same page is also built twice more, with Angular and with Blazor WebAssembly, as a side-by-side comparison; see [Three editions](#three-editions).
+The site follows the **KISS principle**: keep it simple, and add nothing that is not earning its place. It is plain HTML, CSS, and vanilla JavaScript with no framework, no build step, no bundler, no third-party scripts, and a strict Content Security Policy. One page, one stylesheet, one deferred script, shipped exactly as written. The static files sit in a private S3 bucket behind CloudFront, and three small Lambda functions do the only work that needs a server: the contact form, the resume download, and the Experience API. The same page is also built three more times, with Angular, with React, and with Blazor WebAssembly, as a side-by-side comparison; see [Four editions](#four-editions).
 
 ## What is in this repository
 
@@ -28,11 +28,12 @@ The site follows the **KISS principle**: keep it simple, and add nothing that is
 | `404.html`, `privacy.html`, `terms.html` | The not-found page and the policies required for the toll-free SMS registration. |
 | `assets/` | Self-hosted fonts (Inter and JetBrains Mono as variable WOFF2 subsets) and images. Icons are an inline SVG sprite in the HTML. |
 | `angular/` | The Angular edition: an Angular 22 workspace with Vitest tests. See [angular/README.md](angular/README.md) and [docs/ANGULAR-EDITION.pdf](docs/ANGULAR-EDITION.pdf). |
+| `react/` | The React edition: a React 19 app built with Vite, with Vitest and Testing Library tests. See [react/README.md](react/README.md) and [docs/REACT-EDITION.pdf](docs/REACT-EDITION.pdf). |
 | `blazor/` | The Blazor edition: a Blazor WebAssembly app on .NET 10 with bUnit tests. See [blazor/README.md](blazor/README.md) and [docs/BLAZOR-EDITION.pdf](docs/BLAZOR-EDITION.pdf). |
 | `api/` | The Experience API: C# on .NET 10, run on AWS Lambda (arm64) and reading a single DynamoDB table. Spec-first with OpenAPI 3.1, tested over the in-process host, deployed with SAM. See [api/README.md](api/README.md). |
 | `infra/` | The contact-form and resume-download Lambdas (Node.js 22 on arm64), the CloudFront Function that redirects `www` and answers the engagement beacon, and the SES DKIM change batch. |
 | `tools/` | `cf-stats.mjs`, which reads the CloudFront access logs and prints visits, unique visitors, referrers, and what the beacon recorded. See [Visitor stats](docs/DEPLOY.md#visitor-stats). |
-| `docs/` | [DEPLOY.md](docs/DEPLOY.md), the infrastructure walkthrough; the two edition guidelines; and the screenshots above. |
+| `docs/` | [DEPLOY.md](docs/DEPLOY.md), the infrastructure walkthrough; the three edition guidelines; and the screenshots above. |
 | `.github/workflows/` | The deploy: GitHub Actions authenticated with OIDC, so no AWS keys are stored anywhere. |
 
 ## How it is served
@@ -42,14 +43,15 @@ The site follows the **KISS principle**: keep it simple, and add nothing that is
 - **Experience API.** `/api/experience` and `/api/skills` on the same domain. Responses carry ETags and cache headers so CloudFront answers most requests itself, errors follow RFC 9457 problem details, and the function URL accepts only requests signed by CloudFront. The contract is [api/openapi.yaml](api/openapi.yaml).
 - **Deploys.** Every push to `main` assumes a least-privilege IAM role through OIDC, syncs the bucket in two passes (a week of browser caching for fonts and images, five minutes for pages), and invalidates the CloudFront cache. Third-party actions are pinned to commit hashes.
 
-## Three editions
+## Four editions
 
-The same page is built three ways from this repository. Every edition shows the same content, loads the same stylesheet, and reads the same Experience API; what differs is how the page reaches the browser.
+The same page is built four ways from this repository. Every edition shows the same content, loads the same stylesheet, and reads the same Experience API; what differs is how the page reaches the browser.
 
 | Edition | Built with | Source | Live |
 | --- | --- | --- | --- |
 | Default | HTML, CSS, and vanilla JavaScript. No framework, no build step. | repository root | [mvcprogrammer.com](https://mvcprogrammer.com) |
 | Angular | Angular 22: standalone components, signals, and a reactive form in TypeScript. | [`angular/`](angular/) | [angular.mvcprogrammer.com](https://angular.mvcprogrammer.com) |
+| React | React 19 with Vite: function components, hooks, and React Router in TypeScript. | [`react/`](react/) | [react.mvcprogrammer.com](https://react.mvcprogrammer.com) |
 | Blazor | Blazor WebAssembly on .NET 10: Razor components and C# running in the browser. | [`blazor/`](blazor/) | [blazor.mvcprogrammer.com](https://blazor.mvcprogrammer.com) |
 
 Each framework edition has its own test suite, README, and guideline PDF, its own CloudFront distribution and certificate under the same bucket, and its own job in the deploy workflow. The editions mirror each other: a change to one is made to the others in the same commit, and the stylesheet, fonts, images, icons, and seed data are shared from the root rather than copied by hand. The skill chips in the About section and the hero highlights link between the editions, so each one is a click away from the others.

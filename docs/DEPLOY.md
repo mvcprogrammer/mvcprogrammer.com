@@ -181,7 +181,7 @@ aws cloudfront test-function --name mvcprogrammer-www-redirect --if-match "$ETAG
 aws cloudfront publish-function --name mvcprogrammer-www-redirect --if-match "$ETAG"
 ```
 
-A published function takes effect within a few seconds; no invalidation is needed. The same function is associated with the default behavior of the Blazor and Angular distributions too (since 2026-10-15), so `/ping` is answered on every edition; the `www` branch never matches there.
+A published function takes effect within a few seconds; no invalidation is needed. The same function is associated with the default behavior of the Blazor, Angular, and React distributions too (since 2026-10-15 and 2026-10-16), so `/ping` is answered on every edition; the `www` branch never matches there.
 
 ### 5. Route 53 records
 
@@ -369,7 +369,7 @@ aws logs tail /aws/lambda/mvcprogrammer-resume-download --since 24h --format sho
 aws logs tail /aws/lambda/mvcprogrammer-contact --follow
 ```
 
-CloudFront access logs are separate and go to S3, not CloudWatch: standard logging on each distribution writes gzipped W3C files to `s3://mvcprogrammer-cf-logs-334383610383/` under `cf/` for mvcprogrammer.com (enabled 2026-10-07), `blazor/` and `angular/` for the two framework editions (enabled 2026-10-15); the bucket lifecycle expires them after 30 days. `tools/cf-stats.mjs` (see [Visitor stats](#visitor-stats)) reads all three. Logging itself is free; the only cost is S3 storage, well under a megabyte a day across the three.
+CloudFront access logs are separate and go to S3, not CloudWatch: standard logging on each distribution writes gzipped W3C files to `s3://mvcprogrammer-cf-logs-334383610383/` under `cf/` for mvcprogrammer.com (enabled 2026-10-07), `blazor/` and `angular/` for the two framework editions (enabled 2026-10-15) and `react/` for the third (enabled 2026-10-16); the bucket lifecycle expires them after 30 days. `tools/cf-stats.mjs` (see [Visitor stats](#visitor-stats)) reads all four. Logging itself is free; the only cost is S3 storage, well under a megabyte a day across the four.
 
 Reviewed 2026-10-08 over the first two days of logs (about 4,800 requests): every 4xx was scanner traffic (PHP and `.env`
 probes, WordPress paths, `POST /`), none of the old site's URLs (`/images/`, `/js/`, `/css/`, `single-blog.html`) arrived
@@ -392,9 +392,9 @@ node tools/cf-stats.mjs --days 30 --scanners              # a month, plus the 4x
 CF_STATS_EXCLUDE_IPS=203.0.113.7 node tools/cf-stats.mjs  # leave your own visits out
 ```
 
-The bucket defaults to `mvcprogrammer-cf-logs-<account id>` for the current AWS account (`--bucket` or `CF_LOG_BUCKET` override it), all three prefixes are read unless `--prefix cf/` or `--prefix blazor/,angular/` narrows it, and files are cached under `~/.cache/mvcprogrammer-cf-stats/`, so a second run only downloads what is new. A "By edition" line splits the visits by host. Unique visitors are IP address plus browser string, the best a server log can do; carrier NAT and office networks blur it.
+The bucket defaults to `mvcprogrammer-cf-logs-<account id>` for the current AWS account (`--bucket` or `CF_LOG_BUCKET` override it), all four prefixes are read unless `--prefix cf/` or `--prefix blazor/,angular/,react/` narrows it, and files are cached under `~/.cache/mvcprogrammer-cf-stats/`, so a second run only downloads what is new. A "By edition" line splits the visits by host. Unique visitors are IP address plus browser string, the best a server log can do; carrier NAT and office networks blur it.
 
-The beacon itself is the last block of `main.js` (mirrored by `watchEngagement()` in the Blazor edition's `site.js` and `BeaconEngagementTracker` in the Angular edition). It sends `GET /ping?e=view&s=<section>` once per section that reaches the middle of the viewport and `GET /ping?e=leave&t=<seconds visible>` each time the tab is hidden, with `keepalive` so the last one survives the tab closing. The CloudFront Function answers 204 (section 4b), the request lands in the access log, and nothing is stored anywhere else. The beacon stays silent on `localhost` and when the browser sends Do Not Track or Global Privacy Control, and `privacy.html` describes it. Logging must stay on for the stats to exist; at well under a megabyte a day of S3 storage across the three distributions, that is the whole cost.
+The beacon itself is the last block of `main.js` (mirrored by `watchEngagement()` in the Blazor edition's `site.js` and `BeaconEngagementTracker` in the Angular and React editions). It sends `GET /ping?e=view&s=<section>` once per section that reaches the middle of the viewport and `GET /ping?e=leave&t=<seconds visible>` each time the tab is hidden, with `keepalive` so the last one survives the tab closing. The CloudFront Function answers 204 (section 4b), the request lands in the access log, and nothing is stored anywhere else. The beacon stays silent on `localhost` and when the browser sends Do Not Track or Global Privacy Control, and `privacy.html` describes it. Logging must stay on for the stats to exist; at well under a megabyte a day of S3 storage across the four distributions, that is the whole cost.
 
 ## GitHub Actions (optional)
 
@@ -639,13 +639,13 @@ the other two jobs changed.
 | Response headers policy | the static site's `mvcprogrammer-security-headers` (`28b549c3-c562-418c-a803-abe16efe78eb`), unchanged: Angular needs no `'wasm-unsafe-eval'` and nothing inline |
 | ACM certificate | `arn:aws:acm:us-east-1:334383610383:certificate/fab70e2b-d72f-4c74-b3c8-2bcdcc89bc89` (angular.mvcprogrammer.com, DNS-validated) |
 | Route 53 | A and AAAA aliases for `angular.mvcprogrammer.com` to the distribution |
-| Bucket policy | the `AWS:SourceArn` condition lists all three distributions |
+| Bucket policy | the `AWS:SourceArn` condition lists every distribution (four since the React edition) |
 | Experience API | Lambda permission `angular-cloudfront-invoke` lets the new distribution invoke the function URL. Outside the SAM template, like the Blazor one |
-| Contact Lambda | function URL CORS and `ALLOWED_ORIGIN` list all three origins |
+| Contact Lambda | function URL CORS and `ALLOWED_ORIGIN` list every origin (four since the React edition) |
 | GitHub variable | `ANGULAR_DISTRIBUTION_ID` = `E33NA2ZQ9O29DK` |
 | IAM | `infra/iam/github-actions-deploy-role-policy.json` lists the distribution under `cloudfront:CreateInvalidation`; apply with the `put-role-policy` command in the Blazor section |
 
-All of it was created 2026-10-15 with the commands below, which are kept for the next edition.
+All of it was created 2026-10-15 with the commands below, which the React edition reused the next day.
 
 ### Create the resources
 
@@ -711,4 +711,40 @@ aws s3 sync . s3://mvcprogrammer.com/angular/ --delete \
   --cache-control "public, max-age=300, s-maxage=31536000" \
   --exclude "main-*.js" --exclude "polyfills-*.js" --exclude "chunk-*.js" --exclude "styles-*.css"
 aws cloudfront create-invalidation --distribution-id E33NA2ZQ9O29DK --paths "/*"
+```
+
+## React edition (react.mvcprogrammer.com)
+
+Added 2026-10-16. The React 19 build in `react/` (Vite) is published to the `react/` prefix of the same
+bucket and served by a fourth distribution, set up the same way as the Angular edition above. The
+`deploy-react` job in the workflow tests, type-checks, builds, and syncs it on every push to `main`;
+nothing in the other three jobs changed.
+
+| Piece | Value |
+| --- | --- |
+| CloudFront distribution | `<REACT_DISTRIBUTION_ID>` (`<REACT_DISTRIBUTION_DOMAIN>`), origin path `/react`, same S3 OAC `E2KEES7ZY0UA4S`, `/api/*` to the Experience API with its OAC `EADX2EY7VKO1Y`, 403 → `/index.html` 200, the `mvcprogrammer-www-redirect` function on the default behavior, access logs under `react/` |
+| Response headers policy | the static site's `mvcprogrammer-security-headers` (`28b549c3-c562-418c-a803-abe16efe78eb`), unchanged: React needs no `'wasm-unsafe-eval'` and nothing inline |
+| ACM certificate | `<REACT_CERTIFICATE_ARN>` (react.mvcprogrammer.com, DNS-validated) |
+| Route 53 | A and AAAA aliases for `react.mvcprogrammer.com` to the distribution |
+| Bucket policy | the `AWS:SourceArn` condition lists all four distributions |
+| Experience API | Lambda permission `react-cloudfront-invoke` lets the new distribution invoke the function URL. Outside the SAM template, like the other two |
+| Contact Lambda | function URL CORS and `ALLOWED_ORIGIN` list all four origins |
+| GitHub variable | `REACT_DISTRIBUTION_ID` = `<REACT_DISTRIBUTION_ID>` |
+| IAM | `infra/iam/github-actions-deploy-role-policy.json` lists the distribution under `cloudfront:CreateInvalidation`; apply with the `put-role-policy` command in the Blazor section |
+
+The resources were created with the Angular edition's commands above, with `angular` replaced by
+`react` throughout and the distribution cloned from the Angular one (`E33NA2ZQ9O29DK`), which already
+carries the static site's headers policy, the beacon function, and access logging.
+
+Manual deploy, the same two syncs the workflow runs (the fingerprinted bundles live under `bundles/`;
+everything else, `index.html` included, gets the short browser TTL):
+
+```bash
+cd react && npm ci && npm test && npm run build && cd dist
+aws s3 sync bundles/ s3://mvcprogrammer.com/react/bundles/ --delete \
+  --cache-control "public, max-age=604800, s-maxage=31536000, immutable"
+aws s3 sync . s3://mvcprogrammer.com/react/ --delete \
+  --cache-control "public, max-age=300, s-maxage=31536000" \
+  --exclude "bundles/*"
+aws cloudfront create-invalidation --distribution-id <REACT_DISTRIBUTION_ID> --paths "/*"
 ```

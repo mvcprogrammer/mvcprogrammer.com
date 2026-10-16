@@ -9,7 +9,7 @@ public sealed class StaticSectionTests : BunitContext
 {
     #region AboutSection Tests
 
-    /// <summary>The Angular, Blazor, and JavaScript tags lead to the three editions with a hint; the list is the same on every edition.</summary>
+    /// <summary>The Angular, React, Blazor, and JavaScript tags lead to the four editions with a hint; the list is the same on every edition.</summary>
     [Fact]
     public void AboutSection_ShouldLinkEditionTagsWithHints()
     {
@@ -21,6 +21,7 @@ public sealed class StaticSectionTests : BunitContext
         Assert.Equal(
         [
             ("Angular", "https://angular.mvcprogrammer.com/", "See the Angular edition of this site"),
+            ("React", "https://react.mvcprogrammer.com/", "See the React edition of this site"),
             ("Blazor", "https://blazor.mvcprogrammer.com/", "See the Blazor edition of this site"),
             ("JavaScript", "https://mvcprogrammer.com/", "See the plain JavaScript edition of this site"),
         ], links);
@@ -33,7 +34,7 @@ public sealed class StaticSectionTests : BunitContext
 
     #region HeroSection Tests
 
-    /// <summary>The C# / .NET and Angular highlights link to the matching editions with a hint; React and the database one stay plain.</summary>
+    /// <summary>The C# / .NET, Angular, and React highlights link to the matching editions with a hint; the database one stays plain.</summary>
     [Fact]
     public void HeroSection_ShouldLinkHighlightsToEditions()
     {
@@ -46,6 +47,7 @@ public sealed class StaticSectionTests : BunitContext
         [
             ("C# / .NET", "https://blazor.mvcprogrammer.com/", "See the C# / .NET edition of this site"),
             ("Angular", "https://angular.mvcprogrammer.com/", "See the Angular edition of this site"),
+            ("React", "https://react.mvcprogrammer.com/", "See the React edition of this site"),
         ], links);
         Assert.Equal(3, cut.FindAll(".highlights li").Count);
         Assert.Equal("Angular / React", cut.FindAll(".highlight-value")[1].TextContent);

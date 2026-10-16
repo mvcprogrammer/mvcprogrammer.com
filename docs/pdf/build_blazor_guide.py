@@ -4,7 +4,7 @@
     .venv/bin/python docs/pdf/build_fonts.py /tmp/pdf-fonts
     .venv/bin/python docs/pdf/build_blazor_guide.py /tmp/pdf-fonts docs/BLAZOR-EDITION.pdf
 
-The styling and helpers are shared with build_angular_guide.py through guide_common.py.
+The styling and helpers are shared with build_angular_guide.py and build_react_guide.py through guide_common.py.
 """
 import sys
 from reportlab.lib.units import inch
@@ -25,26 +25,29 @@ story += [
 
 # ---------------------------------------------------------------- 1
 story += [
-    p("1. Why there are three editions", "h1"),
-    p("The portfolio ships three times. The default edition is plain HTML, CSS, and JavaScript at the repository root, "
+    p("1. Why there are four editions", "h1"),
+    p("The portfolio ships four times. The default edition is plain HTML, CSS, and JavaScript at the repository root, "
       "served at " + link("mvcprogrammer.com", "https://mvcprogrammer.com") + ". The Blazor edition is a standalone "
       "Blazor WebAssembly app on .NET 10 under " + c("blazor/") + ", served at "
       + link("blazor.mvcprogrammer.com", "https://blazor.mvcprogrammer.com") + ". The Angular edition is an Angular 22 "
       "app under " + c("angular/") + ", served at " + link("angular.mvcprogrammer.com", "https://angular.mvcprogrammer.com")
       + " and documented in its own guideline, " + link("docs/ANGULAR-EDITION.pdf", BLOB + "docs/ANGULAR-EDITION.pdf")
-      + ". All three show the same content, load the same stylesheet, and call the same Experience API. The Blazor "
+      + ". The React edition is a React 19 app built with Vite under " + c("react/") + ", served at "
+      + link("react.mvcprogrammer.com", "https://react.mvcprogrammer.com") + " and documented in "
+      + link("docs/REACT-EDITION.pdf", BLOB + "docs/REACT-EDITION.pdf")
+      + ". All four show the same content, load the same stylesheet, and call the same Experience API. The Blazor "
       "edition exists to show that content consumed from C# running in the browser, not to replace the static site."),
     p("The one rule that matters", "h2"),
-    p("<b>Every content, markup, behavior, or styling change made to one edition is made to the other two in the same "
+    p("<b>Every content, markup, behavior, or styling change made to one edition is made to the other three in the same "
       "commit.</b> Before finishing any change to the site, check the other editions for the same change. Section 4 "
-      "lists which files are shared by linking (one edit) and which are duplicated (three edits)."),
+      "lists which files are shared by linking (one edit) and which are duplicated (four edits)."),
     p("No exceptions", "h2"),
     p("Content is identical on every edition. The editions cross-link through the About core-skill chips "
-      "(<b>Angular</b>, <b>Blazor</b>, <b>JavaScript</b>, each with a title hint such as <i>See the Angular edition of "
-      "this site</i>) and the hero highlights (<b>C# / .NET</b> to the Blazor edition, <b>Angular</b> (of <i>Angular / React</i>) to the "
-      "Angular edition). A link to the edition already open simply reloads it. The portfolio card carries no edition "
+      "(<b>Angular</b>, <b>React</b>, <b>Blazor</b>, <b>JavaScript</b>, each with a title hint such as <i>See the Angular edition of "
+      "this site</i>) and the hero highlights (<b>C# / .NET</b> to the Blazor edition, <b>Angular</b> and <b>React</b> of <i>Angular / React</i> to "
+      "their editions). A link to the edition already open simply reloads it. The portfolio card carries no edition "
       "links. The bUnit tests, " + c("AboutSection_ShouldLinkEditionTagsWithHints") + " and " + c("HeroSection_ShouldLinkHighlightsToEditions") + ", pin the Blazor side of it."),
-    p("The Blazor and Angular editions stay off the GitHub profile README until the owner decides otherwise."),
+    p("The Blazor, Angular, and React editions stay off the GitHub profile README until the owner decides otherwise."),
 ]
 
 # ---------------------------------------------------------------- 2
@@ -91,7 +94,7 @@ story += [
             ["Where state lives", "DOM attributes and closures in " + c("main.js") + ".", "C# fields in the component code-behinds; the UI re-renders from them."],
             ["JavaScript", c("main.js") + ", about 470 lines, owns every behavior.", c("site.js") + ", about 100 lines, exposes only the browser APIs .NET cannot reach. Each watcher returns a handle with " + c("dispose()") + "."],
             ["Experience timeline", "The timeline is in the HTML. When " + c("/api/experience") + " answers, the script re-renders it and shows the skill filter. On failure the HTML stays as it was.", c("ExperienceTimeline") + " loads from the API. If that fails, times out, or returns HTML, it loads the bundled seed " + c("data/positions.json") + " (linked from " + c("api/seed/") + "). The filter shows only when skills load."],
-            ["Skill chips", "Same ordering: pinned list first, then the rest, then demoted; twelve shown before the more button.", "Same constants and ordering in C#. Pinning a different skill means editing both."],
+            ["Skill chips", "Same ordering: pinned list first, then the rest, then demoted; twelve shown before the more button.", "Same constants and ordering in C#. Pinning a different skill means editing all four."],
             ["Contact form", "HTML5 validation plus " + c("checkValidity()") + "; fetch to the Lambda; status text for 429, other failures, and success.", c("EditForm") + " over " + c("ContactForm") + " with data annotations and a conditional phone rule; " + c("ContactClient") + " posts; the same status messages, plus a timeout message when the 20 second client timeout cancels."],
             ["Topic preselection", "Call-to-action buttons set the select's value directly.", c("IContactTopicState") + ", a singleton the buttons call and the form subscribes to."],
             ["Configuration", "Endpoints sit in " + c("data-") + " attributes in the HTML.", c("SiteOptions") + " bound from " + c("wwwroot/appsettings.json") + " and validated at startup."],
@@ -99,7 +102,7 @@ story += [
             ["Kiosk demo", "Button opens a native dialog; the iframe is cleared on close.", c("KioskDialog") + " renders the iframe only while open and tears it down on " + c("OnClosed") + "."],
             ["Build output", "The files as committed.", c("dotnet publish") + ": trimmed, invariant globalization, no time zone data, no fingerprint placeholders (the import map would be an inline script, which the CSP forbids)."],
             ["Hosting", "Root of the private S3 bucket, distribution for mvcprogrammer.com.", c("blazor/") + " prefix of the same bucket, distribution " + c("E2NFN5MW02S8Y9") + ", own ACM certificate, CSP with " + c("'wasm-unsafe-eval'") + ", S3 403 rewritten to " + c("index.html") + " so deep links reach the router."],
-            ["Tests", "None in the repo for the static page.", "111 bUnit and xUnit cases, run before every publish. (The Angular edition has its own Vitest suite.)"],
+            ["Tests", "None in the repo for the static page.", "111 bUnit and xUnit cases, run before every publish. (The Angular and React editions have their own Vitest suites.)"],
         ],
         [1.15 * inch, 2.85 * inch, 3.0 * inch],
     ),
@@ -109,7 +112,7 @@ story += [
 story += [
     p("4. Shared by linking versus duplicated by hand", "h1"),
     p("The Blazor project file pulls the shared assets from the repository root with " + c("&lt;Content Link=...&gt;")
-      + " items, so they are one file on disk and cannot drift. (The Angular edition copies the same files with a script "
+      + " items, so they are one file on disk and cannot drift. (The Angular and React editions copy the same files with a script "
       "before each build.) Everything else is written once per edition."),
     p("Edit once (linked into wwwroot)", "h2"),
     b(c("styles.css") + ", the whole stylesheet."),
@@ -117,11 +120,11 @@ story += [
     b(c("favicon.svg") + ", " + c("favicon.ico") + ", " + c("apple-touch-icon.png") + "."),
     b(c("api/seed/positions.json") + ", served to the Blazor edition as " + c("data/positions.json") + "."),
     p("Edit twice (one copy per edition)", "h2"),
-    b("Markup: " + c("index.html") + ", again in " + c("blazor/.../Sections/*.razor") + " and " + c("Components/*.razor") + ", and again in the Angular edition's " + c("sections/") + " and " + c("components/") + " templates."),
-    b("Behavior: " + c("main.js") + ", again in the Razor code-behind files plus " + c("wwwroot/js/site.js") + ", and again in the Angular component classes."),
+    b("Markup: " + c("index.html") + ", again in " + c("blazor/.../Sections/*.razor") + " and " + c("Components/*.razor") + ", again in the Angular edition's " + c("sections/") + " and " + c("components/") + " templates, and again in the React edition's JSX under the same folder names."),
+    b("Behavior: " + c("main.js") + ", again in the Razor code-behind files plus " + c("wwwroot/js/site.js") + ", again in the Angular component classes, and again in the React components and hooks."),
     b("Constants that shape the page: pinned and demoted skills, the visible chip count, status messages, section ids and labels."),
     b("Endpoints: " + c("data-") + " attributes in " + c("index.html") + " and " + c("wwwroot/appsettings.json") + "."),
-    p("When a change touches a duplicated file, the commit is not finished until all three copies match. When the Blazor "
+    p("When a change touches a duplicated file, the commit is not finished until all four copies match. When the Blazor "
       "copy changes behavior, add or update the bUnit test that proves it."),
 ]
 
@@ -222,11 +225,11 @@ story += [
         ["Step", "Do"],
         [
             ["1", "Make the change in the edition you started with."],
-            ["2", "If the file is shared by linking (section 4), you are done with content. If it is duplicated, make the matching change in the other two editions."],
+            ["2", "If the file is shared by linking (section 4), you are done with content. If it is duplicated, make the matching change in the other three editions."],
             ["3", "If the Blazor behavior changed, add or update the bUnit test that proves it. Follow the naming and layout conventions in section 6."],
             ["4", "Run " + c("dotnet test --project blazor/tests/Portfolio.Blazor.Tests") + " and make it green. Run " + c("dotnet build") + " on the app; warnings are errors."],
-            ["5", "Preview the editions locally: " + c("python3 -m http.server 8080") + " at the root, " + c("dotnet run --project blazor/src/Portfolio.Blazor") + ", and " + c("npm start") + " in " + c("angular/") + "."],
-            ["6", "Check the cross-links survived: the three About chips and the two hero highlights, identical on every edition, with their hints."],
+            ["5", "Preview the editions locally: " + c("python3 -m http.server 8080") + " at the root, " + c("dotnet run --project blazor/src/Portfolio.Blazor") + ", and " + c("npm start") + " in " + c("angular/") + " and in " + c("react/") + "."],
+            ["6", "Check the cross-links survived: the four About chips and the three hero highlights, identical on every edition, with their hints."],
             ["7", "Commit all editions together. No AI attribution trailers in the message."],
             ["8", "Push to " + c("main") + " only when asked. The workflow tests, publishes, and deploys every edition."],
         ],
@@ -245,6 +248,8 @@ story += [
             ["Live, vanilla edition", link("https://mvcprogrammer.com", "https://mvcprogrammer.com")],
             ["Live, Angular edition", link("https://angular.mvcprogrammer.com", "https://angular.mvcprogrammer.com")],
             ["Angular guideline", link("docs/ANGULAR-EDITION.pdf", BLOB + "docs/ANGULAR-EDITION.pdf")],
+            ["Live, React edition", link("https://react.mvcprogrammer.com", "https://react.mvcprogrammer.com")],
+            ["React guideline", link("docs/REACT-EDITION.pdf", BLOB + "docs/REACT-EDITION.pdf")],
             ["Repository", link(REPO, REPO)],
             ["Blazor app source", link("blazor/src/Portfolio.Blazor", TREE + "blazor/src/Portfolio.Blazor")],
             ["Blazor tests", link("blazor/tests/Portfolio.Blazor.Tests", TREE + "blazor/tests/Portfolio.Blazor.Tests")],

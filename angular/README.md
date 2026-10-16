@@ -3,7 +3,7 @@
 The same site as the static page at the repository root, rebuilt as an Angular 22 application and
 served at [angular.mvcprogrammer.com](https://angular.mvcprogrammer.com). It exists to show the
 same content, the same stylesheet, and the same Experience API consumed from TypeScript components
-with signals, next to the vanilla edition and the Blazor edition in `../blazor`.
+with signals, next to the vanilla edition, the React edition in `../react`, and the Blazor edition in `../blazor`.
 
 ## Layout
 
