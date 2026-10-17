@@ -1,7 +1,30 @@
 /* blazor.mvcprogrammer.com — blazor.css
-   Additions to the shared styles.css for the Blazor WebAssembly edition: the boot screen
-   shown while the runtime downloads, the framework's error bar, and form validation state.
-   The tokens (--bg, --text, --accent, ...) come from styles.css. */
+   Additions to the shared styles.css for the Blazor WebAssembly edition: this edition's palette,
+   the boot screen shown while the runtime downloads, the framework's error bar, and form
+   validation state. */
+
+/* ---------- Palette ----------
+   .NET violet: the .NET brand purple for buttons and links on faintly lavender surfaces in light
+   mode, a deep violet-black with lilac buttons in dark mode, and the hot pink of the Blazor logo
+   gradient on hover. Only the design tokens from styles.css are overridden; light-dark() picks the
+   value for the active color scheme (styles.css declares color-scheme: light dark on :root), so one
+   declaration covers both themes and no rule is repeated. Every text, button, and hover pairing
+   clears WCAG AA in both modes. */
+:root {
+  --bg: light-dark(#f4f1fb, #1a1430);
+  --bg-alt: light-dark(#e9e3f7, #140f26);
+  --surface: light-dark(#ffffff, #26203f);
+  --text: light-dark(#1f1a2e, #ede8fb);
+  --text-muted: light-dark(#5a536e, #b3a9d1);
+  --border: light-dark(#d6cfe8, #3d3360);
+  --accent: light-dark(#512bd4, #b49cff);
+  --accent-hover: light-dark(#3f1fb0, #c9b8ff);
+  --accent-contrast: light-dark(#ffffff, #1a1430);
+  --accent-soft: light-dark(rgba(81, 43, 212, 0.10), rgba(180, 156, 255, 0.16));
+  --hover: light-dark(#c2187a, #ff7ac8);
+  --hover-soft: light-dark(rgba(194, 24, 122, 0.12), rgba(255, 122, 200, 0.18));
+  --hover-contrast: light-dark(#ffffff, #1a1430);
+}
 
 .app-loading {
   min-height: 100vh;

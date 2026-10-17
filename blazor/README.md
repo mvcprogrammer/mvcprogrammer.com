@@ -25,7 +25,8 @@ blazor/src/Portfolio.Blazor/
   Serialization/              System.Text.Json source generator context (no reflection in the trimmed build).
   wwwroot/js/site.js          The only JavaScript: document events, IntersectionObserver, matchMedia,
                               <dialog>, and the engagement beacon (GET /ping, mirrored from ../main.js).
-  wwwroot/blazor.css          Boot screen and error bar; everything else is the shared styles.css.
+  wwwroot/blazor.css          This edition's palette (.NET violet, overriding the shared design tokens with
+                              light-dark()), the boot screen, and the error bar; everything else is the shared styles.css.
 ```
 
 The stylesheet, fonts, images, icons, and `api/seed/positions.json` are linked into `wwwroot`

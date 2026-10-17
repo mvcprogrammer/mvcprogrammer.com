@@ -3,7 +3,7 @@
   <div class="container">
     <p class="eyebrow">07 / Colophon</p>
     <h2 id="colophon-title">How This Site Is Built</h2>
-    <p class="section-intro">A footnote for the curious. This is the Blazor WebAssembly edition of <a href="https://mvcprogrammer.com/">mvcprogrammer.com</a>: the same content and the same stylesheet, with the page rebuilt as C# components that run in the browser on the .NET runtime. There is still no server behind it, only static files on a CDN, three Lambdas, and the same API.</p>
+    <p class="section-intro">A footnote for the curious. This is the Blazor WebAssembly edition of <a href="https://mvcprogrammer.com/">mvcprogrammer.com</a>: the same content and the same stylesheet under its own palette, with the page rebuilt as C# components that run in the browser on the .NET runtime. There is still no server behind it, only static files on a CDN, three Lambdas, and the same API.</p>
     <dl class="colophon-list">
       <div class="colophon-item">
         <dt>Front end</dt>
@@ -11,7 +11,7 @@
       </div>
       <div class="colophon-item">
         <dt>Shared with the static site</dt>
-        <dd>The stylesheet, fonts, images, icons, and the Experience seed data are linked into this project from the repository root at build time rather than copied, so the editions cannot drift. The markup is the static page's markup, section by section.</dd>
+        <dd>The stylesheet, fonts, images, icons, and the Experience seed data are linked into this project from the repository root at build time rather than copied, so the editions cannot drift. The markup is the static page's markup, section by section. One extra stylesheet carries the boot screen and this edition's palette, the .NET brand violet, by overriding the shared design tokens with <code>light-dark()</code>; no rule from the shared stylesheet is repeated.</dd>
       </div>
       <div class="colophon-item">
         <dt>API integration</dt>
