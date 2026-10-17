@@ -9,7 +9,7 @@ The styling and helpers are shared with build_angular_guide.py and build_react_g
 import sys
 from reportlab.lib.units import inch
 from reportlab.platypus import KeepTogether, Spacer
-from guide_common import BLOB, REPO, TREE, b, build, c, code_block, link, p, register_fonts, table
+from guide_common import BLOB, REPO, TREE, b, build, c, code_block, link, p, palette_table, register_fonts, table
 
 FONT_DIR, OUT = sys.argv[1], sys.argv[2]
 register_fonts(FONT_DIR)
@@ -35,7 +35,7 @@ story += [
       + ". The React edition is a React 19 app built with Vite under " + c("react/") + ", served at "
       + link("react.mvcprogrammer.com", "https://react.mvcprogrammer.com") + " and documented in "
       + link("docs/REACT-EDITION.pdf", BLOB + "docs/REACT-EDITION.pdf")
-      + ". All four show the same content, load the same stylesheet, and call the same Experience API. The Blazor "
+      + ". All four show the same content, load the same stylesheet under their own palettes, and call the same Experience API. The Blazor "
       "edition exists to show that content consumed from C# running in the browser, not to replace the static site."),
     p("The one rule that matters", "h2"),
     p("<b>Every content, markup, behavior, or styling change made to one edition is made to the other three in the same "
@@ -47,7 +47,19 @@ story += [
       "this site</i>) and the hero highlights (<b>Angular</b> and <b>React</b> of <i>Angular / React</i> to "
       "their editions). A link to the edition already open simply reloads it. The portfolio card carries no edition "
       "links. The bUnit tests, " + c("AboutSection_ShouldLinkEditionTagsWithHints") + " and " + c("HeroSection_ShouldLinkHighlightsToEditions") + ", pin the Blazor side of it."),
-    p("The Blazor, Angular, and React editions stay off the GitHub profile README until the owner decides otherwise."),
+    KeepTogether([
+        p("The one exception: color", "h2"),
+        p("Each edition carries its own palette. One small file per edition, loaded after the shared " + c("styles.css")
+          + ", overrides only the design tokens (" + c("--bg") + ", " + c("--accent") + ", " + c("--hover") + ", and the rest) "
+          "with " + c("light-dark()") + " values, so one declaration covers both color schemes and no rule from the shared "
+          "stylesheet is repeated. Older browsers ignore " + c("light-dark()") + " and fall back to the shared JetBrains "
+          "Rider palette. The four palettes, with the page, the quote band where it differs, the accent, and the hover color "
+          "for each scheme:"),
+        palette_table(),
+        p("The Blazor edition links " + c("blazor.css") + " from " + c("index.html") + " as a plain static file, so nothing rewrites " + c("light-dark()") + " on the way to the browser; the published " + c("wwwroot/blazor.css") + " is the file as committed.", "caption"),
+    ]),
+    p("Every edition's colophon describes its own palette, and the four are listed with screenshots in the README of "
+      "this repository and on the GitHub profile README."),
 ]
 
 # ---------------------------------------------------------------- 2
@@ -72,7 +84,7 @@ story += [
             [c("Serialization/"), c("System.Text.Json") + " source-generator context, so the trimmed build needs no reflection."],
             [c("Extensions/"), c("ServiceCollectionExtensions") + " (DI registration) and " + c("PositionExtensions") + " (date and place labels)."],
             [c("wwwroot/js/site.js"), "The only JavaScript: document events, IntersectionObserver, matchMedia, the native dialog, and focus. Loaded as an ES module through " + c("IJSRuntime") + "."],
-            [c("wwwroot/blazor.css"), "Boot screen and error bar only. Everything else is the shared " + c("styles.css") + "."],
+            [c("wwwroot/blazor.css"), "This edition's palette (section 1), the boot screen, and the error bar. Everything else is the shared " + c("styles.css") + "."],
             [c("blazor/tests/Portfolio.Blazor.Tests/"), "bUnit on xunit.v3. Section 6."],
             [c("blazor/README.md"), "The short version of this document, kept in the repo."],
         ],
@@ -100,9 +112,10 @@ story += [
             ["Configuration", "Endpoints sit in " + c("data-") + " attributes in the HTML.", c("SiteOptions") + " bound from " + c("wwwroot/appsettings.json") + " and validated at startup."],
             ["Header behavior", "Scroll listener, IntersectionObserver, Escape and outside-click handlers in " + c("main.js") + ".", "The same observers in " + c("site.js") + ", reporting to " + c("SiteHeader") + " through " + c("[JSInvokable]") + " methods. Document listeners exist only while the menu is open."],
             ["Kiosk demo", "Button opens a native dialog; the iframe is cleared on close.", c("KioskDialog") + " renders the iframe only while open and tears it down on " + c("OnClosed") + "."],
+            ["Styling", "Shared stylesheet plus " + c("vanilla.css") + " (palette).", "Shared stylesheet plus " + c("blazor.css") + " (palette, boot screen, error bar). Razor components carry no scoped CSS."],
             ["Build output", "The files as committed.", c("dotnet publish") + ": trimmed, invariant globalization, no time zone data, no fingerprint placeholders (the import map would be an inline script, which the CSP forbids)."],
             ["Hosting", "Root of the private S3 bucket, distribution for mvcprogrammer.com.", c("blazor/") + " prefix of the same bucket, distribution " + c("E2NFN5MW02S8Y9") + ", own ACM certificate, CSP with " + c("'wasm-unsafe-eval'") + ", S3 403 rewritten to " + c("index.html") + " so deep links reach the router."],
-            ["Tests", "None in the repo for the static page.", "111 bUnit and xUnit cases, run before every publish. (The Angular and React editions have their own Vitest suites.)"],
+            ["Tests", "None in the repo for the static page.", "114 bUnit and xUnit cases, run before every publish. (The Angular and React editions have their own Vitest suites.)"],
         ],
         [1.15 * inch, 2.85 * inch, 3.0 * inch],
     ),
@@ -115,7 +128,7 @@ story += [
       + " items, so they are one file on disk and cannot drift. (The Angular and React editions copy the same files with a script "
       "before each build.) Everything else is written once per edition."),
     p("Edit once (linked into wwwroot)", "h2"),
-    b(c("styles.css") + ", the whole stylesheet."),
+    b(c("styles.css") + ", the whole stylesheet. The palette on top of it is per edition (section 1), so a color change is four edits."),
     b(c("assets/**") + ": fonts (Inter and JetBrains Mono as variable WOFF2 subsets) and images."),
     b(c("favicon.svg") + ", " + c("favicon.ico") + ", " + c("apple-touch-icon.png") + "."),
     b(c("api/seed/positions.json") + ", served to the Blazor edition as " + c("data/positions.json") + "."),

@@ -9,7 +9,7 @@ The styling and helpers are shared with build_blazor_guide.py and build_angular_
 import sys
 from reportlab.lib.units import inch
 from reportlab.platypus import KeepTogether, Spacer
-from guide_common import BLOB, REPO, TREE, b, build, c, code_block, link, p, register_fonts, table
+from guide_common import BLOB, REPO, TREE, b, build, c, code_block, link, p, palette_table, register_fonts, table
 
 FONT_DIR, OUT = sys.argv[1], sys.argv[2]
 register_fonts(FONT_DIR)
@@ -37,7 +37,7 @@ story += [
       + link("docs/ANGULAR-EDITION.pdf", BLOB + "docs/ANGULAR-EDITION.pdf") + ". The React edition is a React 19 "
       "application built with Vite under " + c("react/") + ", served at "
       + link("react.mvcprogrammer.com", "https://react.mvcprogrammer.com") + ". All four show the same content, load "
-      "the same stylesheet, and call the same Experience API. The React edition exists to show that content consumed "
+      "the same stylesheet under their own palettes, and call the same Experience API. The React edition exists to show that content consumed "
       "from function components and hooks, next to the Angular, C#, and vanilla versions."),
     p("The one rule that matters", "h2"),
     p("<b>Every content, markup, behavior, or styling change made to one edition is made to the other three in the same "
@@ -49,7 +49,19 @@ story += [
       "this site</i>) and the hero highlights (<b>Angular</b> and <b>React</b> of "
       "<i>Angular / React</i> to their editions). A link to the edition already open simply reloads it. The portfolio card "
       "carries no edition links. The test in " + c("sections/static-sections.test.tsx") + " pins the React side of it."),
-    p("The Blazor, Angular, and React editions stay off the GitHub profile README until the owner decides otherwise."),
+    KeepTogether([
+        p("The one exception: color", "h2"),
+        p("Each edition carries its own palette. One small file per edition, loaded after the shared " + c("styles.css")
+          + ", overrides only the design tokens (" + c("--bg") + ", " + c("--accent") + ", " + c("--hover") + ", and the rest) "
+          "with " + c("light-dark()") + " values, so one declaration covers both color schemes and no rule from the shared "
+          "stylesheet is repeated. Older browsers ignore " + c("light-dark()") + " and fall back to the shared JetBrains "
+          "Rider palette. The four palettes, with the page, the quote band where it differs, the accent, and the hover color "
+          "for each scheme:"),
+        palette_table(),
+        p("Vite's CSS minifier would rewrite " + c("light-dark()") + " into a variable polyfill that only works when " + c("color-scheme") + " is declared in the same file, and it is declared in the shared " + c("styles.css") + ", so " + c("vite.config.ts") + " pins " + c("build.cssTarget") + " to browsers that support the function and the minifier leaves it alone. Check the production stylesheet under " + c("dist/bundles/") + " after any change to the palette, not only the dev server.", "caption"),
+    ]),
+    p("Every edition's colophon describes its own palette, and the four are listed with screenshots in the README of "
+      "this repository and on the GitHub profile README."),
 ]
 
 # ---------------------------------------------------------------- 2
@@ -64,9 +76,9 @@ story += [
             [c("react/"), "The project: one Vite application, " + c("portfolio-react") + ", React 19, strict TypeScript, Vitest with Testing Library."],
             [c("scripts/sync-shared.mjs"), "Copies the shared root files into " + c("public/") + " before every build and serve (the " + c("prebuild") + " and " + c("prestart") + " npm hooks). " + c("public/") + " is generated and not committed."],
             [c("index.html"), "The shell: metadata, the shared stylesheet link, the boot screen inside " + c("#root") + ", and the module script tag Vite rewrites."],
-            [c("vite.config.ts"), "The React plugin, " + c("assetsDir: 'bundles'") + ", " + c("assetsInlineLimit: 0") + ", and the Vitest section (jsdom, globals, the setup file)."],
+            [c("vite.config.ts"), "The React plugin, " + c("assetsDir: 'bundles'") + ", " + c("assetsInlineLimit: 0") + ", " + c("cssTarget") + " (keeps " + c("light-dark()") + " in the palette, section 1), and the Vitest section (jsdom, globals, the setup file)."],
             [c("src/main.tsx"), "The " + c("siteOptions") + " literal, " + c("createSiteServices()") + ", and " + c("createRoot().render()") + " under " + c("StrictMode") + ". Imports " + c("react.css") + "."],
-            [c("src/react.css"), "The only extra stylesheet: the boot screen and the " + c("aria-invalid") + " validation state."],
+            [c("src/react.css"), "The only extra stylesheet: this edition's palette (section 1), the boot screen, and the " + c("aria-invalid") + " validation state."],
             [c("src/app/App.tsx"), c("App") + " (SiteProvider, BrowserRouter, Layout) and " + c("Layout") + ": skip link, icon sprite, header, " + c("&lt;main&gt;") + " with the routes, footer."],
             [c("pages/"), c("Home") + " (the sections in page order; starts the engagement tracker in an effect) and " + c("NotFound") + "."],
             [c("sections/"), "One component per section of the page: Hero, About, Quote, Services, Freelance, Portfolio, Resume, Contact, Colophon. JSX lifted from " + c("index.html") + "."],
@@ -106,7 +118,7 @@ story += [
             ["Configuration", c("data-") + " attributes in the HTML.", "A " + c("SiteOptions") + " literal validated by " + c("provideSite()") + ", injected through a token.", "A " + c("SiteOptions") + " literal in " + c("main.tsx") + ", validated by " + c("createSiteServices()") + ", supplied by " + c("SiteProvider") + " and read with " + c("useSite()") + "."],
             ["Header behavior", "Listeners in " + c("main.js") + ".", "Observers in " + c("SiteHeader") + "; re-attached after " + c("NavigationEnd") + ".", "Observers in " + c("SiteHeader") + " effects; the section observer depends on " + c("useLocation().pathname") + " so it re-attaches after a navigation."],
             ["Kiosk demo", "Native dialog; iframe cleared on close.", c("KioskDialog") + " calls " + c("showModal()") + "; iframe while the " + c("open") + " signal is true.", c("KioskDialog") + " takes " + c("open") + " and " + c("onClose") + " props; an effect calls " + c("showModal()") + " or " + c("close()") + ", the dialog's " + c("close") + " event reports back, the iframe exists only while open."],
-            ["Styling", "One stylesheet.", "Shared stylesheet plus " + c("angular.css") + "; no component styles (CSP).", "Shared stylesheet plus " + c("react.css") + ". <b>No CSS-in-JS and no " + c("style") + " attribute</b>: the CSP forbids inline styles. No host elements, so no " + c("display: contents") + " list to maintain."],
+            ["Styling", "Shared stylesheet plus " + c("vanilla.css") + " (palette).", "Shared stylesheet plus " + c("angular.css") + " (palette, boot screen); no component styles (CSP).", "Shared stylesheet plus " + c("react.css") + " (palette, boot screen). <b>No CSS-in-JS and no " + c("style") + " attribute</b>: the CSP forbids inline styles. No host elements, so no " + c("display: contents") + " list to maintain."],
             ["Build output", "The files as committed.", c("ng build") + ": esbuild, fingerprinted bundles, critical CSS not inlined.", c("tsc -b") + " then " + c("vite build") + ": one fingerprinted script and stylesheet under " + c("bundles/") + ", nothing inlined, no source maps."],
             ["Hosting", "Bucket root, distribution for mvcprogrammer.com.", c("angular/") + " prefix, own distribution, S3 403 rewritten to " + c("index.html") + ".", c("react/") + " prefix, own distribution, the static site's response headers policy unchanged, S3 403 rewritten to " + c("index.html") + " so React Router answers deep links."],
             ["Tests", "None for the static page.", "133 Vitest cases on jsdom.", "181 Vitest cases on jsdom with Testing Library, run before every build."],
@@ -123,7 +135,7 @@ story += [
       + " before every build and serve, the same way the Angular edition does it, and " + c("public/") + " stays out of "
       "git, so there is still one source on disk. Everything else is written once per edition."),
     p("Edit once (copied into public/)", "h2"),
-    b(c("styles.css") + ", the whole stylesheet, linked from " + c("index.html") + " by hand, ahead of the build's own stylesheet."),
+    b(c("styles.css") + ", the whole stylesheet, linked from " + c("index.html") + " by hand, ahead of the build's own stylesheet. The palette on top of it is per edition (section 1), so a color change is four edits."),
     b(c("assets/**") + ": fonts (Inter and JetBrains Mono as variable WOFF2 subsets) and images. The bundles go under " + c("bundles/") + " so the deploy can give the two folders different cache headers."),
     b(c("favicon.svg") + ", " + c("favicon.ico") + ", " + c("apple-touch-icon.png") + "."),
     b(c("api/seed/positions.json") + ", served to the React edition as " + c("data/positions.json") + "."),
@@ -238,7 +250,7 @@ story += [
             ["4", "Run " + c("npm test") + " and " + c("npm run build") + " in " + c("react/") + " and make both green. Warnings in the build are errors in review."],
             ["5", "Preview the editions locally: " + c("python3 -m http.server 8080") + " at the root, " + c("dotnet run --project blazor/src/Portfolio.Blazor") + ", and " + c("npm start") + " in " + c("angular/") + " and in " + c("react/") + "."],
             ["6", "Check the cross-links survived: the four About chips and the two hero highlights, identical on every edition, with their hints."],
-            ["7", "Never add a " + c("style") + " attribute, a CSS-in-JS library, or an inline " + c("&lt;script&gt;") + "; the CSP blocks them in production. New rules go in " + c("react.css") + "."],
+            ["7", "Never add a " + c("style") + " attribute, a CSS-in-JS library, or an inline " + c("&lt;script&gt;") + "; the CSP blocks them in production. New rules go in " + c("react.css") + "; a color change edits its palette block, and the other three palette files if it is meant to be shared."],
             ["8", "Commit all editions together. No AI attribution trailers in the message."],
             ["9", "Push to " + c("main") + " only when asked. The workflow tests, builds, and deploys every edition."],
         ],

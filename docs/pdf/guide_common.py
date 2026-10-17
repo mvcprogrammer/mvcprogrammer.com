@@ -1,4 +1,4 @@
-"""Shared styling and helpers for the edition guidelines in docs/ (see build_blazor_guide.py and build_angular_guide.py)."""
+"""Shared styling and helpers for the edition guidelines in docs/ (see build_blazor_guide.py, build_angular_guide.py, and build_react_guide.py)."""
 from reportlab.lib import colors
 from reportlab.lib.enums import TA_LEFT
 from reportlab.lib.pagesizes import letter
@@ -78,6 +78,62 @@ def table(head, rows, widths, first_style="cell"):
     data = [[Paragraph(h, S["cellhead"]) for h in head]]
     data += [[Paragraph(cell, S[first_style] if i == 0 else S["cell"]) for i, cell in enumerate(row)] for row in rows]
     t = Table(data, colWidths=widths, repeatRows=1)
+    t.setStyle(TableStyle([
+        ("BACKGROUND", (0, 0), (-1, 0), HEAD_BG),
+        ("LINEBELOW", (0, 0), (-1, 0), 0.8, ACCENT),
+        ("LINEBELOW", (0, 1), (-1, -1), 0.4, RULE),
+        ("VALIGN", (0, 0), (-1, -1), "TOP"),
+        ("LEFTPADDING", (0, 0), (-1, -1), 6),
+        ("RIGHTPADDING", (0, 0), (-1, -1), 6),
+        ("TOPPADDING", (0, 0), (-1, -1), 4),
+        ("BOTTOMPADDING", (0, 0), (-1, -1), 4),
+    ]))
+    return t
+
+
+# ---------------------------------------------------------------- Palettes
+# One row per edition: the palette file, a one-line description, and the token colors as they are declared in that
+# file (page, optional band, accent, hover) for each color scheme. Every guideline prints the same table, so a palette
+# change is made here once.
+PALETTES = [
+    ("Default", "vanilla.css",
+     "Eggshell paper with a terracotta accent and a coral hover; a warm charcoal after dark.",
+     ["#f0ead6", "#a64a23", "#d4602f"], ["#211e18", "#e0855c", "#ffb088"]),
+    ("Angular", "angular/src/angular.css",
+     "The four Google logo colors, each with a job: a blue page, a yellow quote band, red buttons, green hovers. "
+     "Dark mode flips to royal blue and green with yellow buttons.",
+     ["#d2e3fc", "#fde293", "#b31412", "#137333"], ["#174ea6", "#0d652d", "#fcc934", "#fad2cf"]),
+    ("React", "react/src/react.css",
+     "The react.dev documentation palette: cool slate surfaces, React blue for buttons and links, the logo cyan on hover.",
+     ["#f6f7f9", "#067394", "#149eca"], ["#23272f", "#58c4dc", "#61dafb"]),
+    ("Blazor", "blazor/src/Portfolio.Blazor/<br/>wwwroot/blazor.css",
+     ".NET violet: the .NET brand purple on faint lavender, a deep violet-black with lilac buttons after dark, "
+     "the Blazor gradient's pink on hover.",
+     ["#f4f1fb", "#512bd4", "#c2187a"], ["#1a1430", "#b49cff", "#ff7ac8"]),
+]
+
+
+def swatches(hexes):
+    """A row of small color squares, one per hex value, for a table cell."""
+    size = 0.16 * inch
+    t = Table([[""] * len(hexes)], colWidths=[size + 3] * len(hexes), rowHeights=[size])
+    style = [("LEFTPADDING", (0, 0), (-1, -1), 0), ("RIGHTPADDING", (0, 0), (-1, -1), 3),
+             ("TOPPADDING", (0, 0), (-1, -1), 0), ("BOTTOMPADDING", (0, 0), (-1, -1), 0)]
+    for i, h in enumerate(hexes):
+        style.append(("BACKGROUND", (i, 0), (i, 0), colors.HexColor(h)))
+        style.append(("BOX", (i, 0), (i, 0), 0.4, RULE))
+    t.setStyle(TableStyle(style))
+    return t
+
+
+def palette_table():
+    """The four edition palettes: file, description, and light and dark swatches (page, band, accent, hover)."""
+    head = ["Edition", "Palette file", "Palette", "Light", "Dark"]
+    data = [[Paragraph(h, S["cellhead"]) for h in head]]
+    for name, path, text, light, dark in PALETTES:
+        data.append([Paragraph(name, S["cell"]), Paragraph(c(path), S["cell"]), Paragraph(text, S["cellsmall"]),
+                     swatches(light), swatches(dark)])
+    t = Table(data, colWidths=[0.65 * inch, 2.2 * inch, 2.25 * inch, 0.95 * inch, 0.95 * inch], repeatRows=1)
     t.setStyle(TableStyle([
         ("BACKGROUND", (0, 0), (-1, 0), HEAD_BG),
         ("LINEBELOW", (0, 0), (-1, 0), 0.8, ACCENT),
