@@ -11,7 +11,7 @@ with signals, next to the vanilla edition, the React edition in `../react`, and 
 angular/
   scripts/sync-shared.mjs       Copies the shared root files into public/ before every build and serve.
   src/index.html                The shell: metadata, the shared stylesheet link, the boot screen.
-  src/angular.css               The only extra stylesheet: boot screen, component host elements, validation.
+  src/angular.css               The only extra stylesheet: this edition's palette, boot screen, component host elements, validation.
   src/main.ts                   Bootstraps App with app.config.ts.
   src/app/app.ts                Layout: skip link, icon sprite, header, <main> with the router outlet, footer.
   src/app/app.config.ts         Router, global error listeners, and provideSite() with the endpoints.
@@ -39,7 +39,8 @@ run, so the editions cannot drift. `public/` is generated and is not committed. 
 paths outside the workspace, which is why a copy stands in for the Blazor project's linked files.
 
 Component styles are not used anywhere: Angular would inject them as inline `<style>` elements,
-which the site's Content Security Policy forbids. The few additions live in `src/angular.css`, and
+which the site's Content Security Policy forbids. The few additions live in `src/angular.css`, together with this edition's palette (the four Google
+logo colors, applied by overriding the shared design tokens with `light-dark()`), and
 the production build has critical-CSS inlining switched off for the same reason. Every component
 host element gets `display: contents` there, so the sticky header and the grids see the same
 children the static markup gives them.

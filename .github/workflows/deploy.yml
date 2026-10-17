@@ -158,13 +158,13 @@ jobs:
         run: |
           aws s3 sync dist/portfolio-angular/browser/ "s3://${S3_BUCKET}/angular/" --delete \
             --cache-control "public, max-age=604800, s-maxage=31536000, immutable" \
-            --exclude "*" --include "main-*.js" --include "polyfills-*.js" --include "chunk-*.js" --include "styles-*.css"
+            --exclude "*" --include "main-*.js" --include "polyfills-*.js" --include "chunk-*.js" --include "angular-*.css"
 
       - name: Sync everything else (short browser TTL)
         run: |
           aws s3 sync dist/portfolio-angular/browser/ "s3://${S3_BUCKET}/angular/" --delete \
             --cache-control "public, max-age=300, s-maxage=31536000" \
-            --exclude "main-*.js" --exclude "polyfills-*.js" --exclude "chunk-*.js" --exclude "styles-*.css"
+            --exclude "main-*.js" --exclude "polyfills-*.js" --exclude "chunk-*.js" --exclude "angular-*.css"
 
       - name: Invalidate CloudFront
         run: |

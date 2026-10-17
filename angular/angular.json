@@ -25,7 +25,10 @@
               }
             ],
             "styles": [
-              "src/angular.css"
+              {
+                "input": "src/angular.css",
+                "bundleName": "angular"
+              }
             ]
           },
           "configurations": {

@@ -712,10 +712,10 @@ Manual deploy, the same two syncs the workflow runs:
 cd angular && npm ci && npm test && npm run build && cd dist/portfolio-angular/browser
 aws s3 sync . s3://mvcprogrammer.com/angular/ --delete \
   --cache-control "public, max-age=604800, s-maxage=31536000, immutable" \
-  --exclude "*" --include "main-*.js" --include "polyfills-*.js" --include "chunk-*.js" --include "styles-*.css"
+  --exclude "*" --include "main-*.js" --include "polyfills-*.js" --include "chunk-*.js" --include "angular-*.css"
 aws s3 sync . s3://mvcprogrammer.com/angular/ --delete \
   --cache-control "public, max-age=300, s-maxage=31536000" \
-  --exclude "main-*.js" --exclude "polyfills-*.js" --exclude "chunk-*.js" --exclude "styles-*.css"
+  --exclude "main-*.js" --exclude "polyfills-*.js" --exclude "chunk-*.js" --exclude "angular-*.css"
 aws cloudfront create-invalidation --distribution-id E33NA2ZQ9O29DK --paths "/*"
 ```
 

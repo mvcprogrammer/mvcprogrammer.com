@@ -1,9 +1,32 @@
 /* angular.mvcprogrammer.com — angular.css
-   Additions to the shared styles.css for the Angular edition: the boot screen shown until the app
-   bootstraps, the component host elements, and form validation state. The tokens (--bg, --text,
-   --accent, ...) come from styles.css. Component styles are not used anywhere in this edition:
-   Angular would inject them as inline <style> elements, which the site's Content Security Policy
-   forbids, so every rule lives in this one file. */
+   Additions to the shared styles.css for the Angular edition: this edition's palette, the boot
+   screen shown until the app bootstraps, the component host elements, and form validation state.
+   Component styles are not used anywhere in this edition: Angular would inject them as inline
+   <style> elements, which the site's Content Security Policy forbids, so every rule lives in this
+   one file. */
+
+/* ---------- Palette ----------
+   The four Google logo colors, each with a job: a blue page, a yellow quote band, red buttons and
+   links, green on hover. Dark mode flips to a royal blue page with a green band, yellow buttons,
+   and a pink hover. Only the design tokens from styles.css are overridden; light-dark() picks the
+   value for the active color scheme (styles.css declares color-scheme: light dark on :root), so one
+   declaration covers both themes and no rule is repeated. Every text, button, and hover pairing
+   clears WCAG AA against the page, the band, and the cards. */
+:root {
+  --bg: light-dark(#d2e3fc, #174ea6);
+  --bg-alt: light-dark(#fde293, #0d652d);
+  --surface: light-dark(#ffffff, #185abc);
+  --text: light-dark(#202124, #ffffff);
+  --text-muted: light-dark(#3c4043, #d2e3fc);
+  --border: light-dark(#a8c7fa, #4a86e8);
+  --accent: light-dark(#b31412, #fcc934);
+  --accent-hover: light-dark(#a50e0e, #fdd663);
+  --accent-contrast: light-dark(#ffffff, #202124);
+  --accent-soft: light-dark(rgba(179, 20, 18, 0.12), rgba(252, 201, 52, 0.18));
+  --hover: light-dark(#137333, #fad2cf);
+  --hover-soft: light-dark(rgba(19, 115, 51, 0.12), rgba(250, 210, 207, 0.2));
+  --hover-contrast: light-dark(#ffffff, #202124);
+}
 
 /* Angular wraps each component in its host element. With display: contents the wrappers leave the
    box tree, so the sticky header, the flex rows, and the grids see the same children the static

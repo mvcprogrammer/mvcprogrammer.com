@@ -3,7 +3,7 @@
   <div class="container">
     <p class="eyebrow">07 / Colophon</p>
     <h2 id="colophon-title">How This Site Is Built</h2>
-    <p class="section-intro">A footnote for the curious. This is the Angular edition of <a href="https://mvcprogrammer.com/">mvcprogrammer.com</a>: the same content and the same stylesheet, with the page rebuilt as Angular components in TypeScript. There is still no server behind it, only static files on a CDN, three Lambdas, and the same API.</p>
+    <p class="section-intro">A footnote for the curious. This is the Angular edition of <a href="https://mvcprogrammer.com/">mvcprogrammer.com</a>: the same content and the same stylesheet under its own palette, with the page rebuilt as Angular components in TypeScript. There is still no server behind it, only static files on a CDN, three Lambdas, and the same API.</p>
     <dl class="colophon-list">
       <div class="colophon-item">
         <dt>Front end</dt>
@@ -11,7 +11,7 @@
       </div>
       <div class="colophon-item">
         <dt>Shared with the static site</dt>
-        <dd>The stylesheet, fonts, images, icons, and the Experience seed data are copied into this build from the repository root by a script that runs before every build, so the editions cannot drift. The markup is the static page's markup, section by section. Component styles are not used: Angular would inject them inline, which the Content Security Policy forbids, so the few additions sit in one extra stylesheet.</dd>
+        <dd>The stylesheet, fonts, images, icons, and the Experience seed data are copied into this build from the repository root by a script that runs before every build, so the editions cannot drift. The markup is the static page's markup, section by section. Component styles are not used: Angular would inject them inline, which the Content Security Policy forbids, so the few additions sit in one extra stylesheet. That file also carries this edition's palette, the four Google logo colors, by overriding the shared design tokens with <code>light-dark()</code>; no rule from the shared stylesheet is repeated.</dd>
       </div>
       <div class="colophon-item">
         <dt>API integration</dt>

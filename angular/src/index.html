@@ -4,8 +4,8 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="color-scheme" content="light dark">
-  <meta name="theme-color" content="#f7f8fa" media="(prefers-color-scheme: light)">
-  <meta name="theme-color" content="#1e1f22" media="(prefers-color-scheme: dark)">
+  <meta name="theme-color" content="#d2e3fc" media="(prefers-color-scheme: light)">
+  <meta name="theme-color" content="#174ea6" media="(prefers-color-scheme: dark)">
 
   <title>Neal Thomas | Senior Full-Stack Software Engineer | .NET, Angular, React, SQL Server</title>
   <meta name="description" content="Neal Thomas is a senior full-stack software engineer in Tampa Bay, Florida, building enterprise API applications with C#/.NET Core, Angular, and SQL Server. This is the Angular edition of mvcprogrammer.com.">
@@ -36,7 +36,9 @@
   <link rel="preload" href="assets/fonts/jetbrains-mono-latin.woff2" as="font" type="font/woff2" crossorigin>
 
   <!-- styles.css is the static site's stylesheet, copied into this build unchanged. The build appends
-       its own link for angular.css (the boot screen, the component host elements, and form validation). -->
+       its own link for angular.css (this edition's palette, the boot screen, the component host elements,
+       and form validation), emitted under the bundle name "angular" so that ng serve does not name it
+       styles.css and shadow the shared file. -->
   <link rel="stylesheet" href="styles.css">
 </head>
 
