@@ -4,7 +4,8 @@
    and the dark theme to a warm charcoal with eggshell text. light-dark() picks the value for the
    active color scheme (styles.css declares color-scheme: light dark on :root), so one declaration
    covers both themes and no rule in styles.css is repeated here. The accent is terracotta, the warm
-   partner of eggshell; both shades clear WCAG AA against the page and under white or ink text. */
+   partner of eggshell; both shades clear WCAG AA against the page and under white or ink text. Hover
+   states brighten to coral, so a hovered link or button reads as lit rather than pressed. */
 
 :root {
   --bg: light-dark(#f0ead6, #211e18);
@@ -17,4 +18,7 @@
   --accent-hover: light-dark(#8c3c1b, #eb9a76);
   --accent-contrast: light-dark(#ffffff, #16171a);
   --accent-soft: light-dark(rgba(166, 74, 35, 0.12), rgba(224, 133, 92, 0.16));
+  --hover: light-dark(#d4602f, #ffb088);
+  --hover-soft: light-dark(rgba(212, 96, 47, 0.14), rgba(255, 176, 136, 0.16));
+  --hover-contrast: #16171a;
 }
