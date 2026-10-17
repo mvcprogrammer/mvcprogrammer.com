@@ -1,0 +1,15 @@
+/* mvcprogrammer.com — vanilla.css
+   Palette override for the default edition, loaded after the shared styles.css. Only the design
+   tokens change: the page, section, and card surfaces move from Rider's neutral grays to eggshell,
+   and the dark theme to a warm charcoal with eggshell text. light-dark() picks the value for the
+   active color scheme (styles.css declares color-scheme: light dark on :root), so one declaration
+   covers both themes and no rule in styles.css is repeated here. The accent stays JetBrains blue. */
+
+:root {
+  --bg: light-dark(#f0ead6, #211e18);
+  --bg-alt: light-dark(#e7e0c8, #29251e);
+  --surface: light-dark(#faf7ee, #2e2a22);
+  --text: light-dark(#1e1f22, #ede7d6);
+  --text-muted: light-dark(#5b584c, #b3ab99);
+  --border: light-dark(#dcd4bc, #3f3a30);
+}

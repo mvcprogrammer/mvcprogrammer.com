@@ -8,7 +8,8 @@ The site follows the KISS principle. Plain HTML, CSS, and vanilla JavaScript. No
 index.html                  the single page
 404.html                    small not-found page, served by CloudFront for any missing path
 privacy.html, terms.html    privacy policy and SMS terms (required for the toll-free SMS registration)
-styles.css                  mobile-first styles, light/dark via prefers-color-scheme
+styles.css                  mobile-first styles shared by all four editions, light/dark via prefers-color-scheme
+vanilla.css                 eggshell palette override for this edition (design tokens only, loaded after styles.css)
 main.js                     nav toggle, active-section highlighting, footer year, image fallback
 favicon.svg                 tab icon (follows dark mode)
 favicon.ico, apple-touch-icon.png  raster fallbacks rendered from favicon.svg (16/32/48 px ICO, 180 px PNG)
@@ -227,7 +228,7 @@ aws s3 sync . s3://mvcprogrammer.com/ --delete \
   --cache-control "public, max-age=300, s-maxage=31536000" \
   --exclude "*" \
   --include "index.html" --include "privacy.html" --include "terms.html" --include "404.html" \
-  --include "styles.css" --include "main.js" \
+  --include "styles.css" --include "vanilla.css" --include "main.js" \
   --include "favicon.svg" --include "favicon.ico" --include "apple-touch-icon.png" --include "site.webmanifest" \
   --include "robots.txt" --include "sitemap.xml" --include "assets/*" \
   --exclude "assets/README.md" --exclude "assets/*/README.md" --exclude "*.gitkeep"

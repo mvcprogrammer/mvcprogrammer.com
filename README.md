@@ -18,13 +18,13 @@
 
 <br>
 
-The site follows the **KISS principle**: keep it simple, and add nothing that is not earning its place. It is plain HTML, CSS, and vanilla JavaScript with no framework, no build step, no bundler, no third-party scripts, and a strict Content Security Policy. One page, one stylesheet, one deferred script, shipped exactly as written. The static files sit in a private S3 bucket behind CloudFront, and three small Lambda functions do the only work that needs a server: the contact form, the resume download, and the Experience API. The same page is also built three more times, with Angular, with React, and with Blazor WebAssembly, as a side-by-side comparison; see [Four editions](#four-editions).
+The site follows the **KISS principle**: keep it simple, and add nothing that is not earning its place. It is plain HTML, CSS, and vanilla JavaScript with no framework, no build step, no bundler, no third-party scripts, and a strict Content Security Policy. One page, one stylesheet plus a short palette override, one deferred script, shipped exactly as written. The static files sit in a private S3 bucket behind CloudFront, and three small Lambda functions do the only work that needs a server: the contact form, the resume download, and the Experience API. The same page is also built three more times, with Angular, with React, and with Blazor WebAssembly, as a side-by-side comparison; see [Four editions](#four-editions).
 
 ## What is in this repository
 
 | Path | What it is |
 | --- | --- |
-| `index.html`, `styles.css`, `main.js` | The site. The Experience timeline is in the HTML so it reads without JavaScript; when the API answers, the script re-renders it from JSON and reveals a skill filter. |
+| `index.html`, `styles.css`, `vanilla.css`, `main.js` | The site. `styles.css` is shared by all four editions; `vanilla.css` overrides its design tokens with the eggshell palette for this edition. The Experience timeline is in the HTML so it reads without JavaScript; when the API answers, the script re-renders it from JSON and reveals a skill filter. |
 | `404.html`, `privacy.html`, `terms.html` | The not-found page and the policies required for the toll-free SMS registration. |
 | `assets/` | Self-hosted fonts (Inter and JetBrains Mono as variable WOFF2 subsets) and images. Icons are an inline SVG sprite in the HTML. |
 | `angular/` | The Angular edition: an Angular 22 workspace with Vitest tests. See [angular/README.md](angular/README.md) and [docs/ANGULAR-EDITION.pdf](docs/ANGULAR-EDITION.pdf). |
@@ -54,7 +54,7 @@ The same page is built four ways from this repository. Every edition shows the s
 | React | React 19 with Vite: function components, hooks, and React Router in TypeScript. | [`react/`](react/) | [react.mvcprogrammer.com](https://react.mvcprogrammer.com) |
 | Blazor | Blazor WebAssembly on .NET 10: Razor components and C# running in the browser. | [`blazor/`](blazor/) | [blazor.mvcprogrammer.com](https://blazor.mvcprogrammer.com) |
 
-Each framework edition has its own test suite, README, and guideline PDF, its own CloudFront distribution and certificate under the same bucket, and its own job in the deploy workflow. The editions mirror each other: a change to one is made to the others in the same commit, and the stylesheet, fonts, images, icons, and seed data are shared from the root rather than copied by hand. The skill chips in the About section and the hero highlights link between the editions, so each one is a click away from the others.
+Each framework edition has its own test suite, README, and guideline PDF, its own CloudFront distribution and certificate under the same bucket, and its own job in the deploy workflow. The editions mirror each other: a change to one is made to the others in the same commit, and the stylesheet, fonts, images, icons, and seed data are shared from the root rather than copied by hand. Color is the one deliberate difference: an edition may layer a small palette file over the shared stylesheet, overriding only the design tokens, as the default edition does with `vanilla.css`. The skill chips in the About section and the hero highlights link between the editions, so each one is a click away from the others.
 
 ## Preview locally
 

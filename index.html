@@ -4,8 +4,8 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="color-scheme" content="light dark">
-  <meta name="theme-color" content="#f7f8fa" media="(prefers-color-scheme: light)">
-  <meta name="theme-color" content="#1e1f22" media="(prefers-color-scheme: dark)">
+  <meta name="theme-color" content="#f0ead6" media="(prefers-color-scheme: light)">
+  <meta name="theme-color" content="#211e18" media="(prefers-color-scheme: dark)">
 
   <title>Neal Thomas | Senior Full-Stack Software Engineer | .NET, Angular, React, SQL Server</title>
   <meta name="description" content="Neal Thomas is a senior full-stack software engineer in Tampa Bay, Florida, building enterprise API applications with C#/.NET Core, Angular, and SQL Server. 15+ years of experience, event-driven architecture, deep accounting and healthcare domain knowledge, and freelance Stellar MLS / Bridge Data Output API integration for real estate.">
@@ -36,6 +36,7 @@
   <link rel="preload" href="assets/fonts/jetbrains-mono-latin.woff2" as="font" type="font/woff2" crossorigin>
 
   <link rel="stylesheet" href="styles.css">
+  <link rel="stylesheet" href="vanilla.css">
 
   <script type="application/ld+json">
   {
@@ -598,11 +599,11 @@
         <dl class="colophon-list">
           <div class="colophon-item">
             <dt>Front end</dt>
-            <dd>I kept the front end simple: plain HTML, CSS, and vanilla JavaScript. No framework, no build step, no bundler, and no dependencies: one stylesheet and one deferred script of under 500 lines, shipped exactly as written. The Experience timeline is in the HTML, so it reads without JavaScript; when the Experience API answers, the script re-renders it from the JSON and reveals a skill filter.</dd>
+            <dd>I kept the front end simple: plain HTML, CSS, and vanilla JavaScript. No framework, no build step, no bundler, and no dependencies: one stylesheet, a short palette override, and one deferred script of under 500 lines, shipped exactly as written. The Experience timeline is in the HTML, so it reads without JavaScript; when the Experience API answers, the script re-renders it from the JSON and reveals a skill filter.</dd>
           </div>
           <div class="colophon-item">
             <dt>Styling</dt>
-            <dd>Mobile-first CSS built on custom properties. Light and dark themes follow the operating system through <code>prefers-color-scheme</code>, with a palette borrowed from JetBrains Rider, and <code>prefers-reduced-motion</code> switches off the transitions. Inter and JetBrains Mono are self-hosted as variable WOFF2 subsets and preloaded. Icons are a single inline SVG sprite.</dd>
+            <dd>Mobile-first CSS built on custom properties. Light and dark themes follow the operating system through <code>prefers-color-scheme</code>. The shared palette borrows from JetBrains Rider; this edition warms it to eggshell through a small file that overrides only the design tokens with <code>light-dark()</code>, so no rule is repeated. <code>prefers-reduced-motion</code> switches off the transitions. Inter and JetBrains Mono are self-hosted as variable WOFF2 subsets and preloaded. Icons are a single inline SVG sprite.</dd>
           </div>
           <div class="colophon-item">
             <dt>Markup</dt>

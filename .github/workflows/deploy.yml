@@ -52,7 +52,7 @@ jobs:
             --cache-control "public, max-age=300, s-maxage=31536000" \
             --exclude "*" \
             --include "index.html" --include "privacy.html" --include "terms.html" --include "404.html" \
-            --include "styles.css" --include "main.js" \
+            --include "styles.css" --include "vanilla.css" --include "main.js" \
             --include "favicon.svg" --include "favicon.ico" --include "apple-touch-icon.png" --include "site.webmanifest" \
             --include "robots.txt" --include "sitemap.xml" --include "assets/*" \
             --exclude "assets/README.md" --exclude "assets/*/README.md" --exclude "*.gitkeep"
