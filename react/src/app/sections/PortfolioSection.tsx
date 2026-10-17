@@ -32,20 +32,21 @@ export function PortfolioSection() {
                 <h3>mvcprogrammer.com</h3>
                 <p className="card-subtitle">The tech behind this site, in four editions</p>
                 <p>
-                  This site follows the KISS principle: keep it simple, and add nothing that is not
-                  earning its place. Plain HTML, CSS, and JavaScript with no framework, no build
-                  step, and no dependencies. The files live in a private S3 bucket that only
-                  CloudFront can read through Origin Access Control. CloudFront serves them
-                  worldwide over HTTPS with an ACM certificate, Route 53 points the domain at the
-                  distribution, and a GitHub Actions workflow authenticated with OIDC syncs the
-                  bucket and invalidates the cache on every push to main. No servers, no load
-                  balancer, no auto scaling group. The Experience section is also served by a small
-                  read-only C# API on Lambda and DynamoDB, with the HTML as its fallback. You are
-                  reading the fourth edition: the same page rebuilt as a React 19 app, TypeScript
-                  and hooks in the browser, bundled by Vite and served the same way from a{' '}
-                  <code>react/</code> prefix of the same bucket. The second and third editions do it
-                  again in Blazor WebAssembly and in Angular. The chips under Core skills lead to
-                  the other editions; the colophon at the bottom has the details.
+                  The default edition of this site follows the KISS principle: keep it simple, and
+                  add nothing that is not earning its place. Plain HTML, CSS, and JavaScript with no
+                  framework, no build step, and no dependencies. The files live in a private S3
+                  bucket that only CloudFront can read through Origin Access Control. CloudFront
+                  serves them worldwide over HTTPS with an ACM certificate, Route 53 points the
+                  domain at the distribution, and a GitHub Actions workflow authenticated with OIDC
+                  syncs the bucket and invalidates the cache on every push to main. No servers, no
+                  load balancer, no auto scaling group. The Experience section is also served by a
+                  small read-only C# API on Lambda and DynamoDB, with the HTML as its fallback. You
+                  are reading the fourth edition: the same page rebuilt as a React 19 app,
+                  TypeScript and hooks in the browser, bundled by Vite and served the same way from
+                  a <code>react/</code> prefix of the same bucket. The second and third
+                  editions do it again in Blazor WebAssembly and in Angular. The JavaScript,
+                  Angular, React, and Blazor chips under Core skills are links; each one switches to
+                  the edition built on that stack. The colophon at the bottom has the details.
                 </p>
                 <ul
                   className="tag-list card-tags"
