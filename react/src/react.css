@@ -1,9 +1,31 @@
 /* react.mvcprogrammer.com — react.css
-   Additions to the shared styles.css for the React edition: the boot screen shown until the app
-   renders, and form validation state. The tokens (--bg, --text, --accent, ...) come from styles.css.
-   There is no CSS-in-JS and no style attribute anywhere in this edition: the site's Content Security
-   Policy forbids inline styles, so every rule lives in this one file, which Vite bundles into a
-   fingerprinted stylesheet next to the scripts. */
+   Additions to the shared styles.css for the React edition: this edition's palette, the boot screen
+   shown until the app renders, and form validation state. There is no CSS-in-JS and no style
+   attribute anywhere in this edition: the site's Content Security Policy forbids inline styles, so
+   every rule lives in this one file, which Vite bundles into a fingerprinted stylesheet next to the
+   scripts. */
+
+/* ---------- Palette ----------
+   The react.dev documentation palette: cool slate surfaces, React's blue for buttons and links, and
+   the logo cyan on hover. Only the design tokens from styles.css are overridden; light-dark() picks
+   the value for the active color scheme (styles.css declares color-scheme: light dark on :root), so
+   one declaration covers both themes and no rule is repeated. Text, buttons, and the dark-mode hover
+   clear WCAG AA; the light-mode hover is a transient state and sits below it, as on every edition. */
+:root {
+  --bg: light-dark(#f6f7f9, #23272f);
+  --bg-alt: light-dark(#ebecf0, #1b1f26);
+  --surface: light-dark(#ffffff, #2f343e);
+  --text: light-dark(#23272f, #f6f7f9);
+  --text-muted: light-dark(#5e687e, #99a1b3);
+  --border: light-dark(#d9dde3, #3e4452);
+  --accent: light-dark(#067394, #58c4dc);
+  --accent-hover: light-dark(#055c76, #7ad5e8);
+  --accent-contrast: light-dark(#ffffff, #16171a);
+  --accent-soft: light-dark(rgba(6, 115, 148, 0.10), rgba(88, 196, 220, 0.14));
+  --hover: light-dark(#149eca, #61dafb);
+  --hover-soft: light-dark(rgba(20, 158, 202, 0.14), rgba(97, 218, 251, 0.16));
+  --hover-contrast: #16171a;
+}
 
 .app-loading {
   min-height: 100vh;

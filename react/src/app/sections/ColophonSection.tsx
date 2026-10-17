@@ -8,8 +8,9 @@ export function ColophonSection() {
         <p className="section-intro">
           A footnote for the curious. This is the React edition of{' '}
           <a href="https://mvcprogrammer.com/">mvcprogrammer.com</a>: the same content and the same
-          stylesheet, with the page rebuilt as React function components in TypeScript. There is
-          still no server behind it, only static files on a CDN, three Lambdas, and the same API.
+          stylesheet under its own palette, with the page rebuilt as React function components in
+          TypeScript. There is still no server behind it, only static files on a CDN, three Lambdas,
+          and the same API.
         </p>
         <dl className="colophon-list">
           <div className="colophon-item">
@@ -34,7 +35,9 @@ export function ColophonSection() {
               editions cannot drift. The markup is the static page's markup, section by section, as
               JSX. There is no CSS-in-JS and no <code>style</code> attribute: the Content Security
               Policy forbids inline styles, so the few additions sit in one extra stylesheet that
-              Vite bundles next to the scripts.
+              Vite bundles next to the scripts. That file also carries this edition's palette, the
+              slate and cyan of the React documentation, by overriding the shared design tokens with{' '}
+              <code>light-dark()</code>; no rule from the shared stylesheet is repeated.
             </dd>
           </div>
           <div className="colophon-item">

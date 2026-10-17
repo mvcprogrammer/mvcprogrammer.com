@@ -14,7 +14,7 @@ react/
   index.html                    The shell: metadata, the shared stylesheet link, the boot screen, the module script.
   vite.config.ts                Vite with the React plugin, bundles under bundles/, nothing inlined; the Vitest config.
   src/main.tsx                  The site options, createSiteServices(), and the React root.
-  src/react.css                 The only extra stylesheet: boot screen and form validation state.
+  src/react.css                 The only extra stylesheet: this edition's palette, boot screen, and form validation state.
   src/app/App.tsx               App (provider + browser router) and Layout: skip link, sprite, header, main, footer.
   src/app/pages/                Home (the sections in order; starts the engagement tracker) and NotFound.
   src/app/sections/             One component per section of the page, markup lifted from ../index.html as JSX.
@@ -39,7 +39,9 @@ the repository root by `scripts/sync-shared.mjs`, which the `prebuild` and `pres
 run, so the editions cannot drift. `public/` is generated and is not committed.
 
 There is no CSS-in-JS and no `style` attribute anywhere: the site's Content Security Policy forbids
-inline styles. The few additions live in `src/react.css`, which Vite bundles into a fingerprinted
+inline styles. The few additions live in `src/react.css`, together with this edition's palette (the
+react.dev slate and cyan, applied by overriding the shared design tokens with `light-dark()`), which
+Vite bundles into a fingerprinted
 stylesheet next to the script, and `assetsInlineLimit` is zero so nothing becomes a `data:` URI.
 The bundles go under `bundles/` rather than Vite's default `assets/`, because `public/assets/` holds
 the shared fonts and images and the deploy syncs the two with different cache headers.
