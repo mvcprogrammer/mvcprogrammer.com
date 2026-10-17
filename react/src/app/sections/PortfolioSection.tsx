@@ -39,14 +39,19 @@ export function PortfolioSection() {
                   serves them worldwide over HTTPS with an ACM certificate, Route 53 points the
                   domain at the distribution, and a GitHub Actions workflow authenticated with OIDC
                   syncs the bucket and invalidates the cache on every push to main. No servers, no
-                  load balancer, no auto scaling group. The Experience section is also served by a
-                  small read-only C# API on Lambda and DynamoDB, with the HTML as its fallback. You
-                  are reading the fourth edition: the same page rebuilt as a React 19 app,
+                  load balancer, no auto scaling group.
+                </p>
+                <p>
+                  The Experience section is also served by a C# API on Lambda and DynamoDB, with
+                  default HTML as a fallback.
+                </p>
+                <p>
+                  You are reading the fourth edition: the same page rebuilt as a React 19 app,
                   TypeScript and hooks in the browser, bundled by Vite and served the same way from
-                  a <code>react/</code> prefix of the same bucket. The second and third
-                  editions do it again in Blazor WebAssembly and in Angular. The JavaScript,
-                  Angular, React, and Blazor chips under Core skills are links; each one switches to
-                  the edition built on that stack. The colophon at the bottom has the details.
+                  a <code>react/</code> prefix of the same bucket. The second and third editions do
+                  it again in Blazor WebAssembly and in Angular. The JavaScript, Angular, React, and
+                  Blazor chips under Core skills are links; each one switches to the edition built
+                  on that stack. The colophon at the bottom has the details.
                 </p>
                 <ul
                   className="tag-list card-tags"
