@@ -3,7 +3,8 @@
    tokens change: the page, section, and card surfaces move from Rider's neutral grays to eggshell,
    and the dark theme to a warm charcoal with eggshell text. light-dark() picks the value for the
    active color scheme (styles.css declares color-scheme: light dark on :root), so one declaration
-   covers both themes and no rule in styles.css is repeated here. The accent stays JetBrains blue. */
+   covers both themes and no rule in styles.css is repeated here. The accent is terracotta, the warm
+   partner of eggshell; both shades clear WCAG AA against the page and under white or ink text. */
 
 :root {
   --bg: light-dark(#f0ead6, #211e18);
@@ -12,4 +13,8 @@
   --text: light-dark(#1e1f22, #ede7d6);
   --text-muted: light-dark(#5b584c, #b3ab99);
   --border: light-dark(#dcd4bc, #3f3a30);
+  --accent: light-dark(#a64a23, #e0855c);
+  --accent-hover: light-dark(#8c3c1b, #eb9a76);
+  --accent-contrast: light-dark(#ffffff, #16171a);
+  --accent-soft: light-dark(rgba(166, 74, 35, 0.12), rgba(224, 133, 92, 0.16));
 }
