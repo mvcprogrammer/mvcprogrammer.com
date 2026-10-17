@@ -47,8 +47,8 @@ story += [
     p("Content is identical on every edition. The editions cross-link through the About core-skill chips "
       "(<b>Angular</b>, <b>React</b>, <b>Blazor</b>, <b>JavaScript</b>, each with a title hint such as <i>See the React edition of "
       "this site</i>) and the hero highlights (<b>Angular</b> and <b>React</b> of "
-      "<i>Angular / React</i> to their editions). A link to the edition already open simply reloads it. The portfolio card "
-      "carries no edition links. The test in " + c("sections/static-sections.test.tsx") + " pins the React side of it."),
+      "<i>Angular / React</i> to their editions), and through the edition menu in the header: a pill naming the open "
+      "edition that lists all four. A link to the edition already open simply reloads it. The portfolio card carries no edition links. The test in " + c("sections/static-sections.test.tsx") + " pins the React side of it."),
     KeepTogether([
         p("The one exception: color", "h2"),
         p("Each edition carries its own palette. One small file per edition, loaded after the shared " + c("styles.css")
@@ -121,7 +121,7 @@ story += [
             ["Styling", "Shared stylesheet plus " + c("vanilla.css") + " (palette).", "Shared stylesheet plus " + c("angular.css") + " (palette, boot screen); no component styles (CSP).", "Shared stylesheet plus " + c("react.css") + " (palette, boot screen). <b>No CSS-in-JS and no " + c("style") + " attribute</b>: the CSP forbids inline styles. No host elements, so no " + c("display: contents") + " list to maintain."],
             ["Build output", "The files as committed.", c("ng build") + ": esbuild, fingerprinted bundles, critical CSS not inlined.", c("tsc -b") + " then " + c("vite build") + ": one fingerprinted script and stylesheet under " + c("bundles/") + ", nothing inlined, no source maps."],
             ["Hosting", "Bucket root, distribution for mvcprogrammer.com.", c("angular/") + " prefix, own distribution, S3 403 rewritten to " + c("index.html") + ".", c("react/") + " prefix, own distribution, the static site's response headers policy unchanged, S3 403 rewritten to " + c("index.html") + " so React Router answers deep links."],
-            ["Tests", "None for the static page.", "133 Vitest cases on jsdom.", "181 Vitest cases on jsdom with Testing Library, run before every build."],
+            ["Tests", "None for the static page.", "138 Vitest cases on jsdom.", "186 Vitest cases on jsdom with Testing Library, run before every build."],
         ],
         [0.95 * inch, 1.6 * inch, 2.1 * inch, 2.35 * inch],
         first_style="cellsmall",
@@ -194,12 +194,12 @@ story += [
     b("Async rules: a state change after a promise is awaited with " + c("findBy...") + " or " + c("waitFor") + "; a call into the component from outside React (the topic state, an observer callback) is wrapped in " + c("act()") + "."),
     b("jsdom has no " + c("IntersectionObserver") + ", no " + c("matchMedia") + ", and no modal dialogs. The components guard for that; the tests stub the observer and the dialog methods where the behavior matters, and query a closed dialog's button with " + c("hidden: true") + "."),
     p("Test layout", "h2"),
-    p("Files mirror the app. The counts are test cases as Vitest reports them (181 in all)."),
+    p("Files mirror the app. The counts are test cases as Vitest reports them (186 in all)."),
     table(
         ["File", "Tests", "What it proves"],
         [
             [link("components/ExperienceTimeline.test.tsx", BLOB + SRC + "components/ExperienceTimeline.test.tsx"), "19", "API render, date and place labels, Present, every fallback path (error, empty, not a list, seed failure, empty seed, skills failure, no skills), late response after unmount, chip order, the more button, chip titles, filtering, restore without refetch, filter failure, the loading class."],
-            [link("components/SiteHeader.test.tsx", BLOB + SRC + "components/SiteHeader.test.tsx"), "15", "Nav links and initial state, menu toggle, close on nav click, Escape with focus return, outside and inside clicks, the breakpoint, listeners released, scrolled class, current link set, cleared near the top, kept further down, no sections, no observer in the browser, disconnect on unmount, replaced after navigation."],
+            [link("components/SiteHeader.test.tsx", BLOB + SRC + "components/SiteHeader.test.tsx"), "20", "Nav links and initial state, the edition list (four entries, current marked, open and close, Escape, outside click, listener release), menu toggle, close on nav click, Escape with focus return, outside and inside clicks, the breakpoint, listeners released, scrolled class, current link set, cleared near the top, kept further down, no sections, no observer in the browser, disconnect on unmount, replaced after navigation."],
             [link("components/KioskDialog.test.tsx", BLOB + SRC + "components/KioskDialog.test.tsx"), "8", "No iframe while closed, open shows the configured kiosk modally, showModal not repeated, close button, close while not open, backdrop versus inside click, parent closing it, Escape through the close event."],
             [link("components/IconSprite.test.tsx", BLOB + SRC + "components/IconSprite.test.tsx"), "15", "Every symbol the page references exists in the sprite; the sprite is hidden."],
             [link("components/Icon, SocialLinks, SiteFooter", TREE + SRC + "components"), "3", "Icon references a sprite symbol, three social profiles, footer year and legal links."],
@@ -249,7 +249,7 @@ story += [
             ["3", "If the React behavior changed, add or update the test that proves it. Follow the conventions in section 6."],
             ["4", "Run " + c("npm test") + " and " + c("npm run build") + " in " + c("react/") + " and make both green. Warnings in the build are errors in review."],
             ["5", "Preview the editions locally: " + c("python3 -m http.server 8080") + " at the root, " + c("dotnet run --project blazor/src/Portfolio.Blazor") + ", and " + c("npm start") + " in " + c("angular/") + " and in " + c("react/") + "."],
-            ["6", "Check the cross-links survived: the four About chips and the two hero highlights, identical on every edition, with their hints."],
+            ["6", "Check the cross-links survived: the edition menu in the header, the four About chips, and the two hero highlights, identical on every edition, with their hints."],
             ["7", "Never add a " + c("style") + " attribute, a CSS-in-JS library, or an inline " + c("&lt;script&gt;") + "; the CSP blocks them in production. New rules go in " + c("react.css") + "; a color change edits its palette block, and the other three palette files if it is meant to be shared."],
             ["8", "Commit all editions together. No AI attribution trailers in the message."],
             ["9", "Push to " + c("main") + " only when asked. The workflow tests, builds, and deploys every edition."],

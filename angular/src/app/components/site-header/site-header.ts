@@ -22,7 +22,14 @@ export interface SectionLink {
   readonly label: string;
 }
 
-/** Site header: menu state, scroll shadow, and the current-section highlight. */
+/** An edition of the site: its key, the label shown in the edition menu, and where it lives. */
+export interface Edition {
+  readonly key: string;
+  readonly label: string;
+  readonly href: string;
+}
+
+/** Site header: menu and edition-list state, scroll shadow, and the current-section highlight. */
 @Component({
   selector: 'app-site-header',
   imports: [SocialLinks],
@@ -40,6 +47,17 @@ export class SiteHeader {
     { id: 'contact', label: 'Contact' },
   ];
 
+  /** The four editions of the site, in the order the edition menu lists them. */
+  static readonly EDITIONS: readonly Edition[] = [
+    { key: 'js', label: 'JS Edition', href: 'https://mvcprogrammer.com/' },
+    { key: 'angular', label: 'Angular Edition', href: 'https://angular.mvcprogrammer.com/' },
+    { key: 'react', label: 'React Edition', href: 'https://react.mvcprogrammer.com/' },
+    { key: 'blazor', label: 'Blazor Edition', href: 'https://blazor.mvcprogrammer.com/' },
+  ];
+
+  /** The key of the edition this app is; its entry in EDITIONS is marked current. */
+  static readonly CURRENT_EDITION = 'angular';
+
   /** Scrolling past this many pixels draws the header's bottom border. */
   private static readonly SCROLL_THRESHOLD = 8;
 
@@ -47,7 +65,7 @@ export class SiteHeader {
   private static readonly TOP_ZONE = 200;
 
   /** The breakpoint at which the mobile menu becomes the desktop nav. */
-  private static readonly DESKTOP_QUERY = '(min-width: 48em)';
+  private static readonly DESKTOP_QUERY = '(min-width: 52em)';
 
   private static readonly SECTION_OBSERVER_OPTIONS: IntersectionObserverInit = {
     rootMargin: '-40% 0px -50% 0px',
@@ -55,12 +73,17 @@ export class SiteHeader {
   };
 
   protected readonly links = SiteHeader.SECTION_LINKS;
+  protected readonly editions = SiteHeader.EDITIONS;
+  protected readonly currentEdition: Edition = SiteHeader.EDITIONS.find((e) => e.key === SiteHeader.CURRENT_EDITION) as Edition;
   protected readonly menuOpen = signal(false);
+  protected readonly editionsOpen = signal(false);
   protected readonly scrolled = signal(false);
   protected readonly current = signal<string | null>(null);
 
   private readonly header = viewChild.required<ElementRef<HTMLElement>>('header');
   private readonly toggle = viewChild.required<ElementRef<HTMLButtonElement>>('toggle');
+  private readonly edition = viewChild.required<ElementRef<HTMLElement>>('edition');
+  private readonly editionToggle = viewChild.required<ElementRef<HTMLButtonElement>>('editionToggle');
   private readonly document = inject(DOCUMENT);
   private readonly destroyRef = inject(DestroyRef);
   private readonly injector = inject(Injector);
@@ -87,6 +110,15 @@ export class SiteHeader {
       onCleanup(this.watchMenu());
     });
 
+    // The same for the edition list.
+    effect((onCleanup) => {
+      if (!this.editionsOpen()) {
+        return;
+      }
+
+      onCleanup(this.watchEditions());
+    });
+
     this.destroyRef.onDestroy(() => this.sectionObserver?.disconnect());
   }
 
@@ -105,8 +137,27 @@ export class SiteHeader {
     }
   }
 
+  /**
+   * Closes the edition list. Called from Escape and an outside click.
+   * @param returnFocus True to move focus back to the edition button, as Escape should.
+   */
+  closeEditions(returnFocus: boolean): void {
+    if (!this.editionsOpen()) {
+      return;
+    }
+
+    this.editionsOpen.set(false);
+    if (returnFocus) {
+      this.editionToggle().nativeElement.focus();
+    }
+  }
+
   protected toggleMenu(): void {
     this.menuOpen.update((open) => !open);
+  }
+
+  protected toggleEditions(): void {
+    this.editionsOpen.update((open) => !open);
   }
 
   protected isCurrent(sectionId: string): boolean {
@@ -175,6 +226,29 @@ export class SiteHeader {
     }
 
     this.sectionObserver = observer;
+  }
+
+  /** While the edition list is open: Escape or a click outside the list closes it. */
+  private watchEditions(): () => void {
+    const edition = this.edition().nativeElement;
+    const onKey = (event: KeyboardEvent): void => {
+      if (event.key === 'Escape') {
+        this.closeEditions(true);
+      }
+    };
+    const onClick = (event: MouseEvent): void => {
+      if (!edition.contains(event.target as Node)) {
+        this.closeEditions(false);
+      }
+    };
+
+    this.document.addEventListener('keydown', onKey);
+    this.document.addEventListener('click', onClick);
+
+    return () => {
+      this.document.removeEventListener('keydown', onKey);
+      this.document.removeEventListener('click', onClick);
+    };
   }
 
   /** While the menu is open: Escape, a click outside the header, or growing past the breakpoint closes it. */

@@ -45,7 +45,8 @@ story += [
     p("Content is identical on every edition. The editions cross-link through the About core-skill chips "
       "(<b>Angular</b>, <b>React</b>, <b>Blazor</b>, <b>JavaScript</b>, each with a title hint such as <i>See the Angular edition of "
       "this site</i>) and the hero highlights (<b>Angular</b> and <b>React</b> of <i>Angular / React</i> to "
-      "their editions). A link to the edition already open simply reloads it. The portfolio card carries no edition "
+      "their editions), and through the edition menu in the header: a pill naming the open edition that lists all four. "
+      "A link to the edition already open simply reloads it. The portfolio card carries no edition "
       "links. The bUnit tests, " + c("AboutSection_ShouldLinkEditionTagsWithHints") + " and " + c("HeroSection_ShouldLinkHighlightsToEditions") + ", pin the Blazor side of it."),
     KeepTogether([
         p("The one exception: color", "h2"),
@@ -115,7 +116,7 @@ story += [
             ["Styling", "Shared stylesheet plus " + c("vanilla.css") + " (palette).", "Shared stylesheet plus " + c("blazor.css") + " (palette, boot screen, error bar). Razor components carry no scoped CSS."],
             ["Build output", "The files as committed.", c("dotnet publish") + ": trimmed, invariant globalization, no time zone data, no fingerprint placeholders (the import map would be an inline script, which the CSP forbids)."],
             ["Hosting", "Root of the private S3 bucket, distribution for mvcprogrammer.com.", c("blazor/") + " prefix of the same bucket, distribution " + c("E2NFN5MW02S8Y9") + ", own ACM certificate, CSP with " + c("'wasm-unsafe-eval'") + ", S3 403 rewritten to " + c("index.html") + " so deep links reach the router."],
-            ["Tests", "None in the repo for the static page.", "114 bUnit and xUnit cases, run before every publish. (The Angular and React editions have their own Vitest suites.)"],
+            ["Tests", "None in the repo for the static page.", "118 bUnit and xUnit cases, run before every publish. (The Angular and React editions have their own Vitest suites.)"],
         ],
         [1.15 * inch, 2.85 * inch, 3.0 * inch],
     ),
@@ -190,12 +191,12 @@ story += [
     b("Dependencies of the class under test are faked, never the class itself. " + c("Assert.Equal") + " for exact values, " + c("Assert.Single") + " when one element is expected, " + c("Assert.ThrowsAsync") + " for async failures, " + c("CancellationToken.None") + " unless cancellation is the subject."),
     b("Async component assertions use " + c("cut.WaitForAssertionAsync(...)") + " because the first render happens before " + c("OnInitializedAsync") + " completes."),
     p("Test project layout", "h2"),
-    p("Folders mirror the app. The counts are test methods; theories expand to more cases at run time (111 in all)."),
+    p("Folders mirror the app. The counts are test methods; theories expand to more cases at run time (115 in all)."),
     table(
         ["File", "Tests", "What it proves"],
         [
             [link("Components/ExperienceTimelineTests.cs", BLOB + "blazor/tests/Portfolio.Blazor.Tests/Components/ExperienceTimelineTests.cs"), "15", "API render, date and place labels, every fallback path (error, non-JSON, timeout, empty), chip order and the more button, filtering, restore without refetch, cancellation on dispose."],
-            [link("Components/SiteHeaderTests.cs", BLOB + "blazor/tests/Portfolio.Blazor.Tests/Components/SiteHeaderTests.cs"), "10", "Watchers start on render, menu toggle and document watch, close on nav click, focus return, scrolled class, current-section marking, module release."],
+            [link("Components/SiteHeaderTests.cs", BLOB + "blazor/tests/Portfolio.Blazor.Tests/Components/SiteHeaderTests.cs"), "14", "Watchers start on render, the edition list (four entries, current marked, open and watch, close, focus return), menu toggle and document watch, close on nav click, focus return, scrolled class, current-section marking, module release."],
             [link("Components/KioskDialogTests.cs", BLOB + "blazor/tests/Portfolio.Blazor.Tests/Components/KioskDialogTests.cs"), "7", "No iframe while closed, open shows the modal, open is idempotent, close removes the iframe, close button behavior, the portfolio card opens it."],
             [link("Components/ChromeComponentTests.cs", BLOB + "blazor/tests/Portfolio.Blazor.Tests/Components/ChromeComponentTests.cs"), "4", "Icon references a sprite symbol, every symbol exists, three social profiles, footer year and legal links."],
             [link("Sections/ContactSectionTests.cs", BLOB + "blazor/tests/Portfolio.Blazor.Tests/Sections/ContactSectionTests.cs"), "12", "Phone field hidden by default, topic preselection and unsubscribe, phone reveal, post and confirmations, honeypot forwarded, 429, generic failure, timeout, no post when invalid."],
@@ -242,7 +243,7 @@ story += [
             ["3", "If the Blazor behavior changed, add or update the bUnit test that proves it. Follow the naming and layout conventions in section 6."],
             ["4", "Run " + c("dotnet test --project blazor/tests/Portfolio.Blazor.Tests") + " and make it green. Run " + c("dotnet build") + " on the app; warnings are errors."],
             ["5", "Preview the editions locally: " + c("python3 -m http.server 8080") + " at the root, " + c("dotnet run --project blazor/src/Portfolio.Blazor") + ", and " + c("npm start") + " in " + c("angular/") + " and in " + c("react/") + "."],
-            ["6", "Check the cross-links survived: the four About chips and the two hero highlights, identical on every edition, with their hints."],
+            ["6", "Check the cross-links survived: the edition menu in the header, the four About chips, and the two hero highlights, identical on every edition, with their hints."],
             ["7", "Commit all editions together. No AI attribution trailers in the message."],
             ["8", "Push to " + c("main") + " only when asked. The workflow tests, publishes, and deploys every edition."],
         ],

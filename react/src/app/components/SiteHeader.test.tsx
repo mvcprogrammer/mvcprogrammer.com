@@ -1,6 +1,6 @@
 import { act, fireEvent, render, screen } from '@testing-library/react';
 import { MemoryRouter, useNavigate } from 'react-router';
-import { SECTION_LINKS, SiteHeader } from './SiteHeader';
+import { EDITIONS, SECTION_LINKS, SiteHeader } from './SiteHeader';
 
 /** The observer callback and bookkeeping captured from a stubbed IntersectionObserver. */
 interface ObserverCapture {
@@ -130,6 +130,84 @@ describe('SiteHeader', () => {
 
       // Act
       fireEvent.keyDown(document, { key: 'Escape' });
+
+      // Assert
+      const types = removed.mock.calls.map((call) => call[0]);
+      expect(types).toContain('keydown');
+      expect(types).toContain('click');
+    });
+  });
+
+  describe('editions', () => {
+    it('should list the four editions with this one marked current and the list closed', () => {
+      // Arrange, Act
+      renderHeader();
+
+      // Assert
+      const toggle = screen.getByRole('button', { name: 'React Edition' });
+      expect(toggle.getAttribute('aria-expanded')).toBe('false');
+      const links = Array.from(document.querySelectorAll<HTMLAnchorElement>('.edition-link'));
+      expect(links.map((a) => [a.textContent, a.getAttribute('href')])).toEqual(EDITIONS.map((e) => [e.label, e.href]));
+      const current = links.filter((a) => a.getAttribute('aria-current') === 'true');
+      expect(current.length).toBe(1);
+      expect(current[0].textContent).toBe('React Edition');
+      expect(document.querySelector('.edition')?.classList.contains('is-open')).toBe(false);
+    });
+
+    it('should open on the button and close on the second press', () => {
+      // Arrange
+      renderHeader();
+      const toggle = screen.getByRole('button', { name: 'React Edition' });
+
+      // Act, Assert: open
+      fireEvent.click(toggle);
+      expect(document.querySelector('.edition')?.classList.contains('is-open')).toBe(true);
+      expect(toggle.getAttribute('aria-expanded')).toBe('true');
+
+      // Act, Assert: closed
+      fireEvent.click(toggle);
+      expect(document.querySelector('.edition')?.classList.contains('is-open')).toBe(false);
+    });
+
+    it('should close on Escape and return focus to the button', () => {
+      // Arrange
+      renderHeader();
+      const toggle = screen.getByRole('button', { name: 'React Edition' });
+      fireEvent.click(toggle);
+      toggle.blur();
+
+      // Act
+      fireEvent.keyDown(document, { key: 'Escape' });
+
+      // Assert
+      expect(document.querySelector('.edition')?.classList.contains('is-open')).toBe(false);
+      expect(document.activeElement).toBe(toggle);
+    });
+
+    it('should close on a click outside the list but not inside it', () => {
+      // Arrange
+      renderHeader();
+      fireEvent.click(screen.getByRole('button', { name: 'React Edition' }));
+
+      // Act, Assert: inside
+      fireEvent.click(document.querySelector('.edition-menu')!);
+      expect(document.querySelector('.edition')?.classList.contains('is-open')).toBe(true);
+
+      // Act, Assert: outside
+      fireEvent.click(document.body);
+      expect(document.querySelector('.edition')?.classList.contains('is-open')).toBe(false);
+    });
+
+    it('should release the document listeners once the list closes', () => {
+      // Arrange
+      const removed = vi.spyOn(document, 'removeEventListener');
+      renderHeader();
+      const toggle = screen.getByRole('button', { name: 'React Edition' });
+      fireEvent.click(toggle);
+      removed.mockClear();
+
+      // Act
+      fireEvent.click(toggle);
 
       // Assert
       const types = removed.mock.calls.map((call) => call[0]);

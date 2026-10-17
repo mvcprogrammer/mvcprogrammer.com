@@ -1,11 +1,25 @@
-@* Sticky header with the brand, the section nav, and the mobile menu toggle. The scroll state,
-   the section in view, and the open menu are component state; site.js reports the browser events. *@
+@* Sticky header with the brand, the edition menu, the section nav, and the mobile menu toggle. The scroll
+   state, the section in view, and the open menus are component state; site.js reports the browser events. *@
 <header class="site-header @(_scrolled ? "is-scrolled" : null)" @ref="_header">
     <div class="container header-inner">
-        <a class="brand" href="#top" aria-label="mvcprogrammer.com, Blazor Edition, back to top">
-            <span class="brand-mark" aria-hidden="true"></span>
-            <span class="brand-name">mvcprogrammer.com<span class="brand-edition"> - Blazor Edition</span></span>
-        </a>
+        <div class="brand-group">
+            <a class="brand" href="#top" aria-label="mvcprogrammer.com, back to top">
+                <span class="brand-mark" aria-hidden="true"></span>
+                <span class="brand-name">mvcprogrammer.com</span>
+            </a>
+            <div class="edition @(_editionsOpen ? "is-open" : null)" @ref="_edition">
+                <button class="edition-toggle" type="button" aria-haspopup="true" aria-expanded="@(_editionsOpen ? "true" : "false")"
+                        aria-controls="edition-menu" @onclick="ToggleEditions" @ref="_editionToggle">@CurrentEdition.Label</button>
+                <ul class="edition-menu" id="edition-menu" role="list" aria-label="Editions of this site">
+                    @foreach (var edition in EDITIONS)
+                    {
+                        <li>
+                            <a class="edition-link" href="@edition.Href" aria-current="@(edition.Key == CURRENT_EDITION ? "true" : null)">@edition.Label</a>
+                        </li>
+                    }
+                </ul>
+            </div>
+        </div>
 
         <button class="nav-toggle" type="button" aria-expanded="@(_menuOpen ? "true" : "false")" aria-controls="primary-nav"
                 aria-label="@(_menuOpen ? "Close menu" : "Open menu")" @onclick="ToggleMenu" @ref="_toggle">

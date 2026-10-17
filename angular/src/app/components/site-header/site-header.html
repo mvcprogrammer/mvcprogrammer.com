@@ -1,11 +1,24 @@
-<!-- Sticky header with the brand, the section nav, and the mobile menu toggle. The scroll state, the
-     section in view, and the open menu are signals; the browser events feed them directly. -->
+<!-- Sticky header with the brand, the edition menu, the section nav, and the mobile menu toggle. The scroll
+     state, the section in view, and the open menus are signals; the browser events feed them directly. -->
 <header class="site-header" [class.is-scrolled]="scrolled()" #header>
   <div class="container header-inner">
-    <a class="brand" href="#top" aria-label="mvcprogrammer.com, Angular Edition, back to top">
-      <span class="brand-mark" aria-hidden="true"></span>
-      <span class="brand-name">mvcprogrammer.com<span class="brand-edition"> - Angular Edition</span></span>
-    </a>
+    <div class="brand-group">
+      <a class="brand" href="#top" aria-label="mvcprogrammer.com, back to top">
+        <span class="brand-mark" aria-hidden="true"></span>
+        <span class="brand-name">mvcprogrammer.com</span>
+      </a>
+      <div class="edition" [class.is-open]="editionsOpen()" #edition>
+        <button class="edition-toggle" type="button" aria-haspopup="true" [attr.aria-expanded]="editionsOpen()"
+                aria-controls="edition-menu" (click)="toggleEditions()" #editionToggle>{{ currentEdition.label }}</button>
+        <ul class="edition-menu" id="edition-menu" role="list" aria-label="Editions of this site">
+          @for (edition of editions; track edition.key) {
+            <li>
+              <a class="edition-link" [href]="edition.href" [attr.aria-current]="edition.key === currentEdition.key ? 'true' : null">{{ edition.label }}</a>
+            </li>
+          }
+        </ul>
+      </div>
+    </div>
 
     <button class="nav-toggle" type="button" [attr.aria-expanded]="menuOpen()" aria-controls="primary-nav"
             [attr.aria-label]="menuOpen() ? 'Close menu' : 'Open menu'" (click)="toggleMenu()" #toggle>

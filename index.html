@@ -112,10 +112,21 @@
 
   <header class="site-header">
     <div class="container header-inner">
-      <a class="brand" href="#top" aria-label="mvcprogrammer.com, JS Edition, back to top">
-        <span class="brand-mark" aria-hidden="true"></span>
-        <span class="brand-name">mvcprogrammer.com<span class="brand-edition"> - JS Edition</span></span>
-      </a>
+      <div class="brand-group">
+        <a class="brand" href="#top" aria-label="mvcprogrammer.com, back to top">
+          <span class="brand-mark" aria-hidden="true"></span>
+          <span class="brand-name">mvcprogrammer.com</span>
+        </a>
+        <div class="edition">
+          <button class="edition-toggle" type="button" aria-haspopup="true" aria-expanded="false" aria-controls="edition-menu">JS Edition</button>
+          <ul class="edition-menu" id="edition-menu" role="list" aria-label="Editions of this site">
+            <li><a class="edition-link" href="https://mvcprogrammer.com/" aria-current="true">JS Edition</a></li>
+            <li><a class="edition-link" href="https://angular.mvcprogrammer.com/">Angular Edition</a></li>
+            <li><a class="edition-link" href="https://react.mvcprogrammer.com/">React Edition</a></li>
+            <li><a class="edition-link" href="https://blazor.mvcprogrammer.com/">Blazor Edition</a></li>
+          </ul>
+        </div>
+      </div>
 
       <button class="nav-toggle" type="button" aria-expanded="false" aria-controls="primary-nav" aria-label="Open menu">
         <span class="nav-toggle-bar" aria-hidden="true"></span>

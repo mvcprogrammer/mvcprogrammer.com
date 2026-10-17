@@ -3,9 +3,21 @@ using Microsoft.JSInterop;
 
 namespace Portfolio.Blazor.Components;
 
-/// <summary>Code-behind for the site header: menu state, scroll shadow, and the current-section highlight.</summary>
+/// <summary>Code-behind for the site header: menu and edition-list state, scroll shadow, and the current-section highlight.</summary>
 public sealed partial class SiteHeader : IAsyncDisposable
 {
+    /// <summary>The key of the edition this app is; its entry in <see cref="EDITIONS"/> is marked current.</summary>
+    private const string CURRENT_EDITION = "blazor";
+
+    /// <summary>The four editions of the site, in the order the edition menu lists them.</summary>
+    private static readonly Edition[] EDITIONS =
+    [
+        new("js", "JS Edition", "https://mvcprogrammer.com/"),
+        new("angular", "Angular Edition", "https://angular.mvcprogrammer.com/"),
+        new("react", "React Edition", "https://react.mvcprogrammer.com/"),
+        new("blazor", "Blazor Edition", "https://blazor.mvcprogrammer.com/"),
+    ];
+
     private static readonly SectionLink[] SECTION_LINKS =
     [
         new("about", "About"),
@@ -18,7 +30,10 @@ public sealed partial class SiteHeader : IAsyncDisposable
 
     private ElementReference _header;
     private ElementReference _toggle;
+    private ElementReference _edition;
+    private ElementReference _editionToggle;
     private bool _menuOpen;
+    private bool _editionsOpen;
     private bool _scrolled;
     private string? _current;
     private DotNetObjectReference<SiteHeader>? _self;
@@ -26,6 +41,7 @@ public sealed partial class SiteHeader : IAsyncDisposable
     private IJSObjectReference? _headerWatch;
     private IJSObjectReference? _sectionWatch;
     private IJSObjectReference? _menuWatch;
+    private IJSObjectReference? _editionWatch;
 
     [Inject]
     private IJSRuntime Js { get; set; } = null!;
@@ -72,9 +88,29 @@ public sealed partial class SiteHeader : IAsyncDisposable
         }
     }
 
+    /// <summary>Closes the edition list. Called from site.js (Escape, outside click, resize).</summary>
+    /// <param name="returnFocus">True to move focus back to the edition button, as Escape should.</param>
+    [JSInvokable]
+    public async Task CloseEditions(bool returnFocus)
+    {
+        if (!_editionsOpen)
+        {
+            return;
+        }
+
+        _editionsOpen = false;
+        StateHasChanged();
+
+        if (returnFocus && _module is not null)
+        {
+            await _module.InvokeVoidAsync("focus", _editionToggle);
+        }
+    }
+
     /// <inheritdoc />
     public async ValueTask DisposeAsync()
     {
+        await DisposeHandleAsync(_editionWatch);
         await DisposeHandleAsync(_menuWatch);
         await DisposeHandleAsync(_sectionWatch);
         await DisposeHandleAsync(_headerWatch);
@@ -109,6 +145,18 @@ public sealed partial class SiteHeader : IAsyncDisposable
             _menuWatch = null;
             await DisposeHandleAsync(watch);
         }
+
+        // The same for the edition list, reporting through CloseEditions.
+        if (_editionsOpen && _editionWatch is null && _module is not null)
+        {
+            _editionWatch = await _module.InvokeAsync<IJSObjectReference>("watchMenu", _self, _edition, nameof(CloseEditions));
+        }
+        else if (!_editionsOpen && _editionWatch is not null)
+        {
+            var watch = _editionWatch;
+            _editionWatch = null;
+            await DisposeHandleAsync(watch);
+        }
     }
 
     private static async Task DisposeHandleAsync(IJSObjectReference? handle)
@@ -124,8 +172,15 @@ public sealed partial class SiteHeader : IAsyncDisposable
 
     private bool IsCurrent(string sectionId) => string.Equals(_current, sectionId, StringComparison.Ordinal);
 
+    private static Edition CurrentEdition => EDITIONS.First(e => e.Key == CURRENT_EDITION);
+
     private void ToggleMenu() => _menuOpen = !_menuOpen;
+
+    private void ToggleEditions() => _editionsOpen = !_editionsOpen;
 
     /// <summary>A nav entry: the section id it scrolls to and its label.</summary>
     private sealed record SectionLink(string Id, string Label);
+
+    /// <summary>An edition of the site: its key, the label shown in the edition menu, and where it lives.</summary>
+    private sealed record Edition(string Key, string Label, string Href);
 }

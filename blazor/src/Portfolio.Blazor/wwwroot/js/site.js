@@ -52,17 +52,18 @@ export function observeSections(dotnet, ids) {
   return { dispose: () => observer.disconnect() };
 }
 
-/** While the mobile menu is open: Escape, a click outside the header, or growing past the breakpoint closes it. */
-export function watchMenu(dotnet, header) {
+/** While a menu is open: Escape, a click outside its root, or growing past the breakpoint closes it.
+ *  The mobile menu reports through CloseMenu; the edition list passes its own method name. */
+export function watchMenu(dotnet, root, method = "CloseMenu") {
   const onKey = (event) => {
-    if (event.key === "Escape") dotnet.invokeMethodAsync("CloseMenu", true);
+    if (event.key === "Escape") dotnet.invokeMethodAsync(method, true);
   };
   const onClick = (event) => {
-    if (!header.contains(event.target)) dotnet.invokeMethodAsync("CloseMenu", false);
+    if (!root.contains(event.target)) dotnet.invokeMethodAsync(method, false);
   };
-  const query = window.matchMedia("(min-width: 48em)");
+  const query = window.matchMedia("(min-width: 52em)");
   const onChange = (event) => {
-    if (event.matches) dotnet.invokeMethodAsync("CloseMenu", false);
+    if (event.matches) dotnet.invokeMethodAsync(method, false);
   };
   document.addEventListener("keydown", onKey);
   document.addEventListener("click", onClick);

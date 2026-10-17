@@ -316,23 +316,120 @@ img, svg {
   text-decoration: none;
 }
 
+/* The brand group is the site name plus the edition menu: a pill button naming the edition that is
+   open, which drops a list of the four editions. On phones the pill wraps under the name. */
+.brand-group {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  column-gap: 0.6rem;
+  row-gap: 0.2rem;
+  min-width: 0;
+}
+
 .brand-name {
   white-space: nowrap;
-  line-height: 1.15;
 }
 
-/* The edition suffix reads as a tag: smaller, lighter, muted. */
-.brand-edition {
-  font-size: 0.82em;
-  font-weight: 500;
+.edition {
+  position: relative;
+}
+
+.edition-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.22rem 0.65rem;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  background: var(--surface);
   color: var(--text-muted);
+  font: inherit;
+  font-size: 0.8125rem;
+  font-weight: 500;
+  line-height: 1.25;
+  white-space: nowrap;
+  cursor: pointer;
 }
 
-/* Phones: the suffix drops to its own line so the brand never crowds the menu button. */
-@media (max-width: 29.99em) {
-  .brand-edition {
-    display: block;
-  }
+/* A small chevron drawn from two borders; it flips while the list is open. */
+.edition-toggle::after {
+  content: "";
+  width: 0.38rem;
+  height: 0.38rem;
+  margin-top: -0.2rem;
+  border-right: 1.5px solid currentColor;
+  border-bottom: 1.5px solid currentColor;
+  transform: rotate(45deg);
+  transition: transform 0.2s var(--ease), margin-top 0.2s var(--ease);
+}
+
+.edition-toggle:hover,
+.edition-toggle[aria-expanded="true"] {
+  color: var(--hover);
+  border-color: var(--hover);
+  background: var(--hover-soft);
+}
+
+.edition-toggle[aria-expanded="true"]::after {
+  margin-top: 0.2rem;
+  transform: rotate(225deg);
+}
+
+.edition-menu {
+  position: absolute;
+  top: calc(100% + 0.5rem);
+  left: 0;
+  z-index: 1;
+  display: none;
+  min-width: 11rem;
+  margin: 0;
+  padding: 0.35rem;
+  list-style: none;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  box-shadow: var(--shadow);
+}
+
+.edition.is-open .edition-menu {
+  display: block;
+}
+
+.edition-link {
+  display: block;
+  padding: 0.45rem 0.75rem;
+  border-radius: 6px;
+  color: var(--text);
+  font-size: 0.875rem;
+  font-weight: 500;
+  white-space: nowrap;
+}
+
+/* Every entry reserves room for the marker so the labels line up; only the open edition shows it. */
+.edition-link::before {
+  content: "";
+  display: inline-block;
+  width: 0.4rem;
+  height: 0.4rem;
+  margin-right: 0.55rem;
+  border-radius: 50%;
+  vertical-align: middle;
+}
+
+.edition-link[aria-current="true"] {
+  color: var(--accent);
+}
+
+.edition-link[aria-current="true"]::before {
+  background: var(--accent);
+}
+
+.edition-link:hover,
+.edition-link:focus-visible {
+  color: var(--hover);
+  background: var(--hover-soft);
+  text-decoration: none;
 }
 
 .brand-mark {
@@ -439,9 +536,9 @@ img, svg {
   background: var(--hover-soft);
 }
 
-/* The brand names the site and the edition (mvcprogrammer.com - JS Edition), so it is wider than a
-   name; the inline nav waits for 52em, the nav runs compact until 68em, and between the two the
-   social icons stay in the footer only. */
+/* The brand group (site name plus the edition pill) is wider than a name, so the inline nav waits
+   for 52em, runs compact until 68em, and between 52em and 64em the social icons stay in the footer
+   only. The JavaScript in every edition closes the mobile menu at the same 52em. */
 @media (min-width: 52em) {
   .nav-toggle {
     display: none;
@@ -509,6 +606,10 @@ img, svg {
 @media (min-width: 52em) and (max-width: 67.99em) {
   .brand {
     font-size: 0.9375rem;
+  }
+
+  .edition-toggle {
+    font-size: 0.75rem;
   }
 
   .site-nav {

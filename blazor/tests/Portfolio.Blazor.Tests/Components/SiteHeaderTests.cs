@@ -3,7 +3,7 @@ using Portfolio.Blazor.Tests.Helpers;
 
 namespace Portfolio.Blazor.Tests.Components;
 
-/// <summary>Tests for <see cref="SiteHeader"/>: the mobile menu, scroll state, and current-section highlight.</summary>
+/// <summary>Tests for <see cref="SiteHeader"/>: the mobile menu, the edition list, scroll state, and current-section highlight.</summary>
 public sealed class SiteHeaderTests : BunitContext
 {
     #region Render Tests
@@ -24,6 +24,11 @@ public sealed class SiteHeaderTests : BunitContext
         Assert.Equal(["about", "services", "freelance", "portfolio", "resume", "contact"], Assert.IsType<string[]>(observe.Arguments[1]));
         Assert.Equal(6, cut.FindAll(".nav-link").Count);
         Assert.Equal("false", cut.Find(".nav-toggle").GetAttribute("aria-expanded"));
+        Assert.Equal("Blazor Edition", cut.Find(".edition-toggle").TextContent.Trim());
+        Assert.Equal("false", cut.Find(".edition-toggle").GetAttribute("aria-expanded"));
+        Assert.Equal(["JS Edition", "Angular Edition", "React Edition", "Blazor Edition"], cut.FindAll(".edition-link").Select(a => a.TextContent.Trim()));
+        var current = Assert.Single(cut.FindAll(".edition-link[aria-current='true']"));
+        Assert.Equal("https://blazor.mvcprogrammer.com/", current.GetAttribute("href"));
         Assert.DoesNotContain("is-scrolled", cut.Find("header").ClassList);
         Assert.DoesNotContain(module.Invocations, i => i.Identifier == "watchMenu");
     }
@@ -114,6 +119,81 @@ public sealed class SiteHeaderTests : BunitContext
 
         // Act
         await cut.InvokeAsync(() => cut.Instance.CloseMenu(true));
+
+        // Assert
+        Assert.DoesNotContain(module.Invocations, i => i.Identifier == "focus");
+    }
+
+    #endregion
+
+    #region ToggleEditions Tests
+
+    /// <summary>The edition button opens the list, updates its ARIA state, and starts a document watcher that reports through CloseEditions.</summary>
+    [Fact]
+    public void ToggleEditions_ShouldOpenListAndWatchDocument()
+    {
+        // Arrange
+        var module = this.SetupSiteModule();
+        var cut = Render<SiteHeader>();
+
+        // Act
+        cut.Find(".edition-toggle").Click();
+
+        // Assert
+        Assert.Contains("is-open", cut.Find(".edition").ClassList);
+        Assert.Equal("true", cut.Find(".edition-toggle").GetAttribute("aria-expanded"));
+        var watch = Assert.Single(module.Invocations, i => i.Identifier == "watchMenu");
+        Assert.Equal("CloseEditions", watch.Arguments[2]);
+    }
+
+    /// <summary>A second press closes the list and releases the watcher.</summary>
+    [Fact]
+    public void ToggleEditions_ShouldCloseListOnSecondPress()
+    {
+        // Arrange
+        this.SetupSiteModule();
+        var cut = Render<SiteHeader>();
+        cut.Find(".edition-toggle").Click();
+
+        // Act
+        cut.Find(".edition-toggle").Click();
+
+        // Assert
+        Assert.DoesNotContain("is-open", cut.Find(".edition").ClassList);
+        Assert.Equal("false", cut.Find(".edition-toggle").GetAttribute("aria-expanded"));
+    }
+
+    #endregion
+
+    #region CloseEditions Tests
+
+    /// <summary>Escape (reported by site.js with returnFocus) closes the list and focuses the edition button.</summary>
+    [Fact]
+    public async Task CloseEditions_ShouldReturnFocusToButtonWhenAsked()
+    {
+        // Arrange
+        var module = this.SetupSiteModule();
+        var cut = Render<SiteHeader>();
+        cut.Find(".edition-toggle").Click();
+
+        // Act
+        await cut.InvokeAsync(() => cut.Instance.CloseEditions(true));
+
+        // Assert
+        Assert.DoesNotContain("is-open", cut.Find(".edition").ClassList);
+        Assert.Single(module.Invocations, i => i.Identifier == "focus");
+    }
+
+    /// <summary>Closing an already closed list is a no-op and does not touch focus.</summary>
+    [Fact]
+    public async Task CloseEditions_ShouldDoNothingWhenAlreadyClosed()
+    {
+        // Arrange
+        var module = this.SetupSiteModule();
+        var cut = Render<SiteHeader>();
+
+        // Act
+        await cut.InvokeAsync(() => cut.Instance.CloseEditions(true));
 
         // Assert
         Assert.DoesNotContain(module.Invocations, i => i.Identifier == "focus");

@@ -82,7 +82,7 @@ describe('SiteHeader', () => {
       expect(toggle().getAttribute('aria-expanded')).toBe('false');
       expect(toggle().getAttribute('aria-label')).toBe('Open menu');
       expect(nav().classList.contains('is-open')).toBe(false);
-      expect(host.querySelector('[aria-current]')).toBeNull();
+      expect(host.querySelector('.nav-link[aria-current]')).toBeNull();
     });
   });
 
@@ -184,6 +184,87 @@ describe('SiteHeader', () => {
     });
   });
 
+  describe('editions', () => {
+    it('should list the four editions with this one marked current and the list closed', () => {
+      // Arrange, Act
+      const links = Array.from(host.querySelectorAll<HTMLAnchorElement>('.edition-link'));
+
+      // Assert
+      expect(editionToggle().textContent?.trim()).toBe('Angular Edition');
+      expect(editionToggle().getAttribute('aria-expanded')).toBe('false');
+      expect(links.map((a) => [a.textContent?.trim(), a.getAttribute('href')])).toEqual(
+        SiteHeader.EDITIONS.map((e) => [e.label, e.href]),
+      );
+      const current = links.filter((a) => a.getAttribute('aria-current') === 'true');
+      expect(current.length).toBe(1);
+      expect(current[0].textContent?.trim()).toBe('Angular Edition');
+      expect(edition().classList.contains('is-open')).toBe(false);
+    });
+
+    it('should open on the button and close on the second press', async () => {
+      // Act
+      editionToggle().click();
+      await fixture.whenStable();
+
+      // Assert
+      expect(edition().classList.contains('is-open')).toBe(true);
+      expect(editionToggle().getAttribute('aria-expanded')).toBe('true');
+
+      // Act
+      editionToggle().click();
+      await fixture.whenStable();
+
+      // Assert
+      expect(edition().classList.contains('is-open')).toBe(false);
+    });
+
+    it('should close on Escape and return focus to the button', async () => {
+      // Arrange
+      editionToggle().click();
+      await fixture.whenStable();
+
+      // Act
+      document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape' }));
+      await fixture.whenStable();
+
+      // Assert
+      expect(edition().classList.contains('is-open')).toBe(false);
+      expect(document.activeElement).toBe(editionToggle());
+    });
+
+    it('should close on a click outside the list but not inside it', async () => {
+      // Arrange
+      editionToggle().click();
+      await fixture.whenStable();
+
+      // Act, Assert: inside
+      host.querySelector<HTMLElement>('.edition-menu')?.click();
+      await fixture.whenStable();
+      expect(edition().classList.contains('is-open')).toBe(true);
+
+      // Act, Assert: outside
+      document.body.click();
+      await fixture.whenStable();
+      expect(edition().classList.contains('is-open')).toBe(false);
+    });
+
+    it('should ignore document events once the list is closed again', async () => {
+      // Arrange
+      editionToggle().click();
+      await fixture.whenStable();
+      editionToggle().click();
+      await fixture.whenStable();
+      editionToggle().blur();
+
+      // Act
+      document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape' }));
+      await fixture.whenStable();
+
+      // Assert
+      expect(document.activeElement).not.toBe(editionToggle());
+    });
+  });
+
   describe('scroll', () => {
     it('should add the scrolled class past the threshold and remove it back at the top', async () => {
       // Arrange
@@ -243,14 +324,14 @@ describe('SiteHeader', () => {
       const observer = FakeIntersectionObserver.instances[0];
       observer.report([[about, 1]]);
       await fixture.whenStable();
-      expect(host.querySelector('[aria-current]')).not.toBeNull();
+      expect(host.querySelector('.nav-link[aria-current]')).not.toBeNull();
 
       // Act
       observer.report([[about, 0]]);
       await fixture.whenStable();
 
       // Assert
-      expect(host.querySelector('[aria-current]')).toBeNull();
+      expect(host.querySelector('.nav-link[aria-current]')).toBeNull();
     });
 
     it('should replace the observer on a later navigation and disconnect it on destroy', async () => {
@@ -280,7 +361,7 @@ describe('SiteHeader', () => {
       await fixture.whenStable();
 
       // Assert
-      expect(host.querySelector('[aria-current]')).toBeNull();
+      expect(host.querySelector('.nav-link[aria-current]')).toBeNull();
     });
   });
 
@@ -290,6 +371,14 @@ describe('SiteHeader', () => {
 
   function nav(): HTMLElement {
     return host.querySelector<HTMLElement>('.site-nav') as HTMLElement;
+  }
+
+  function edition(): HTMLElement {
+    return host.querySelector<HTMLElement>('.edition') as HTMLElement;
+  }
+
+  function editionToggle(): HTMLButtonElement {
+    return host.querySelector<HTMLButtonElement>('.edition-toggle') as HTMLButtonElement;
   }
 
   function addSection(id: string): HTMLElement {

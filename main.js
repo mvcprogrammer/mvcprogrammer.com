@@ -10,6 +10,41 @@
   var nav = document.getElementById("primary-nav");
   var navLinks = Array.prototype.slice.call(document.querySelectorAll(".nav-link"));
 
+  /* ---------- Edition menu ---------- */
+  var edition = document.querySelector(".edition");
+  var editionToggle = edition ? edition.querySelector(".edition-toggle") : null;
+
+  function setEditions(open) {
+    if (!edition || !editionToggle) return;
+    edition.classList.toggle("is-open", open);
+    editionToggle.setAttribute("aria-expanded", open ? "true" : "false");
+  }
+
+  function isEditionsOpen() {
+    return !!(edition && edition.classList.contains("is-open"));
+  }
+
+  if (edition && editionToggle) {
+    editionToggle.addEventListener("click", function () {
+      setEditions(!isEditionsOpen());
+    });
+
+    // Escape closes the list and returns focus to the button.
+    document.addEventListener("keydown", function (event) {
+      if (event.key === "Escape" && isEditionsOpen()) {
+        setEditions(false);
+        editionToggle.focus();
+      }
+    });
+
+    // Clicking anywhere outside the list closes it.
+    document.addEventListener("click", function (event) {
+      if (isEditionsOpen() && !edition.contains(event.target)) {
+        setEditions(false);
+      }
+    });
+  }
+
   /* ---------- Footer year ---------- */
   var year = document.getElementById("year");
   if (year) {
@@ -57,7 +92,7 @@
     });
 
     // If the viewport grows past the mobile breakpoint, reset the menu state.
-    var mq = window.matchMedia("(min-width: 48em)");
+    var mq = window.matchMedia("(min-width: 52em)");
     var onChange = function (e) {
       if (e.matches) setMenu(false);
     };

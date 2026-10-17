@@ -46,8 +46,8 @@ story += [
     p("Content is identical on every edition. The editions cross-link through the About core-skill chips "
       "(<b>Angular</b>, <b>React</b>, <b>Blazor</b>, <b>JavaScript</b>, each with a title hint such as <i>See the Angular edition of "
       "this site</i>) and the hero highlights (<b>Angular</b> and <b>React</b> of <i>Angular / React</i> to "
-      "their editions). A link to the edition already open simply reloads it. The portfolio card carries no edition "
-      "links. The spec in " + c("sections/static-sections.spec.ts") + " pins the Angular side of it."),
+      "their editions), and through the edition menu in the header: a pill naming the open edition that lists all four. "
+      "A link to the edition already open simply reloads it. The portfolio card carries no edition links. The spec in " + c("sections/static-sections.spec.ts") + " pins the Angular side of it."),
     KeepTogether([
         p("The one exception: color", "h2"),
         p("Each edition carries its own palette. One small file per edition, loaded after the shared " + c("styles.css")
@@ -119,7 +119,7 @@ story += [
             ["Styling", "Shared stylesheet plus " + c("vanilla.css") + " (palette).", "Shared stylesheet plus " + c("blazor.css") + " (palette, boot screen).", "Shared stylesheet plus " + c("angular.css") + " (palette, boot screen). <b>No component styles</b>: Angular injects them inline, which the CSP forbids. Host elements get " + c("display: contents") + " so the sticky header and the grids are unaffected."],
             ["Build output", "The files as committed.", c("dotnet publish") + ", trimmed.", c("ng build") + ": esbuild, fingerprinted bundles, critical-CSS inlining off (it would be an inline " + c("&lt;style&gt;") + ")."],
             ["Hosting", "Bucket root, distribution for mvcprogrammer.com.", c("blazor/") + " prefix, own distribution, CSP with " + c("'wasm-unsafe-eval'") + ".", c("angular/") + " prefix, own distribution, the static site's response headers policy unchanged, S3 403 rewritten to " + c("index.html") + "."],
-            ["Tests", "None for the static page.", "114 bUnit and xUnit cases.", "133 Vitest cases on jsdom, run before every build."],
+            ["Tests", "None for the static page.", "118 bUnit and xUnit cases.", "138 Vitest cases on jsdom, run before every build."],
         ],
         [0.95 * inch, 1.75 * inch, 2.0 * inch, 2.3 * inch],
         first_style="cellsmall",
@@ -190,12 +190,12 @@ story += [
     b("Zoneless rules: every async step is followed by " + c("await fixture.whenStable()") + ". The components wrap their loads in " + c("PendingTasks") + ", which is what makes that wait reliable."),
     b("jsdom has no " + c("IntersectionObserver") + ", no " + c("matchMedia") + ", and no modal dialogs. The components guard for that; the specs stub the observer and the dialog methods where the behavior matters."),
     p("Test layout", "h2"),
-    p("Files mirror the app. The counts are test cases as Vitest reports them (133 in all)."),
+    p("Files mirror the app. The counts are test cases as Vitest reports them (138 in all)."),
     table(
         ["File", "Tests", "What it proves"],
         [
             [link("components/experience-timeline/experience-timeline.spec.ts", BLOB + SRC + "components/experience-timeline/experience-timeline.spec.ts"), "16", "API render, date and place labels, every fallback path (error, empty, not a list, seed failure, empty seed, skills failure), chip order, the more button, chip titles, filtering, restore without refetch, filter failure, late response after destroy."],
-            [link("components/site-header/site-header.spec.ts", BLOB + SRC + "components/site-header/site-header.spec.ts"), "14", "Nav links and initial state, menu toggle, close on nav click, Escape with focus return, outside and inside clicks, listeners released, scrolled class, section observer after navigation, current link set and cleared, observer replaced and disconnected, no observer in the browser."],
+            [link("components/site-header/site-header.spec.ts", BLOB + SRC + "components/site-header/site-header.spec.ts"), "19", "Nav links and initial state, the edition list (four entries, current marked, open and close, Escape, outside click), menu toggle, close on nav click, Escape with focus return, outside and inside clicks, listeners released, scrolled class, section observer after navigation, current link set and cleared, observer replaced and disconnected, no observer in the browser."],
             [link("components/kiosk-dialog/kiosk-dialog.spec.ts", BLOB + SRC + "components/kiosk-dialog/kiosk-dialog.spec.ts"), "7", "No iframe while closed, show renders the configured kiosk and opens modally, show is idempotent, close button, close before open, backdrop versus inside click, close event removes the iframe."],
             [link("components/icon-sprite/icon-sprite.spec.ts", BLOB + SRC + "components/icon-sprite/icon-sprite.spec.ts"), "14", "Every symbol the page references exists in the sprite."],
             [link("components/icon, social-links, site-footer", TREE + SRC + "components"), "3", "Icon references a sprite symbol, three social profiles, footer year and legal links."],
@@ -245,7 +245,7 @@ story += [
             ["3", "If the Angular behavior changed, add or update the spec that proves it. Follow the conventions in section 6."],
             ["4", "Run " + c("npm test") + " and " + c("npm run build") + " in " + c("angular/") + " and make both green. Warnings in the build are errors in review."],
             ["5", "Preview the editions locally: " + c("python3 -m http.server 8080") + " at the root, " + c("dotnet run --project blazor/src/Portfolio.Blazor") + ", and " + c("npm start") + " in " + c("angular/") + " and in " + c("react/") + "."],
-            ["6", "Check the cross-links survived: the four About chips and the two hero highlights, identical on every edition, with their hints."],
+            ["6", "Check the cross-links survived: the edition menu in the header, the four About chips, and the two hero highlights, identical on every edition, with their hints."],
             ["7", "If you added a component, add its selector to the " + c("display: contents") + " list in " + c("angular.css") + ". Never add component styles. A color change edits the palette block at the top of the same file, and the other three palette files if it is meant to be shared."],
             ["8", "Commit all editions together. No AI attribution trailers in the message."],
             ["9", "Push to " + c("main") + " only when asked. The workflow tests, builds, and deploys every edition."],
