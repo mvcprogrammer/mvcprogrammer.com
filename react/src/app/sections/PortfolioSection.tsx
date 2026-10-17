@@ -42,16 +42,17 @@ export function PortfolioSection() {
                   load balancer, no auto scaling group.
                 </p>
                 <p>
-                  The Experience section is also served by a C# API on Lambda and DynamoDB, with
-                  default HTML as a fallback.
+                  The Experience section is served by a C# API on Lambda and DynamoDB, with default
+                  HTML as a fallback.
                 </p>
                 <p>
                   You are reading the fourth edition: the same page rebuilt as a React 19 app,
                   TypeScript and hooks in the browser, bundled by Vite and served the same way from
                   a <code>react/</code> prefix of the same bucket. The second and third editions do
                   it again in Blazor WebAssembly and in Angular. The JavaScript, Angular, React, and
-                  Blazor chips under Core skills are links; each one switches to the edition built
-                  on that stack. The colophon at the bottom has the details.
+                  Blazor skill chips in the Core skills area in the 01 / About Me section are links;
+                  each one switches to the edition built on that stack. The colophon at the bottom
+                  has the details.
                 </p>
                 <ul
                   className="tag-list card-tags"
