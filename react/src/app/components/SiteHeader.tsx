@@ -144,9 +144,9 @@ export function SiteHeader() {
   return (
     <header className={scrolled ? 'site-header is-scrolled' : 'site-header'} ref={header}>
       <div className="container header-inner">
-        <a className="brand" href="#top" aria-label="Neal Thomas, back to top">
+        <a className="brand" href="#top" aria-label="mvcprogrammer.com, React Edition, back to top">
           <span className="brand-mark" aria-hidden="true"></span>
-          <span className="brand-name">Neal Thomas</span>
+          <span className="brand-name">mvcprogrammer.com<span className="brand-edition"> - React Edition</span></span>
         </a>
 
         <button

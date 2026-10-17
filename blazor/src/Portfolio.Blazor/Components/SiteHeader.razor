@@ -2,9 +2,9 @@
    the section in view, and the open menu are component state; site.js reports the browser events. *@
 <header class="site-header @(_scrolled ? "is-scrolled" : null)" @ref="_header">
     <div class="container header-inner">
-        <a class="brand" href="#top" aria-label="Neal Thomas, back to top">
+        <a class="brand" href="#top" aria-label="mvcprogrammer.com, Blazor Edition, back to top">
             <span class="brand-mark" aria-hidden="true"></span>
-            <span class="brand-name">Neal Thomas</span>
+            <span class="brand-name">mvcprogrammer.com<span class="brand-edition"> - Blazor Edition</span></span>
         </a>
 
         <button class="nav-toggle" type="button" aria-expanded="@(_menuOpen ? "true" : "false")" aria-controls="primary-nav"

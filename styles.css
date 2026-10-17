@@ -316,6 +316,25 @@ img, svg {
   text-decoration: none;
 }
 
+.brand-name {
+  white-space: nowrap;
+  line-height: 1.15;
+}
+
+/* The edition suffix reads as a tag: smaller, lighter, muted. */
+.brand-edition {
+  font-size: 0.82em;
+  font-weight: 500;
+  color: var(--text-muted);
+}
+
+/* Phones: the suffix drops to its own line so the brand never crowds the menu button. */
+@media (max-width: 29.99em) {
+  .brand-edition {
+    display: block;
+  }
+}
+
 .brand-mark {
   width: 0.65rem;
   height: 0.65rem;
@@ -420,7 +439,10 @@ img, svg {
   background: var(--hover-soft);
 }
 
-@media (min-width: 48em) {
+/* The brand names the site and the edition (mvcprogrammer.com - JS Edition), so it is wider than a
+   name; the inline nav waits for 52em, the nav runs compact until 68em, and between the two the
+   social icons stay in the footer only. */
+@media (min-width: 52em) {
   .nav-toggle {
     display: none;
   }
@@ -475,6 +497,27 @@ img, svg {
     margin: 0;
     padding-left: 1rem;
     border-left: 1px solid var(--border);
+  }
+}
+
+@media (min-width: 52em) and (max-width: 63.99em) {
+  .site-nav .social-list {
+    display: none;
+  }
+}
+
+@media (min-width: 52em) and (max-width: 67.99em) {
+  .brand {
+    font-size: 0.9375rem;
+  }
+
+  .site-nav {
+    gap: 1rem;
+  }
+
+  .nav-link {
+    padding: 0.5rem;
+    font-size: 0.875rem;
   }
 }
 
