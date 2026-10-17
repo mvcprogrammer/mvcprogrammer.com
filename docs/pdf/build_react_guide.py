@@ -55,7 +55,7 @@ story += [
           + ", overrides only the design tokens (" + c("--bg") + ", " + c("--accent") + ", " + c("--hover") + ", and the rest) "
           "with " + c("light-dark()") + " values, so one declaration covers both color schemes and no rule from the shared "
           "stylesheet is repeated. Older browsers ignore " + c("light-dark()") + " and fall back to the shared JetBrains "
-          "Rider palette. The four palettes, with the page, the quote band where it differs, the accent, and the hover color "
+          "Rider palette. The four palettes, with the page, the accent, and the hover color "
           "for each scheme:"),
         palette_table(),
         p("Vite's CSS minifier would rewrite " + c("light-dark()") + " into a variable polyfill that only works when " + c("color-scheme") + " is declared in the same file, and it is declared in the shared " + c("styles.css") + ", so " + c("vite.config.ts") + " pins " + c("build.cssTarget") + " to browsers that support the function and the minifier leaves it alone. Check the production stylesheet under " + c("dist/bundles/") + " after any change to the palette, not only the dev server.", "caption"),

@@ -100,9 +100,9 @@ PALETTES = [
      "Eggshell paper with a terracotta accent and a coral hover; a warm charcoal after dark.",
      ["#f0ead6", "#a64a23", "#d4602f"], ["#211e18", "#e0855c", "#ffb088"]),
     ("Angular", "angular/src/angular.css",
-     "The four Google logo colors, each with a job: a blue page, a yellow quote band, red buttons, green hovers. "
-     "Dark mode flips to royal blue and green with yellow buttons.",
-     ["#d2e3fc", "#fde293", "#b31412", "#137333"], ["#174ea6", "#0d652d", "#fcc934", "#fad2cf"]),
+     "Navy and brass: a cool, faintly blue page with navy buttons and a goldenrod hover; a true navy after dark "
+     "with muted brass for buttons and links and a paler gold on hover.",
+     ["#f3f5fa", "#1b365d", "#b7791f"], ["#0f1b33", "#e3b04b", "#f2cd7a"]),
     ("React", "react/src/react.css",
      "The react.dev documentation palette: cool slate surfaces, React blue for buttons and links, the logo cyan on hover.",
      ["#f6f7f9", "#067394", "#149eca"], ["#23272f", "#58c4dc", "#61dafb"]),

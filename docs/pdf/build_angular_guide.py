@@ -54,7 +54,7 @@ story += [
           + ", overrides only the design tokens (" + c("--bg") + ", " + c("--accent") + ", " + c("--hover") + ", and the rest) "
           "with " + c("light-dark()") + " values, so one declaration covers both color schemes and no rule from the shared "
           "stylesheet is repeated. Older browsers ignore " + c("light-dark()") + " and fall back to the shared JetBrains "
-          "Rider palette. The four palettes, with the page, the quote band where it differs, the accent, and the hover color "
+          "Rider palette. The four palettes, with the page, the accent, and the hover color "
           "for each scheme:"),
         palette_table(),
         p("The Angular build emits " + c("angular.css") + " under the bundle name " + c("angular") + " (the " + c("bundleName") + " option in " + c("angular.json") + ") so that " + c("ng serve") + " does not name it " + c("styles.css") + " and shadow the shared file; in production the name is hashed either way.", "caption"),

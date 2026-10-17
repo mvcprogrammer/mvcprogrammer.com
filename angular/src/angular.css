@@ -6,26 +6,26 @@
    one file. */
 
 /* ---------- Palette ----------
-   The four Google logo colors, each with a job: a blue page, a yellow quote band, red buttons and
-   links, green on hover. Dark mode flips to a royal blue page with a green band, yellow buttons,
-   and a pink hover. Only the design tokens from styles.css are overridden; light-dark() picks the
-   value for the active color scheme (styles.css declares color-scheme: light dark on :root), so one
-   declaration covers both themes and no rule is repeated. Every text, button, and hover pairing
-   clears WCAG AA against the page, the band, and the cards. */
+   Navy and brass: a cool, faintly blue page with navy buttons and a goldenrod hover in light mode;
+   a true navy page after dark, with muted brass for buttons and links and a paler gold on hover.
+   Only the design tokens from styles.css are overridden; light-dark() picks the value for the active
+   color scheme (styles.css declares color-scheme: light dark on :root), so one declaration covers
+   both themes and no rule is repeated. Text, buttons, and the dark-mode hover clear WCAG AA; the
+   light-mode hover is a transient state and sits below it, as on the default edition. */
 :root {
-  --bg: light-dark(#d2e3fc, #174ea6);
-  --bg-alt: light-dark(#fde293, #0d652d);
-  --surface: light-dark(#ffffff, #185abc);
-  --text: light-dark(#202124, #ffffff);
-  --text-muted: light-dark(#3c4043, #d2e3fc);
-  --border: light-dark(#a8c7fa, #4a86e8);
-  --accent: light-dark(#b31412, #fcc934);
-  --accent-hover: light-dark(#a50e0e, #fdd663);
-  --accent-contrast: light-dark(#ffffff, #202124);
-  --accent-soft: light-dark(rgba(179, 20, 18, 0.12), rgba(252, 201, 52, 0.18));
-  --hover: light-dark(#137333, #fad2cf);
-  --hover-soft: light-dark(rgba(19, 115, 51, 0.12), rgba(250, 210, 207, 0.2));
-  --hover-contrast: light-dark(#ffffff, #202124);
+  --bg: light-dark(#f3f5fa, #0f1b33);
+  --bg-alt: light-dark(#e6ebf5, #0a1428);
+  --surface: light-dark(#ffffff, #182744);
+  --text: light-dark(#121c33, #e6ecf7);
+  --text-muted: light-dark(#4d5873, #a7b3cc);
+  --border: light-dark(#d3dbea, #2b3b5c);
+  --accent: light-dark(#1b365d, #e3b04b);
+  --accent-hover: light-dark(#122745, #ecc36c);
+  --accent-contrast: light-dark(#ffffff, #14213d);
+  --accent-soft: light-dark(rgba(27, 54, 93, 0.10), rgba(227, 176, 75, 0.16));
+  --hover: light-dark(#b7791f, #f2cd7a);
+  --hover-soft: light-dark(rgba(183, 121, 31, 0.12), rgba(242, 205, 122, 0.18));
+  --hover-contrast: light-dark(#ffffff, #14213d);
 }
 
 /* Angular wraps each component in its host element. With display: contents the wrappers leave the
