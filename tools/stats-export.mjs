@@ -80,14 +80,18 @@ function main() {
   const visits = selectVisits(rows);
   const days = dayKeysBetween(dayKey(since), dayKey(now));
 
+  // A day with no log lines at all (before logging started, or past the bucket's retention) gets no
+  // file, so the dashboard shows it as missing rather than as a day nobody visited.
+  const written = days.filter((day) => rows.some((row) => row.day === day));
   mkdirSync(join(out, 'days'), { recursive: true });
-  for (const day of days) {
+  for (const day of written) {
     const file = buildDayFile(day, rows.filter((row) => row.day === day), visits.filter((visit) => visit.day === day), salt ?? 'local');
     writeFileSync(join(out, 'days', `${day}.json`), stableJson(file));
   }
-  const index = buildIndex(readIndex(join(out, 'index.json')), days, now);
+  const index = buildIndex(readIndex(join(out, 'index.json')), written, now);
   writeFileSync(join(out, 'index.json'), stableJson(index));
-  console.log(`Wrote ${days.length} day files (${days[0]} to ${days[days.length - 1]}) and index.json to ${out}; ${visits.length} visits in ${rows.length} requests.`);
+  const span = written.length === 0 ? 'none' : `${written[0]} to ${written[written.length - 1]}`;
+  console.log(`Wrote ${written.length} day files (${span}) and index.json to ${out}; ${visits.length} visits in ${rows.length} requests; ${days.length - written.length} days in the window had no log lines.`);
 }
 
 /**
