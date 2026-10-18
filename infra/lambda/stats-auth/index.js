@@ -67,6 +67,20 @@ async function createAuthenticator() {
   return new Authenticator(buildOptions(await readParameters(client)));
 }
 
+/**
+ * The event with an empty cookie header where the request carried none. cognito-at-edge 1.5.5 reads
+ * `request.headers.cookie` without a guard on the sign-out path, so a signed-out visitor opening
+ * /signout crashed the function (and got the fail-closed 503) instead of a redirect.
+ */
+function withCookieHeader(event) {
+  const request = event?.Records?.[0]?.cf?.request;
+  if (request !== undefined) {
+    request.headers ??= {};
+    request.headers.cookie ??= [];
+  }
+  return event;
+}
+
 /** The answer when the check itself fails: never let a request through because sign-in broke. */
 const UNAVAILABLE = Object.freeze({
   status: '503',
@@ -86,7 +100,7 @@ function createHandler(factory) {
     try {
       pending ??= factory();
       const authenticator = await pending;
-      return await authenticator.handle(event);
+      return await authenticator.handle(withCookieHeader(event));
     } catch (error) {
       pending = null;
       console.error('stats-auth failed', error);
@@ -97,6 +111,7 @@ function createHandler(factory) {
 
 exports.handler = createHandler(createAuthenticator);
 exports.createHandler = createHandler;
+exports.withCookieHeader = withCookieHeader;
 exports.buildOptions = buildOptions;
 exports.readParameters = readParameters;
 exports.PARAMETER_PREFIX = PARAMETER_PREFIX;

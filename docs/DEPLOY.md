@@ -816,7 +816,7 @@ sign-in function. Lambda@Edge, the certificate, and the user pool all live in us
 | App client | `5r0mn4hpa0k18uobgndl0uc9gh` (`stats-dashboard`): no secret, authorization code grant, scopes `openid email`, callback `https://stats.mvcprogrammer.com/`, sign-out `https://mvcprogrammer.com/`, refresh tokens 30 days, managed login branding `dcfd0ae7-a1b1-40d0-a307-61519037b14f` (Cognito's defaults) |
 | Hosted sign-in | `https://mvcprogrammer-stats.auth.us-east-1.amazoncognito.com` (managed login, version 2) |
 | SSM parameters | `/mvcprogrammer/stats/user-pool-id`, `user-pool-app-id`, `user-pool-domain` (String) and `nonce-secret` (SecureString) |
-| Lambda@Edge | `mvcprogrammer-stats-auth` in us-east-1, role `mvcprogrammer-stats-auth`, version 1 on the default behavior's viewer-request event |
+| Lambda@Edge | `mvcprogrammer-stats-auth` in us-east-1, role `mvcprogrammer-stats-auth`, version 2 on the default behavior's viewer-request event (version 1 answered 503 on a cookie-less `/signout`; the handler now gives such a request an empty cookie header before cognito-at-edge sees it) |
 | GitHub variable | `STATS_DISTRIBUTION_ID` = `E2GHK0ID0UE0DV` |
 | IAM | `infra/iam/github-actions-deploy-role-policy.json` lists the distribution under `cloudfront:CreateInvalidation`; applied |
 
@@ -916,10 +916,12 @@ for a new one; passkeys are enrolled afterwards from the managed login page's ac
 from then on the sign-in page offers the passkey first. Sessions last 30 days with refresh;
 `https://stats.mvcprogrammer.com/signout` ends one.
 
-Verification, signed out: `https://stats.mvcprogrammer.com/` and
-`https://stats.mvcprogrammer.com/data/index.json` both redirect to the hosted sign-in, and
-`https://mvcprogrammer.com/stats/data/index.json` is not a 200 (the bucket policy deny in Hosting
-step 4). Signed in: the dashboard loads on a phone and a laptop, `Updated` shows the last export, and
+Verification, signed out (all checked 2026-10-18): `https://stats.mvcprogrammer.com/` and
+`https://stats.mvcprogrammer.com/data/index.json` both redirect to the hosted sign-in,
+`https://stats.mvcprogrammer.com/signout` redirects to the main site, and
+`https://mvcprogrammer.com/stats/data/index.json` is a 404 (the bucket policy deny in Hosting
+step 4). The three framework hosts answer the same path with their own `index.html` (their SPA
+fallback, `text/html`), never the day file. Signed in: the dashboard loads on a phone and a laptop, `Updated` shows the last export, and
 a data URL answers JSON. `curl -sI https://stats.mvcprogrammer.com/` shows the security headers plus
 `X-Robots-Tag`.
 

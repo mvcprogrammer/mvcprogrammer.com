@@ -3,7 +3,7 @@
 
 const assert = require('node:assert/strict');
 const { test } = require('node:test');
-const { buildOptions, createHandler, readParameters, PARAMETER_PREFIX } = require('./index.js');
+const { buildOptions, createHandler, readParameters, withCookieHeader, PARAMETER_PREFIX } = require('./index.js');
 
 const PARAMETERS = { 'user-pool-id': 'us-east-1_abc', 'user-pool-app-id': 'client123', 'user-pool-domain': 'stats.auth.us-east-1.amazoncognito.com', 'nonce-secret': 's3cret' };
 
@@ -82,4 +82,13 @@ test('the handler answers 503 when the authenticator itself throws', async () =>
   } finally {
     console.error = silence;
   }
+});
+
+test('withCookieHeader gives a cookie-less request an empty cookie header and leaves others alone', () => {
+  const bare = { Records: [{ cf: { request: { uri: '/signout', headers: { host: [{ key: 'Host', value: 'stats.mvcprogrammer.com' }] } } } }] };
+  assert.deepEqual(withCookieHeader(bare).Records[0].cf.request.headers.cookie, []);
+  const cookies = [{ key: 'Cookie', value: 'a=b' }];
+  const withCookies = { Records: [{ cf: { request: { uri: '/', headers: { cookie: cookies } } } }] };
+  assert.equal(withCookieHeader(withCookies).Records[0].cf.request.headers.cookie, cookies);
+  assert.deepEqual(withCookieHeader({}), {});
 });
