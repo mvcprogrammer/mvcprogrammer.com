@@ -46,7 +46,8 @@
         "arn:aws:cloudfront::334383610383:distribution/E23085GR2SZJHC",
         "arn:aws:cloudfront::334383610383:distribution/E2NFN5MW02S8Y9",
         "arn:aws:cloudfront::334383610383:distribution/E33NA2ZQ9O29DK",
-        "arn:aws:cloudfront::334383610383:distribution/E2C51AKAKJUCBO"
+        "arn:aws:cloudfront::334383610383:distribution/E2C51AKAKJUCBO",
+        "arn:aws:cloudfront::334383610383:distribution/E2GHK0ID0UE0DV"
       ]
     }
   ]

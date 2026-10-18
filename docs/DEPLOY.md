@@ -802,7 +802,29 @@ aws s3 sync /tmp/stats-data/ s3://mvcprogrammer.com/stats/data/ --cache-control 
 ### Hosting
 
 The same shape as the React edition, minus the API and the beacon, plus a `noindex` header and the
-sign-in function. Lambda@Edge, the certificate, and the user pool all live in us-east-1.
+sign-in function. Lambda@Edge, the certificate, and the user pool all live in us-east-1. Created
+2026-10-18 with the commands below; the ids:
+
+| Piece | Value |
+| --- | --- |
+| CloudFront distribution | `E2GHK0ID0UE0DV` (dhzalpdcd219o.cloudfront.net), origin path `/stats`, same S3 OAC `E2KEES7ZY0UA4S`, no custom error pages, no `/api/*` behavior, no www-redirect function, logging off |
+| Response headers policy | `mvcprogrammer-stats-headers` (`0e594246-b415-46f2-8f72-32150bb66508`): the site's policy with `X-Robots-Tag: noindex, nofollow` and a CSP whose `connect-src` is `'self'` only (no contact Lambda, no kiosk frame) |
+| ACM certificate | `arn:aws:acm:us-east-1:334383610383:certificate/27186bfb-f190-48db-8b61-19a1aeec5dbc` (stats.mvcprogrammer.com, DNS-validated) |
+| Route 53 | A and AAAA aliases for `stats.mvcprogrammer.com` to the distribution |
+| Bucket policy | the distribution is in the `AWS:SourceArn` allow list, and the `StatsOnlyThroughStatsDistribution` statement denies `stats/*` to every other distribution |
+| Cognito user pool | `us-east-1_oTcM1vY0c` (`mvcprogrammer-stats`, Essentials tier, deletion protection on): email sign-in, admin-created users only, first factors password and passkey, TOTP optional, passkey relying party `mvcprogrammer-stats.auth.us-east-1.amazoncognito.com` |
+| App client | `5r0mn4hpa0k18uobgndl0uc9gh` (`stats-dashboard`): no secret, authorization code grant, scopes `openid email`, callback `https://stats.mvcprogrammer.com/`, sign-out `https://mvcprogrammer.com/`, refresh tokens 30 days, managed login branding `dcfd0ae7-a1b1-40d0-a307-61519037b14f` (Cognito's defaults) |
+| Hosted sign-in | `https://mvcprogrammer-stats.auth.us-east-1.amazoncognito.com` (managed login, version 2) |
+| SSM parameters | `/mvcprogrammer/stats/user-pool-id`, `user-pool-app-id`, `user-pool-domain` (String) and `nonce-secret` (SecureString) |
+| Lambda@Edge | `mvcprogrammer-stats-auth` in us-east-1, role `mvcprogrammer-stats-auth`, version 1 on the default behavior's viewer-request event |
+| GitHub variable | `STATS_DISTRIBUTION_ID` = `E2GHK0ID0UE0DV` |
+| IAM | `infra/iam/github-actions-deploy-role-policy.json` lists the distribution under `cloudfront:CreateInvalidation`; applied |
+
+Two things the CLI insists on: `create-user-pool` refuses `--mfa-configuration OPTIONAL` without SMS
+settings, so the pool is created with MFA off and `set-user-pool-mfa-config` turns on optional TOTP
+and the passkey configuration afterwards; and passkeys need the managed login (domain created with
+`--managed-login-version 2` plus a `create-managed-login-branding` for the client), not the classic
+hosted UI.
 
 ```bash
 # 1. Certificate (us-east-1), then add the CNAME it asks for to the hosted zone and wait for ISSUED
@@ -856,11 +878,11 @@ publish commands). The function reads its configuration from SSM Parameter Store
 is in the repository.
 
 ```bash
-# 1. User pool: email sign-in, self-registration off, passkeys (WebAuthn) and TOTP as the second factor
-aws cognito-idp create-user-pool --region us-east-1 --pool-name mvcprogrammer-stats \
+# 1. User pool: email sign-in, self-registration off, password or passkey as the first factor (MFA is set in step 4a)
+aws cognito-idp create-user-pool --region us-east-1 --pool-name mvcprogrammer-stats --deletion-protection ACTIVE \
   --username-attributes email --auto-verified-attributes email \
-  --admin-create-user-config AllowAdminCreateUserOnly=true \
-  --mfa-configuration OPTIONAL --software-token-mfa-configuration Enabled=true \
+  --admin-create-user-config AllowAdminCreateUserOnly=true --mfa-configuration OFF --user-pool-tier ESSENTIALS \
+  --policies '{"PasswordPolicy":{"MinimumLength":12,"RequireUppercase":true,"RequireLowercase":true,"RequireNumbers":true,"RequireSymbols":false,"TemporaryPasswordValidityDays":7},"SignInPolicy":{"AllowedFirstAuthFactors":["PASSWORD","WEB_AUTHN"]}}' \
   --query UserPool.Id --output text
 # 2. The one user
 aws cognito-idp admin-create-user --region us-east-1 --user-pool-id <POOL_ID> --username neal.thomas@mvcprogrammer.com \
@@ -870,10 +892,17 @@ aws cognito-idp create-user-pool-client --region us-east-1 --user-pool-id <POOL_
   --no-generate-secret --allowed-o-auth-flows code --allowed-o-auth-scopes openid email \
   --allowed-o-auth-flows-user-pool-client --supported-identity-providers COGNITO \
   --callback-urls https://stats.mvcprogrammer.com/ --logout-urls https://mvcprogrammer.com/ \
-  --refresh-token-validity 30 --token-validity-units RefreshToken=days \
+  --refresh-token-validity 30 --access-token-validity 60 --id-token-validity 60 \
+  --token-validity-units AccessToken=minutes,IdToken=minutes,RefreshToken=days \
+  --explicit-auth-flows ALLOW_USER_AUTH ALLOW_REFRESH_TOKEN_AUTH --prevent-user-existence-errors ENABLED \
   --query UserPoolClient.ClientId --output text
-# 4. Hosted sign-in domain (managed login)
-aws cognito-idp create-user-pool-domain --region us-east-1 --user-pool-id <POOL_ID> --domain mvcprogrammer-stats
+# 4. Hosted sign-in domain (managed login, which is what supports passkeys), then optional TOTP and the passkey relying party
+aws cognito-idp create-user-pool-domain --region us-east-1 --user-pool-id <POOL_ID> --domain mvcprogrammer-stats --managed-login-version 2
+aws cognito-idp set-user-pool-mfa-config --region us-east-1 --user-pool-id <POOL_ID> --mfa-configuration OPTIONAL \
+  --software-token-mfa-configuration Enabled=true \
+  --web-authn-configuration RelyingPartyId=mvcprogrammer-stats.auth.us-east-1.amazoncognito.com,UserVerification=preferred
+# 4a. The managed login page for the client, with Cognito's default look
+aws cognito-idp create-managed-login-branding --region us-east-1 --user-pool-id <POOL_ID> --client-id <CLIENT_ID> --use-cognito-provided-values
 # 5. The parameters the edge function reads
 aws ssm put-parameter --region us-east-1 --name /mvcprogrammer/stats/user-pool-id --type String --value <POOL_ID>
 aws ssm put-parameter --region us-east-1 --name /mvcprogrammer/stats/user-pool-app-id --type String --value <CLIENT_ID>
@@ -882,10 +911,10 @@ aws ssm put-parameter --region us-east-1 --name /mvcprogrammer/stats/nonce-secre
 # 6. The function: infra/lambda/stats-auth/README.md, then the viewer-request association in step 6 of Hosting
 ```
 
-Passkeys are enrolled from the hosted sign-in page after the first password sign-in (Cognito's
-managed login offers it under the user's security settings when the pool has WebAuthn enabled, which
-is a console toggle on the pool's sign-in experience page at the time of writing). Sessions last 30
-days with refresh; `https://stats.mvcprogrammer.com/signout` ends one.
+The first sign-in uses the temporary password Cognito emailed when the user was created and asks
+for a new one; passkeys are enrolled afterwards from the managed login page's account settings, and
+from then on the sign-in page offers the passkey first. Sessions last 30 days with refresh;
+`https://stats.mvcprogrammer.com/signout` ends one.
 
 Verification, signed out: `https://stats.mvcprogrammer.com/` and
 `https://stats.mvcprogrammer.com/data/index.json` both redirect to the hosted sign-in, and
