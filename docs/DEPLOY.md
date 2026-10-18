@@ -761,3 +761,128 @@ aws s3 sync . s3://mvcprogrammer.com/react/ --delete \
   --exclude "bundles/*"
 aws cloudfront create-invalidation --distribution-id E2C51AKAKJUCBO --paths "/*"
 ```
+
+## Visitor dashboard (stats.mvcprogrammer.com)
+
+Added 2026-10-18. A private React 19 + Vite page under `stats/` (see [stats/README.md](../stats/README.md))
+that reads JSON day files written from the CloudFront access logs and draws the numbers the text
+report prints, with a date range, period comparison, and click-to-filter segments. Three pieces:
+the data pipeline (a scheduled workflow), the hosting (a fifth distribution over the `stats/` prefix
+of the site bucket), and the sign-in (a Cognito user pool checked by a Lambda@Edge function).
+
+### Data pipeline
+
+`.github/workflows/stats.yml` runs at 00:15, 06:15, 12:15, and 18:15 UTC (and on demand, with a
+`days` input) and does what the local export does: runs the parser tests, downloads the window's
+log files, writes `days/YYYY-MM-DD.json` for the last three days plus a refreshed `index.json`
+(fetched from the bucket first so earlier days stay listed), syncs them to
+`s3://mvcprogrammer.com/stats/data/` with a one-hour browser TTL, and invalidates `/data/*` on the
+stats distribution once that exists. A failed run shows up as a failed workflow email; there is no
+other alerting and none is needed.
+
+| Where | Name | Value |
+| --- | --- | --- |
+| Secret | `STATS_VISITOR_SALT` | a random string (`openssl rand -hex 32`); hashed into every visitor token, so the same browser gets the same token on every run and nobody can recompute a token from an IP. Changing it makes every visitor new from that day on |
+| Variable | `CF_LOG_BUCKET` | `mvcprogrammer-cf-logs-334383610383` |
+| Variable | `CF_STATS_EXCLUDE_IPS` | your own IP address(es), comma-separated, left out of every count |
+| Variable | `STATS_DISTRIBUTION_ID` | the stats distribution id, once created; until it is set the invalidation step and the `deploy-stats` job in `deploy.yml` are skipped |
+
+The deploy role needs to read the log bucket and read back the index; `infra/iam/github-actions-deploy-role-policy.json` now carries the two extra statements (`s3:ListBucket` on the log bucket, `s3:GetObject` on its objects, plus `s3:GetObject` on the site bucket). Apply it with the `put-role-policy` command in the Blazor section.
+
+A full rebuild (after a schema change, or to backfill the 30 days the log bucket keeps) is the same
+workflow with `days` set to `30`, or locally:
+
+```bash
+STATS_VISITOR_SALT=<the secret> CF_STATS_EXCLUDE_IPS=<your ip> node tools/stats-export.mjs --days 30 --out /tmp/stats-data
+aws s3 sync /tmp/stats-data/ s3://mvcprogrammer.com/stats/data/ --cache-control "public, max-age=3600, s-maxage=3600"
+```
+
+### Hosting
+
+The same shape as the React edition, minus the API and the beacon, plus a `noindex` header and the
+sign-in function. Lambda@Edge, the certificate, and the user pool all live in us-east-1.
+
+```bash
+# 1. Certificate (us-east-1), then add the CNAME it asks for to the hosted zone and wait for ISSUED
+aws acm request-certificate --region us-east-1 --domain-name stats.mvcprogrammer.com --validation-method DNS
+
+# 2. Response headers policy: the site's policy plus X-Robots-Tag, because a sign-in page should not be indexed either
+aws cloudfront get-response-headers-policy-config --id 28b549c3-c562-418c-a803-abe16efe78eb --query ResponseHeadersPolicyConfig > stats-headers.json
+#    edit: Name "mvcprogrammer-stats-headers", add { "Header": "X-Robots-Tag", "Value": "noindex, nofollow", "Override": true } to CustomHeadersConfig (Quantity 2)
+aws cloudfront create-response-headers-policy --response-headers-policy-config file://stats-headers.json
+
+# 3. Distribution, cloned from the React edition's config (E2C51AKAKJUCBO):
+#    origin path /stats, same S3 OAC E2KEES7ZY0UA4S, the new headers policy, 403 -> /index.html 200,
+#    remove the /api/* behavior and the www-redirect function association, logging off,
+#    alias stats.mvcprogrammer.com with the new certificate; no Lambda association yet (step 6 adds it)
+aws cloudfront get-distribution-config --id E2C51AKAKJUCBO --query DistributionConfig > stats-dist.json   # then edit as above
+aws cloudfront create-distribution --distribution-config file://stats-dist.json
+
+# 4. Bucket policy: add the new distribution ARN to the AWS:SourceArn list (section 3)
+# 5. DNS: A and AAAA aliases for stats.mvcprogrammer.com (CloudFront zone Z2FDTNDATAQYW2), same change batch shape as the apex
+# 6. Sign-in: see below; then set the published function ARN as the viewer-request association on the default behavior
+# 7. Deploy role and GitHub: add the distribution ARN under cloudfront:CreateInvalidation in
+#    infra/iam/github-actions-deploy-role-policy.json, apply it, and set STATS_DISTRIBUTION_ID;
+#    the next push to main runs deploy-stats and the next scheduled export invalidates /data/*
+```
+
+Manual deploy of the page, the same two syncs the workflow runs; neither touches `data/`:
+
+```bash
+cd stats && npm ci && npm test && npm run build && cd dist
+aws s3 sync bundles/ s3://mvcprogrammer.com/stats/bundles/ --delete \
+  --cache-control "public, max-age=604800, s-maxage=31536000, immutable"
+aws s3 sync . s3://mvcprogrammer.com/stats/ --delete \
+  --cache-control "public, max-age=300, s-maxage=31536000" \
+  --exclude "bundles/*" --exclude "data/*"
+aws cloudfront create-invalidation --distribution-id <STATS_DISTRIBUTION_ID> --paths "/*"
+```
+
+### Sign-in
+
+One Cognito user pool with one user, the hosted sign-in page on a Cognito domain, and
+`infra/lambda/stats-auth` (the [cognito-at-edge](https://github.com/awslabs/cognito-at-edge)
+library in a Lambda@Edge viewer-request function; its README has the role, the packaging, and the
+publish commands). The function reads its configuration from SSM Parameter Store, so no id or secret
+is in the repository.
+
+```bash
+# 1. User pool: email sign-in, self-registration off, passkeys (WebAuthn) and TOTP as the second factor
+aws cognito-idp create-user-pool --region us-east-1 --pool-name mvcprogrammer-stats \
+  --username-attributes email --auto-verified-attributes email \
+  --admin-create-user-config AllowAdminCreateUserOnly=true \
+  --mfa-configuration OPTIONAL --software-token-mfa-configuration Enabled=true \
+  --query UserPool.Id --output text
+# 2. The one user
+aws cognito-idp admin-create-user --region us-east-1 --user-pool-id <POOL_ID> --username neal.thomas@mvcprogrammer.com \
+  --user-attributes Name=email,Value=neal.thomas@mvcprogrammer.com Name=email_verified,Value=true
+# 3. App client: public (no secret), authorization code grant, 30-day refresh tokens, the dashboard as the only callback
+aws cognito-idp create-user-pool-client --region us-east-1 --user-pool-id <POOL_ID> --client-name stats-dashboard \
+  --no-generate-secret --allowed-o-auth-flows code --allowed-o-auth-scopes openid email \
+  --allowed-o-auth-flows-user-pool-client --supported-identity-providers COGNITO \
+  --callback-urls https://stats.mvcprogrammer.com/ --logout-urls https://mvcprogrammer.com/ \
+  --refresh-token-validity 30 --token-validity-units RefreshToken=days \
+  --query UserPoolClient.ClientId --output text
+# 4. Hosted sign-in domain (managed login)
+aws cognito-idp create-user-pool-domain --region us-east-1 --user-pool-id <POOL_ID> --domain mvcprogrammer-stats
+# 5. The parameters the edge function reads
+aws ssm put-parameter --region us-east-1 --name /mvcprogrammer/stats/user-pool-id --type String --value <POOL_ID>
+aws ssm put-parameter --region us-east-1 --name /mvcprogrammer/stats/user-pool-app-id --type String --value <CLIENT_ID>
+aws ssm put-parameter --region us-east-1 --name /mvcprogrammer/stats/user-pool-domain --type String --value mvcprogrammer-stats.auth.us-east-1.amazoncognito.com
+aws ssm put-parameter --region us-east-1 --name /mvcprogrammer/stats/nonce-secret --type SecureString --value "$(openssl rand -hex 32)"
+# 6. The function: infra/lambda/stats-auth/README.md, then the viewer-request association in step 6 of Hosting
+```
+
+Passkeys are enrolled from the hosted sign-in page after the first password sign-in (Cognito's
+managed login offers it under the user's security settings when the pool has WebAuthn enabled, which
+is a console toggle on the pool's sign-in experience page at the time of writing). Sessions last 30
+days with refresh; `https://stats.mvcprogrammer.com/signout` ends one.
+
+Verification, signed out: `https://stats.mvcprogrammer.com/` and
+`https://stats.mvcprogrammer.com/data/index.json` both redirect to the hosted sign-in. Signed in: the
+dashboard loads on a phone and a laptop, `Updated` shows the last export, and a data URL answers
+JSON. `curl -sI https://stats.mvcprogrammer.com/` shows the security headers plus `X-Robots-Tag`.
+
+Costs: Cognito is free under 50,000 monthly active users; Lambda@Edge is a few hundred invocations a
+month; the data is kilobytes; GitHub Actions minutes are free on a public repository. Well under a
+dollar a month.

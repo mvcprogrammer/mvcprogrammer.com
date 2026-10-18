@@ -1,0 +1,78 @@
+name: Export visitor stats
+
+# Rebuilds the dashboard's day files from the CloudFront access logs four times a day and syncs them
+# to the stats/data/ prefix of the site bucket. Every run rewrites the last three days, because
+# CloudFront can deliver a log file hours after the requests in it. The visitor salt keeps the
+# tokens stable across runs; without it every run would count every visitor as new.
+
+on:
+  schedule:
+    - cron: "15 0,6,12,18 * * *"
+  workflow_dispatch:
+    inputs:
+      days:
+        description: "Days to rebuild (default 3)"
+        required: false
+        default: "3"
+
+permissions:
+  id-token: write   # required for OIDC
+  contents: read
+
+concurrency:
+  group: stats-export
+  cancel-in-progress: false
+
+env:
+  AWS_REGION: ${{ vars.AWS_REGION || 'us-east-1' }}
+  S3_BUCKET: ${{ vars.S3_BUCKET }}
+  CF_LOG_BUCKET: ${{ vars.CF_LOG_BUCKET }}
+  STATS_DISTRIBUTION_ID: ${{ vars.STATS_DISTRIBUTION_ID }}
+
+jobs:
+  export:
+    name: Export the day files
+    runs-on: ubuntu-24.04
+    steps:
+      - name: Check out
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - name: Set up Node
+        uses: actions/setup-node@a0853c24544627f65ddf259abe73b1d18a591444 # v5.0.0
+        with:
+          node-version: 24
+
+      - name: Test the parser and exporter
+        run: node --test 'tools/test/*.test.mjs'
+
+      - name: Configure AWS credentials (OIDC)
+        uses: aws-actions/configure-aws-credentials@e1253824e5c10ff9df46874f81ed3ec929e19cfd # v6.3.0
+        with:
+          role-to-assume: ${{ secrets.AWS_ROLE_ARN }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      # The exporter syncs the window's log files into ~/.cache and parses them; the index already in
+      # the bucket is fetched first so the days it lists are kept.
+      - name: Fetch the current index
+        run: |
+          mkdir -p out
+          aws s3 cp "s3://${S3_BUCKET}/stats/data/index.json" out/index.json || echo "No index yet"
+
+      - name: Export
+        env:
+          STATS_VISITOR_SALT: ${{ secrets.STATS_VISITOR_SALT }}
+          CF_STATS_EXCLUDE_IPS: ${{ vars.CF_STATS_EXCLUDE_IPS }}
+        run: node tools/stats-export.mjs --days "${{ inputs.days || '3' }}" --out out
+
+      - name: Sync the day files (one-hour browser TTL)
+        run: |
+          aws s3 sync out/ "s3://${S3_BUCKET}/stats/data/" \
+            --cache-control "public, max-age=3600, s-maxage=3600" \
+            --content-type "application/json"
+
+      - name: Invalidate the data on the stats distribution
+        if: env.STATS_DISTRIBUTION_ID != ''
+        run: |
+          aws cloudfront create-invalidation \
+            --distribution-id "${STATS_DISTRIBUTION_ID}" \
+            --paths "/data/*"

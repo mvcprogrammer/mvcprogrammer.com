@@ -1,0 +1,19 @@
+{
+  "name": "mvcprogrammer-stats-auth",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Lambda@Edge viewer-request function that puts stats.mvcprogrammer.com behind a Cognito sign-in",
+  "main": "index.js",
+  "scripts": {
+    "test": "node --test",
+    "build": "esbuild index.js --bundle --platform=node --target=node22 --minify --external:@aws-sdk/* --outfile=dist/index.js --log-level=warning",
+    "package": "npm run build && rm -f stats-auth.zip && cd dist && zip -q ../stats-auth.zip index.js && cd .. && ls -la stats-auth.zip"
+  },
+  "dependencies": {
+    "cognito-at-edge": "^1.5.5"
+  },
+  "devDependencies": {
+    "@aws-sdk/client-ssm": "^3.700.0",
+    "esbuild": "^0.27.0"
+  }
+}
