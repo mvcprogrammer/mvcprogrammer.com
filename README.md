@@ -33,8 +33,8 @@ The site follows the **KISS principle**: keep it simple, and add nothing that is
 | `api/` | The Experience API: C# on .NET 10, run on AWS Lambda (arm64) and reading a single DynamoDB table. Spec-first with OpenAPI 3.1, tested over the in-process host, deployed with SAM. See [api/README.md](api/README.md). |
 | `infra/` | The contact-form and resume-download Lambdas (Node.js 22 on arm64), the CloudFront Function that redirects `www` and answers the engagement beacon, and the SES DKIM change batch. |
 | `tools/` | `cf-stats.mjs`, which reads the CloudFront access logs and prints visits, unique visitors, referrers, and what the beacon recorded; `stats-export.mjs`, which writes the same figures as day files for the visitor dashboard; the shared parser in `lib/` and its tests. See [Visitor stats](docs/DEPLOY.md#visitor-stats). |
-| `stats/` | The private visitor dashboard (React 19 + Vite + Chart.js) that reads the day files `tools/stats-export.mjs` writes. See [stats/README.md](stats/README.md). |
-| `docs/` | [DEPLOY.md](docs/DEPLOY.md), the infrastructure walkthrough; the three edition guidelines; and the screenshots above. |
+| `stats/` | The private visitor dashboard (React 19 + Vite + Chart.js) that reads the day files `tools/stats-export.mjs` writes. See [stats/README.md](stats/README.md) and [docs/STATS-DASHBOARD.pdf](docs/STATS-DASHBOARD.pdf). |
+| `docs/` | [DEPLOY.md](docs/DEPLOY.md), the infrastructure walkthrough; the three edition guidelines and the dashboard guideline; and the screenshots above. |
 | `.github/workflows/` | The deploy: GitHub Actions authenticated with OIDC, so no AWS keys are stored anywhere. |
 
 ## How it is served
