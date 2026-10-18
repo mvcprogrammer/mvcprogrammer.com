@@ -29,7 +29,12 @@ story += [
 ]
 shot = os.path.join(ROOT, "docs", "images", "stats-dashboard-light.png")
 if os.path.exists(shot):
-    story += [Image(shot, width=7.0 * inch, height=7.0 * inch * 1500 / 1280), Paragraph("The dashboard on a laptop, seven days with the previous period compared. The same page on a phone stacks the tiles in two columns and the panels in one.", S["caption"]), Spacer(1, 8)]
+    # The top 1,150 pixels (header, tiles, chart, first panels) at the text width; the full screenshot would not fit under the title.
+    from PIL import Image as PilImage
+    cropped = os.path.join(os.path.dirname(OUT) if os.path.dirname(OUT) else ".", ".stats-dashboard-crop.png")
+    with PilImage.open(shot) as full:
+        full.crop((0, 0, 1280, 1150)).save(cropped)
+    story += [Image(cropped, width=7.0 * inch, height=7.0 * inch * 1150 / 1280), Paragraph("The dashboard on a laptop, seven days with the previous period compared. The same page on a phone stacks the tiles in two columns and the panels in one.", S["caption"]), Spacer(1, 8)]
 
 # ---------------------------------------------------------------- 1
 story += [
@@ -72,7 +77,7 @@ story += [
             [c("infra/lambda/stats-auth/"), "The Lambda@Edge sign-in check (cognito-at-edge), its tests, and its packaging."],
             [c("docs/DEPLOY.md"), "The Visitor dashboard section: pipeline secrets and variables, the distribution, Cognito, and the edge function, step by step."],
         ],
-        [2.0 * inch, 5.0 * inch],
+        [2.35 * inch, 4.65 * inch],
     ),
 ]
 
@@ -80,10 +85,9 @@ story += [
 story += [
     p("3. How the data flows", "h1"),
     *code_block([
-        "CloudFront logs (S3)  -->  tools/stats-export.mjs  -->  stats/data/index.json          -->  the page",
-        "four prefixes, gzipped     parse, drop scanners,         stats/data/days/YYYY-MM-DD.json     fetch the range,",
-        "W3C lines                  build visits, one record      one record per visit, no IPs        filter, sum, draw",
-        "                           per visit, salted tokens",
+        "CloudFront logs (S3)   -->  tools/stats-export.mjs    -->  stats/data/index.json       -->  the page",
+        "four prefixes, gzipped      parse, drop scanners,          days/YYYY-MM-DD.json             fetch the range,",
+        "W3C lines                   build visits, salt tokens      one record per visit, no IPs     filter, sum, draw",
     ]),
     p("The day file", "h2"),
     p("One file per calendar day in the site's time zone, holding the day's request totals and one small record per "
