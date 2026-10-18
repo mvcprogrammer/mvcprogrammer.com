@@ -1,0 +1,79 @@
+{
+  "schemaVersion": 1,
+  "day": "2026-10-17",
+  "timeZone": "America/New_York",
+  "requests": 28,
+  "scannerRequests": 4,
+  "visits": [
+    {
+      "token": "aeb7077a18",
+      "hour": 10,
+      "editions": [
+        "js",
+        "angular"
+      ],
+      "country": "US",
+      "edge": "IAD",
+      "referrer": "www.linkedin.com",
+      "loads": 1,
+      "screen": "desktop",
+      "scheme": "dark",
+      "sections": [
+        "about",
+        "portfolio"
+      ],
+      "seconds": 75,
+      "clicks": [
+        "edition/angular/header"
+      ],
+      "apiCalls": 1,
+      "skills": [
+        "Angular"
+      ]
+    },
+    {
+      "token": "aeb7077a18",
+      "hour": 10,
+      "editions": [
+        "js"
+      ],
+      "country": "US",
+      "edge": "IAD",
+      "loads": 1,
+      "screen": "desktop",
+      "scheme": "dark",
+      "seconds": 5
+    },
+    {
+      "token": "37653da2b1",
+      "hour": 22,
+      "editions": [
+        "react"
+      ],
+      "country": "DE",
+      "edge": "FRA",
+      "loads": 1,
+      "screen": "phone",
+      "scheme": "light",
+      "seconds": 20,
+      "clicks": [
+        "github/profile/about"
+      ],
+      "resumes": [
+        "react"
+      ]
+    },
+    {
+      "token": "37653da2b1",
+      "hour": 23,
+      "editions": [
+        "js"
+      ],
+      "country": "DE",
+      "edge": "FRA",
+      "sections": [
+        "about"
+      ]
+    }
+  ]
+}

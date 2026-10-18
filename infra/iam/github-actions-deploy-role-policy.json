@@ -19,6 +19,27 @@
     {
       "Effect": "Allow",
       "Action": [
+        "s3:GetObject"
+      ],
+      "Resource": "arn:aws:s3:::mvcprogrammer.com/stats/data/index.json"
+    },
+    {
+      "Effect": "Allow",
+      "Action": [
+        "s3:ListBucket"
+      ],
+      "Resource": "arn:aws:s3:::mvcprogrammer-cf-logs-334383610383"
+    },
+    {
+      "Effect": "Allow",
+      "Action": [
+        "s3:GetObject"
+      ],
+      "Resource": "arn:aws:s3:::mvcprogrammer-cf-logs-334383610383/*"
+    },
+    {
+      "Effect": "Allow",
+      "Action": [
         "cloudfront:CreateInvalidation"
       ],
       "Resource": [

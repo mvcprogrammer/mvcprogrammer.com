@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="color-scheme" content="light dark">
+  <meta name="theme-color" content="#f7f8fa" media="(prefers-color-scheme: light)">
+  <meta name="theme-color" content="#1e1f22" media="(prefers-color-scheme: dark)">
+
+  <title>Visitor stats | mvcprogrammer.com</title>
+  <meta name="description" content="Private visitor dashboard for mvcprogrammer.com and its editions.">
+  <!-- A private page behind sign-in: never indexed, never followed. -->
+  <meta name="robots" content="noindex, nofollow">
+  <base href="/">
+
+  <!-- Icons -->
+  <link rel="icon" href="/favicon.svg" type="image/svg+xml">
+  <link rel="icon" href="/favicon.ico" sizes="16x16 32x32 48x48">
+  <link rel="apple-touch-icon" href="/apple-touch-icon.png">
+
+  <!-- Fonts are self-hosted (SIL Open Font License, see assets/fonts/). Preloaded so text renders in the right face on first paint. -->
+  <link rel="preload" href="/assets/fonts/inter-latin.woff2" as="font" type="font/woff2" crossorigin>
+  <link rel="preload" href="/assets/fonts/jetbrains-mono-latin.woff2" as="font" type="font/woff2" crossorigin>
+
+  <!-- styles.css is the static site's stylesheet, copied into this build unchanged, for the tokens, fonts,
+       and themes. The build appends its own link for stats.css (the dashboard's layout) and its script tag. -->
+  <link rel="stylesheet" href="/styles.css">
+</head>
+
+<body id="top">
+  <div id="root">
+    <div class="app-loading" role="status" aria-live="polite">
+      <span class="brand-mark" aria-hidden="true"></span>
+      <p class="app-loading-text">Loading</p>
+    </div>
+  </div>
+  <script type="module" src="/src/main.tsx"></script>
+</body>
+</html>
