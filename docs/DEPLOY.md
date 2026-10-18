@@ -813,7 +813,7 @@ sign-in function. Lambda@Edge, the certificate, and the user pool all live in us
 | Route 53 | A and AAAA aliases for `stats.mvcprogrammer.com` to the distribution |
 | Bucket policy | the distribution is in the `AWS:SourceArn` allow list, and the `StatsOnlyThroughStatsDistribution` statement denies `stats/*` to every other distribution |
 | Cognito user pool | `us-east-1_oTcM1vY0c` (`mvcprogrammer-stats`, Essentials tier, deletion protection on): email sign-in, admin-created users only, first factors password and passkey, TOTP optional, passkey relying party `mvcprogrammer-stats.auth.us-east-1.amazoncognito.com` |
-| App client | `5r0mn4hpa0k18uobgndl0uc9gh` (`stats-dashboard`): no secret, authorization code grant, scopes `openid email`, callback `https://stats.mvcprogrammer.com/`, sign-out `https://mvcprogrammer.com/`, refresh tokens 30 days, managed login branding `dcfd0ae7-a1b1-40d0-a307-61519037b14f` (Cognito's defaults) |
+| App client | `5r0mn4hpa0k18uobgndl0uc9gh` (`stats-dashboard`): no secret, authorization code grant, scopes `openid email`, callbacks `https://stats.mvcprogrammer.com` and `https://stats.mvcprogrammer.com/` (cognito-at-edge sends the origin without a slash, and Cognito matches the callback exactly), sign-out `https://mvcprogrammer.com/`, refresh tokens 30 days, managed login branding `dcfd0ae7-a1b1-40d0-a307-61519037b14f` (Cognito's defaults) |
 | Hosted sign-in | `https://mvcprogrammer-stats.auth.us-east-1.amazoncognito.com` (managed login, version 2) |
 | SSM parameters | `/mvcprogrammer/stats/user-pool-id`, `user-pool-app-id`, `user-pool-domain` (String) and `nonce-secret` (SecureString) |
 | Lambda@Edge | `mvcprogrammer-stats-auth` in us-east-1, role `mvcprogrammer-stats-auth`, version 2 on the default behavior's viewer-request event (version 1 answered 503 on a cookie-less `/signout`; the handler now gives such a request an empty cookie header before cognito-at-edge sees it) |
@@ -891,7 +891,7 @@ aws cognito-idp admin-create-user --region us-east-1 --user-pool-id <POOL_ID> --
 aws cognito-idp create-user-pool-client --region us-east-1 --user-pool-id <POOL_ID> --client-name stats-dashboard \
   --no-generate-secret --allowed-o-auth-flows code --allowed-o-auth-scopes openid email \
   --allowed-o-auth-flows-user-pool-client --supported-identity-providers COGNITO \
-  --callback-urls https://stats.mvcprogrammer.com/ --logout-urls https://mvcprogrammer.com/ \
+  --callback-urls https://stats.mvcprogrammer.com https://stats.mvcprogrammer.com/ --logout-urls https://mvcprogrammer.com/ \
   --refresh-token-validity 30 --access-token-validity 60 --id-token-validity 60 \
   --token-validity-units AccessToken=minutes,IdToken=minutes,RefreshToken=days \
   --explicit-auth-flows ALLOW_USER_AUTH ALLOW_REFRESH_TOKEN_AUTH --prevent-user-existence-errors ENABLED \
