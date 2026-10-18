@@ -121,7 +121,7 @@ story += [
             ["Styling", "Shared stylesheet plus " + c("vanilla.css") + " (palette).", "Shared stylesheet plus " + c("angular.css") + " (palette, boot screen); no component styles (CSP).", "Shared stylesheet plus " + c("react.css") + " (palette, boot screen). <b>No CSS-in-JS and no " + c("style") + " attribute</b>: the CSP forbids inline styles. No host elements, so no " + c("display: contents") + " list to maintain."],
             ["Build output", "The files as committed.", c("ng build") + ": esbuild, fingerprinted bundles, critical CSS not inlined.", c("tsc -b") + " then " + c("vite build") + ": one fingerprinted script and stylesheet under " + c("bundles/") + ", nothing inlined, no source maps."],
             ["Hosting", "Bucket root, distribution for mvcprogrammer.com.", c("angular/") + " prefix, own distribution, S3 403 rewritten to " + c("index.html") + ".", c("react/") + " prefix, own distribution, the static site's response headers policy unchanged, S3 403 rewritten to " + c("index.html") + " so React Router answers deep links."],
-            ["Tests", "None for the static page.", "138 Vitest cases on jsdom.", "186 Vitest cases on jsdom with Testing Library, run before every build."],
+            ["Tests", "None for the static page.", "140 Vitest cases on jsdom.", "188 Vitest cases on jsdom with Testing Library, run before every build."],
         ],
         [0.95 * inch, 1.6 * inch, 2.1 * inch, 2.35 * inch],
         first_style="cellsmall",
@@ -194,7 +194,7 @@ story += [
     b("Async rules: a state change after a promise is awaited with " + c("findBy...") + " or " + c("waitFor") + "; a call into the component from outside React (the topic state, an observer callback) is wrapped in " + c("act()") + "."),
     b("jsdom has no " + c("IntersectionObserver") + ", no " + c("matchMedia") + ", and no modal dialogs. The components guard for that; the tests stub the observer and the dialog methods where the behavior matters, and query a closed dialog's button with " + c("hidden: true") + "."),
     p("Test layout", "h2"),
-    p("Files mirror the app. The counts are test cases as Vitest reports them (186 in all)."),
+    p("Files mirror the app. The counts are test cases as Vitest reports them (188 in all)."),
     table(
         ["File", "Tests", "What it proves"],
         [
@@ -210,7 +210,7 @@ story += [
             [link("providers/site-services.test.ts, SiteProvider.test.tsx", TREE + SRC + "providers"), "14", "Every service built, invalid options rejected before building, each required key, each URL key, every problem named at once, the provider hands services down, useSite throws without one."],
             [link("services/fetch-experience-client.test.ts", BLOB + SRC + "services/fetch-experience-client.test.ts"), "12", "Paths, Accept header and timeout signal, query-string escaping, blank skill ignored, error status, non-JSON body, null bodies, skills, seed, the global fetch by default, a rejected fetch propagated."],
             [link("services/fetch-contact-client.test.ts", BLOB + SRC + "services/fetch-contact-client.test.ts"), "5", "JSON post with the headers and timeout signal, empty success body, status code on rejection, timeout propagated, the global fetch by default."],
-            [link("services/beacon-engagement-tracker.test.ts", BLOB + SRC + "services/beacon-engagement-tracker.test.ts"), "12", "View pings once per section, leave pings with the visible seconds accumulated across hide and show, silence on localhost and under Do Not Track or Global Privacy Control, no observer in the browser, failed pings ignored, restart, stop, stop before start."],
+            [link("services/beacon-engagement-tracker.test.ts", BLOB + SRC + "services/beacon-engagement-tracker.test.ts"), "14", "Load ping with screen class and color scheme, view pings once per section, click pings for edition and profile links with their place, leave pings with the visible seconds accumulated across hide and show, silence on localhost, no observer in the browser, failed pings ignored, restart, stop, stop before start."],
             [link("services/listener-contact-topic-state.test.ts", BLOB + SRC + "services/listener-contact-topic-state.test.ts"), "5", "Notify every subscriber, no subscribers, no replay, unsubscribe stops notifications, unsubscribe during a select."],
             [link("formatters/, validators/, exceptions/", TREE + SRC), "33", "Month labels and unparseable input, place label per work mode, every contact form rule in every reply state, the HttpStatusError shape."],
             [link("src/testing/", TREE + "react/src/testing"), "", c("FakeExperienceClient") + ", " + c("FakeContactClient") + ", and " + c("FakeEngagementTracker") + " (scriptable, record their calls), " + c("createSiteTestServices()") + ", " + c("renderWithSite()") + ", " + c("TEST_SITE_OPTIONS") + ", fixture factories, " + c("jsonResponse()") + ", and " + c("textOf()") + "."],

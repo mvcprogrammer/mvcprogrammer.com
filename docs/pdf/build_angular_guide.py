@@ -119,7 +119,7 @@ story += [
             ["Styling", "Shared stylesheet plus " + c("vanilla.css") + " (palette).", "Shared stylesheet plus " + c("blazor.css") + " (palette, boot screen).", "Shared stylesheet plus " + c("angular.css") + " (palette, boot screen). <b>No component styles</b>: Angular injects them inline, which the CSP forbids. Host elements get " + c("display: contents") + " so the sticky header and the grids are unaffected."],
             ["Build output", "The files as committed.", c("dotnet publish") + ", trimmed.", c("ng build") + ": esbuild, fingerprinted bundles, critical-CSS inlining off (it would be an inline " + c("&lt;style&gt;") + ")."],
             ["Hosting", "Bucket root, distribution for mvcprogrammer.com.", c("blazor/") + " prefix, own distribution, CSP with " + c("'wasm-unsafe-eval'") + ".", c("angular/") + " prefix, own distribution, the static site's response headers policy unchanged, S3 403 rewritten to " + c("index.html") + "."],
-            ["Tests", "None for the static page.", "118 bUnit and xUnit cases.", "138 Vitest cases on jsdom, run before every build."],
+            ["Tests", "None for the static page.", "118 bUnit and xUnit cases.", "140 Vitest cases on jsdom, run before every build."],
         ],
         [0.95 * inch, 1.75 * inch, 2.0 * inch, 2.3 * inch],
         first_style="cellsmall",
@@ -190,7 +190,7 @@ story += [
     b("Zoneless rules: every async step is followed by " + c("await fixture.whenStable()") + ". The components wrap their loads in " + c("PendingTasks") + ", which is what makes that wait reliable."),
     b("jsdom has no " + c("IntersectionObserver") + ", no " + c("matchMedia") + ", and no modal dialogs. The components guard for that; the specs stub the observer and the dialog methods where the behavior matters."),
     p("Test layout", "h2"),
-    p("Files mirror the app. The counts are test cases as Vitest reports them (138 in all)."),
+    p("Files mirror the app. The counts are test cases as Vitest reports them (140 in all)."),
     table(
         ["File", "Tests", "What it proves"],
         [
@@ -203,7 +203,7 @@ story += [
             [link("sections/static-sections.spec.ts", BLOB + SRC + "sections/static-sections.spec.ts"), "6", "Hero, the About tag exception, the quote, the portfolio links and kiosk button, the resume URL and education, the colophon."],
             [link("sections/call-to-action.spec.ts", BLOB + SRC + "sections/call-to-action.spec.ts"), "2", "The Services and Freelance buttons select their contact topic."],
             [link("pages/home, pages/not-found, app.spec.ts", TREE + SRC), "5", "Home renders every section in order, NotFound, the layout around the routed page, an unknown path routes to NotFound."],
-            [link("services/beacon-engagement-tracker.spec.ts", BLOB + SRC + "services/beacon-engagement-tracker.spec.ts"), "10", "View pings once per section, leave pings with the visible seconds, silence on localhost and under Do Not Track or Global Privacy Control, no observer in the browser, failed pings ignored, restart and stop."],
+            [link("services/beacon-engagement-tracker.spec.ts", BLOB + SRC + "services/beacon-engagement-tracker.spec.ts"), "12", "Load ping with screen class and color scheme, view pings once per section, click pings for edition and profile links with their place, leave pings with the visible seconds, silence on localhost, no observer in the browser, failed pings ignored, restart and stop."],
             [link("services/http-experience-client.spec.ts", BLOB + SRC + "services/http-experience-client.spec.ts"), "9", "Paths, timeout option, query-string escaping, blank skill ignored, error status, null bodies, skills, seed."],
             [link("services/http-contact-client.spec.ts", BLOB + SRC + "services/http-contact-client.spec.ts"), "3", "JSON post to the endpoint with the Accept header and timeout, empty success body, status code on rejection."],
             [link("services/subject-contact-topic-state.spec.ts", BLOB + SRC + "services/subject-contact-topic-state.spec.ts"), "4", "Notify every subscriber, no subscribers, unsubscribe stops notifications, no replay."],

@@ -102,20 +102,24 @@ export function closeDialog(dialog) {
   if (dialog.open) dialog.close();
 }
 
-/**
- * The engagement beacon, mirroring main.js: GET /ping?e=view&s=<id> once per section that reaches
- * the middle of the viewport, and GET /ping?e=leave&t=<seconds visible> each time the tab is hidden.
- * CloudFront answers 204 at the edge and the access logs feed tools/cf-stats.mjs. Returns null, so
- * nothing to dispose, when the browser asks not to be tracked or the page runs locally.
- */
+/** The engagement beacon, mirrored from main.js: small GET /ping requests the CloudFront edge answers
+ *  with 204. "load" once with the viewport class and color scheme, "view" once per section that reaches
+ *  the middle of the viewport, "click" when an edition or profile link is followed, and "leave" with the
+ *  seconds visible each time the tab is hidden. No cookies and no identifiers. Returns a handle with
+ *  dispose(), or null, with nothing to dispose, when the page runs locally. */
 export function watchEngagement() {
   const LOCAL_HOSTS = ["localhost", "127.0.0.1", "[::1]"];
-  const optedOut = navigator.doNotTrack === "1" || navigator.globalPrivacyControl === true;
-  if (!window.fetch || optedOut || LOCAL_HOSTS.includes(location.hostname)) return null;
+  if (!window.fetch || LOCAL_HOSTS.includes(location.hostname)) return null;
 
   const ping = (query) => {
     fetch(`/ping?${query}`, { keepalive: true, credentials: "omit", cache: "no-store" }).catch(() => {});
   };
+
+  // Phones below 768 px, tablets below 1024 px, desktops from there: the same bands the stylesheet uses.
+  const viewportClass = window.innerWidth < 768 ? "phone" : window.innerWidth < 1024 ? "tablet" : "desktop";
+  const colorScheme =
+    typeof window.matchMedia === "function" && window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light";
+  ping(`e=load&v=${viewportClass}&c=${colorScheme}`);
 
   let observer = null;
   const sections = document.querySelectorAll("main .section[id]");
@@ -133,6 +137,51 @@ export function watchEngagement() {
     );
     sections.forEach((section) => observer.observe(section));
   }
+
+  // Which links count, keyed by what they point at. Only absolute links qualify, so the in-page
+  // section links never match the edition's own host.
+  const EDITION_HOSTS = {
+    "mvcprogrammer.com": "js",
+    "www.mvcprogrammer.com": "js",
+    "angular.mvcprogrammer.com": "angular",
+    "react.mvcprogrammer.com": "react",
+    "blazor.mvcprogrammer.com": "blazor",
+  };
+  const classifyLink = (anchor) => {
+    const href = anchor.getAttribute("href") ?? "";
+    if (!/^https?:/i.test(href)) return null;
+    let url;
+    try {
+      url = new URL(href);
+    } catch {
+      return null;
+    }
+    const host = url.hostname.toLowerCase();
+    if (EDITION_HOSTS[host] && (url.pathname === "/" || url.pathname === "")) {
+      return { kind: "edition", target: EDITION_HOSTS[host] };
+    }
+    if (host === "github.com" || host === "www.github.com") {
+      const parts = url.pathname.split("/").filter(Boolean);
+      return { kind: "github", target: parts.length > 1 ? parts[1] : "profile" };
+    }
+    if (host === "linkedin.com" || host.endsWith(".linkedin.com")) return { kind: "social", target: "linkedin" };
+    if (host === "flickr.com" || host.endsWith(".flickr.com")) return { kind: "social", target: "flickr" };
+    return null;
+  };
+  const linkPlace = (anchor) => {
+    if (anchor.closest(".site-header")) return "header";
+    if (anchor.closest("footer")) return "footer";
+    const section = anchor.closest("main .section[id]");
+    return section ? section.id : "page";
+  };
+  const onClick = (event) => {
+    const anchor = event.target?.closest?.("a[href]");
+    if (!anchor) return;
+    const link = classifyLink(anchor);
+    if (!link) return;
+    ping(`e=click&k=${link.kind}&t=${encodeURIComponent(link.target)}&f=${encodeURIComponent(linkPlace(anchor))}`);
+  };
+  document.addEventListener("click", onClick);
 
   let visibleSince = document.visibilityState === "hidden" ? null : Date.now();
   let visibleMs = 0;
@@ -152,6 +201,7 @@ export function watchEngagement() {
   return {
     dispose: () => {
       observer?.disconnect();
+      document.removeEventListener("click", onClick);
       document.removeEventListener("visibilitychange", onVisibility);
     },
   };

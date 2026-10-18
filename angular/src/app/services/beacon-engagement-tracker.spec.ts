@@ -49,11 +49,13 @@ interface FakePage {
   document: Document;
   listeners: Map<string, EventListener>;
   fetch: ReturnType<typeof vi.fn>;
-  navigator: { doNotTrack?: string; globalPrivacyControl?: boolean };
   location: { hostname: string };
+  window: { innerWidth: number; darkScheme: boolean };
   sections: Element[];
   visibilityState: DocumentVisibilityState;
 }
+
+const PING_OPTIONS = { keepalive: true, credentials: 'omit', cache: 'no-store' };
 
 describe('BeaconEngagementTracker', () => {
   let page: FakePage;
@@ -84,6 +86,34 @@ describe('BeaconEngagementTracker', () => {
       expect(observer.observed).toEqual(page.sections);
       expect(observer.options?.rootMargin).toBe('-40% 0px -40% 0px');
       expect(page.listeners.has('visibilitychange')).toBe(true);
+      expect(page.listeners.has('click')).toBe(true);
+    });
+
+    it('should send a load ping naming the viewport class and color scheme', () => {
+      // Arrange
+      page.window.innerWidth = 600;
+      page.window.darkScheme = true;
+
+      // Act
+      tracker.start();
+
+      // Assert
+      expect(page.fetch).toHaveBeenCalledTimes(1);
+      expect(page.fetch).toHaveBeenCalledWith('/ping?e=load&v=phone&c=dark', PING_OPTIONS);
+    });
+
+    it('should class a 900 pixel window as a tablet and a 1280 pixel one as a desktop', () => {
+      // Arrange
+      page.window.innerWidth = 900;
+
+      // Act
+      tracker.start();
+      page.window.innerWidth = 1280;
+      tracker.start();
+
+      // Assert
+      const urls = page.fetch.mock.calls.map((call) => call[0] as string);
+      expect(urls).toEqual(['/ping?e=load&v=tablet&c=light', '/ping?e=load&v=desktop&c=light']);
     });
 
     it('should ping a view once per section that intersects and stop observing it', () => {
@@ -98,13 +128,52 @@ describe('BeaconEngagementTracker', () => {
       ]);
 
       // Assert
-      expect(page.fetch).toHaveBeenCalledTimes(1);
-      expect(page.fetch).toHaveBeenCalledWith('/ping?e=view&s=about', {
-        keepalive: true,
-        credentials: 'omit',
-        cache: 'no-store',
-      });
+      expect(page.fetch).toHaveBeenCalledTimes(2);
+      expect(page.fetch).toHaveBeenLastCalledWith('/ping?e=view&s=about', PING_OPTIONS);
       expect(observer.unobserved).toEqual([page.sections[0]]);
+    });
+
+    it('should ping a click on an edition, GitHub, or profile link with where it sat', () => {
+      // Arrange
+      tracker.start();
+      const header = element('<header class="site-header"><a href="https://angular.mvcprogrammer.com/">Angular</a></header>');
+      const main = element(
+        '<main><section class="section" id="about"><a href="https://github.com/mvcprogrammer">GitHub</a></section>' +
+          '<section class="section" id="portfolio"><a href="https://github.com/mvcprogrammer/sandkey-display-api">API</a></section></main>',
+      );
+      const footer = element('<footer><a href="https://www.linkedin.com/in/mvcprogrammer/">LinkedIn</a></footer>');
+      page.fetch.mockClear();
+
+      // Act
+      for (const anchor of [...header.querySelectorAll('a'), ...main.querySelectorAll('a'), ...footer.querySelectorAll('a')]) {
+        click(page, anchor);
+      }
+
+      // Assert
+      const urls = page.fetch.mock.calls.map((call) => call[0] as string);
+      expect(urls).toEqual([
+        '/ping?e=click&k=edition&t=angular&f=header',
+        '/ping?e=click&k=github&t=profile&f=about',
+        '/ping?e=click&k=github&t=sandkey-display-api&f=portfolio',
+        '/ping?e=click&k=social&t=linkedin&f=footer',
+      ]);
+    });
+
+    it('should ignore clicks on in-page links, other sites, and non-links', () => {
+      // Arrange
+      tracker.start();
+      const main = element(
+        '<main><section class="section" id="about"><a href="#resume">Resume</a><a href="https://example.com/">Elsewhere</a><span>text</span></section></main>',
+      );
+      page.fetch.mockClear();
+
+      // Act
+      for (const target of Array.from(main.querySelectorAll('a, span'))) {
+        click(page, target);
+      }
+
+      // Assert
+      expect(page.fetch).not.toHaveBeenCalled();
     });
 
     it('should ping the seconds the page was visible each time the tab is hidden', () => {
@@ -123,7 +192,7 @@ describe('BeaconEngagementTracker', () => {
 
       // Assert
       const urls = page.fetch.mock.calls.map((call) => call[0] as string);
-      expect(urls).toEqual(['/ping?e=leave&t=42', '/ping?e=leave&t=50']);
+      expect(urls).toEqual(['/ping?e=load&v=desktop&c=light', '/ping?e=leave&t=42', '/ping?e=leave&t=50']);
     });
 
     it('should swallow a failed ping', async () => {
@@ -136,29 +205,7 @@ describe('BeaconEngagementTracker', () => {
       await Promise.resolve();
 
       // Assert
-      expect(page.fetch).toHaveBeenCalledTimes(1);
-    });
-
-    it('should do nothing when the browser sends Do Not Track', () => {
-      // Arrange
-      page.navigator.doNotTrack = '1';
-
-      // Act
-      tracker.start();
-
-      // Assert
-      expectSilent(page);
-    });
-
-    it('should do nothing when the browser sends Global Privacy Control', () => {
-      // Arrange
-      page.navigator.globalPrivacyControl = true;
-
-      // Act
-      tracker.start();
-
-      // Assert
-      expectSilent(page);
+      expect(page.fetch).toHaveBeenCalledTimes(2);
     });
 
     it('should do nothing on a local preview', () => {
@@ -183,7 +230,7 @@ describe('BeaconEngagementTracker', () => {
       // Assert
       expect(first.disconnected).toBe(true);
       expect(FakeIntersectionObserver.instances.length).toBe(2);
-      expect(page.listeners.size).toBe(1);
+      expect(page.listeners.size).toBe(2);
     });
   });
 
@@ -218,19 +265,29 @@ describe('BeaconEngagementTracker', () => {
     });
     const listeners = new Map<string, EventListener>();
     const fetch = vi.fn(() => Promise.resolve(new Response(null, { status: 204 })));
-    const navigator: FakePage['navigator'] = {};
     const location = { hostname: 'mvcprogrammer.test' };
+    const window = { innerWidth: 1280, darkScheme: false };
     const fake: FakePage = {
       listeners,
       fetch,
-      navigator,
       location,
+      window,
       sections,
       visibilityState: 'visible',
       document: null as unknown as Document,
     };
     fake.document = {
-      defaultView: { fetch, navigator, location },
+      defaultView: {
+        fetch,
+        location,
+        get innerWidth() {
+          return window.innerWidth;
+        },
+        matchMedia: (query: string) => {
+          expect(query).toBe('(prefers-color-scheme: dark)');
+          return { matches: window.darkScheme };
+        },
+      },
       get visibilityState() {
         return fake.visibilityState;
       },
@@ -242,6 +299,18 @@ describe('BeaconEngagementTracker', () => {
       removeEventListener: (type: string) => listeners.delete(type),
     } as unknown as Document;
     return fake;
+  }
+
+  /** Builds a detached DOM fragment, so closest() works as it would on the page. */
+  function element(html: string): HTMLElement {
+    const host = document.createElement('div');
+    host.innerHTML = html;
+    return host.firstElementChild as HTMLElement;
+  }
+
+  /** Delivers a click on the target through the tracker's document listener. */
+  function click(target: FakePage, element: Element): void {
+    target.listeners.get('click')?.({ target: element } as unknown as Event);
   }
 
   function setVisibility(target: FakePage, state: DocumentVisibilityState): void {

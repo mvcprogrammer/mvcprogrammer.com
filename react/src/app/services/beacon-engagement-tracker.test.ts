@@ -28,9 +28,9 @@ describe('BeaconEngagementTracker', () => {
       configurable: true,
     });
     Object.defineProperty(document, 'visibilityState', { value: 'visible', configurable: true });
-    Object.defineProperty(navigator, 'doNotTrack', { value: null, configurable: true });
-    Object.defineProperty(navigator, 'globalPrivacyControl', {
-      value: undefined,
+    Object.defineProperty(window, 'innerWidth', { value: 1280, configurable: true });
+    Object.defineProperty(window, 'matchMedia', {
+      value: () => ({ matches: false }),
       configurable: true,
     });
     tracker = new BeaconEngagementTracker();
@@ -56,13 +56,86 @@ describe('BeaconEngagementTracker', () => {
       expect(capture.observed.map((element) => element.id)).toEqual(['about', 'resume']);
       expect(capture.options).toEqual({ rootMargin: '-40% 0px -40% 0px' });
       expect(capture.unobserved).toEqual([about]);
-      expect(fetchSpy).toHaveBeenCalledTimes(1);
-      expect(fetchSpy.mock.calls[0]![0]).toBe('/ping?e=view&s=about');
-      expect(fetchSpy.mock.calls[0]![1]).toEqual({
+      expect(fetchSpy).toHaveBeenCalledTimes(2);
+      expect(fetchSpy.mock.calls[1]![0]).toBe('/ping?e=view&s=about');
+      expect(fetchSpy.mock.calls[1]![1]).toEqual({
         keepalive: true,
         credentials: 'omit',
         cache: 'no-store',
       });
+    });
+
+    it('should send a load ping first, naming the viewport class and color scheme', () => {
+      // Arrange
+      Object.defineProperty(window, 'innerWidth', { value: 600, configurable: true });
+      Object.defineProperty(window, 'matchMedia', {
+        value: () => ({ matches: true }),
+        configurable: true,
+      });
+
+      // Act
+      tracker.start();
+
+      // Assert
+      expect(fetchSpy).toHaveBeenCalledTimes(1);
+      expect(fetchSpy.mock.calls[0]![0]).toBe('/ping?e=load&v=phone&c=dark');
+    });
+
+    it('should class a 900 pixel window as a tablet and a 1280 pixel one as a desktop', () => {
+      // Arrange
+      Object.defineProperty(window, 'innerWidth', { value: 900, configurable: true });
+
+      // Act
+      tracker.start();
+      Object.defineProperty(window, 'innerWidth', { value: 1280, configurable: true });
+      tracker.start();
+
+      // Assert
+      const loads = fetchSpy.mock.calls.map((call) => call[0]);
+      expect(loads).toEqual(['/ping?e=load&v=tablet&c=light', '/ping?e=load&v=desktop&c=light']);
+    });
+
+    it('should ping a click on an edition, GitHub, or profile link with where it sat', () => {
+      // Arrange
+      document.body.innerHTML =
+        '<header class="site-header"><a href="https://angular.mvcprogrammer.com/">Angular</a></header>' +
+        '<main><section class="section" id="about"><a href="https://github.com/mvcprogrammer">GitHub</a></section>' +
+        '<section class="section" id="portfolio"><a href="https://github.com/mvcprogrammer/sandkey-display-api">API</a></section></main>' +
+        '<footer><a href="https://www.linkedin.com/in/mvcprogrammer/">LinkedIn</a></footer>';
+      document.addEventListener('click', (event) => event.preventDefault(), true);
+      tracker.start();
+      fetchSpy.mockClear();
+
+      // Act
+      for (const anchor of Array.from(document.querySelectorAll('a'))) {
+        anchor.dispatchEvent(new MouseEvent('click', { bubbles: true, cancelable: true }));
+      }
+
+      // Assert
+      const urls = fetchSpy.mock.calls.map((call) => call[0]);
+      expect(urls).toEqual([
+        '/ping?e=click&k=edition&t=angular&f=header',
+        '/ping?e=click&k=github&t=profile&f=about',
+        '/ping?e=click&k=github&t=sandkey-display-api&f=portfolio',
+        '/ping?e=click&k=social&t=linkedin&f=footer',
+      ]);
+    });
+
+    it('should ignore clicks on in-page links, other sites, and non-links', () => {
+      // Arrange
+      document.body.innerHTML =
+        '<main><section class="section" id="about"><a href="#resume">Resume</a><a href="https://example.com/">Elsewhere</a><span>text</span></section></main>';
+      document.addEventListener('click', (event) => event.preventDefault(), true);
+      tracker.start();
+      fetchSpy.mockClear();
+
+      // Act
+      for (const target of Array.from(document.querySelectorAll('a, span'))) {
+        target.dispatchEvent(new MouseEvent('click', { bubbles: true, cancelable: true }));
+      }
+
+      // Assert
+      expect(fetchSpy).not.toHaveBeenCalled();
     });
 
     it('should not ping for a section that is not intersecting', () => {
@@ -75,8 +148,9 @@ describe('BeaconEngagementTracker', () => {
         {} as IntersectionObserver,
       );
 
-      // Assert
-      expect(fetchSpy).not.toHaveBeenCalled();
+      // Assert: only the load ping went out
+      expect(fetchSpy).toHaveBeenCalledTimes(1);
+      expect(fetchSpy.mock.calls[0]![0]).toBe('/ping?e=load&v=desktop&c=light');
     });
 
     it('should send a leave ping with the seconds the page was visible when the tab is hidden', () => {
@@ -116,7 +190,7 @@ describe('BeaconEngagementTracker', () => {
       document.dispatchEvent(new Event('visibilitychange'));
 
       // Assert
-      const leaves = fetchSpy.mock.calls.map((call) => call[0]);
+      const leaves = fetchSpy.mock.calls.map((call) => call[0]).filter((url) => String(url).startsWith('/ping?e=leave'));
       expect(leaves).toEqual(['/ping?e=leave&t=10', '/ping?e=leave&t=15']);
     });
 
@@ -136,28 +210,6 @@ describe('BeaconEngagementTracker', () => {
       expect(fetchSpy).not.toHaveBeenCalled();
     });
 
-    it('should stay silent when the browser sends Do Not Track', () => {
-      // Arrange
-      Object.defineProperty(navigator, 'doNotTrack', { value: '1', configurable: true });
-
-      // Act
-      tracker.start();
-
-      // Assert
-      expect(capture.observed).toEqual([]);
-    });
-
-    it('should stay silent when the browser sends Global Privacy Control', () => {
-      // Arrange
-      Object.defineProperty(navigator, 'globalPrivacyControl', { value: true, configurable: true });
-
-      // Act
-      tracker.start();
-
-      // Assert
-      expect(capture.observed).toEqual([]);
-    });
-
     it('should still report leaves when IntersectionObserver is missing', () => {
       // Arrange
       vi.stubGlobal('IntersectionObserver', undefined);
@@ -168,8 +220,8 @@ describe('BeaconEngagementTracker', () => {
       document.dispatchEvent(new Event('visibilitychange'));
 
       // Assert
-      expect(fetchSpy).toHaveBeenCalledTimes(1);
-      expect(fetchSpy.mock.calls[0]![0]).toMatch(/^\/ping\?e=leave&t=\d+$/);
+      expect(fetchSpy).toHaveBeenCalledTimes(2);
+      expect(fetchSpy.mock.calls[1]![0]).toMatch(/^\/ping\?e=leave&t=\d+$/);
     });
 
     it('should ignore a failed ping', async () => {
@@ -185,7 +237,7 @@ describe('BeaconEngagementTracker', () => {
       await Promise.resolve();
 
       // Assert: nothing thrown, and the tracker keeps working
-      expect(fetchSpy).toHaveBeenCalledTimes(1);
+      expect(fetchSpy).toHaveBeenCalledTimes(2);
     });
 
     it('should restart cleanly when called twice', () => {
@@ -208,8 +260,10 @@ describe('BeaconEngagementTracker', () => {
 
       // Act
       tracker.stop();
+      fetchSpy.mockClear();
       Object.defineProperty(document, 'visibilityState', { value: 'hidden', configurable: true });
       document.dispatchEvent(new Event('visibilitychange'));
+      document.body.dispatchEvent(new MouseEvent('click', { bubbles: true }));
 
       // Assert
       expect(capture.disconnects).toBe(1);

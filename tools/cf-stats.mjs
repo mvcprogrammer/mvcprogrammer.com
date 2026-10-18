@@ -3,8 +3,10 @@
 // Visitor and engagement figures from the CloudFront access logs. Downloads the log files for the
 // window with the AWS CLI (aws s3 sync, so a second run only fetches what is new), parses the gzipped
 // W3C lines, drops scanners and known crawlers, and prints per-day visits, unique visitors,
-// referrers, regions, and what the engagement beacon (GET /ping, see main.js) recorded: which
-// sections visitors reached and how long the page stayed visible. No dependencies beyond Node 22+.
+// referrers, regions, and what the engagement beacon (GET /ping, see main.js) recorded: how many
+// real browsers loaded the page and on what kind of screen, which sections visitors reached, which
+// edition and profile links they clicked, and how long the page stayed visible. No dependencies
+// beyond Node 22+.
 //
 //   node tools/cf-stats.mjs                      # the last 7 days
 //   node tools/cf-stats.mjs --days 30 --scanners # a month, plus the 4xx and bot breakdown
@@ -234,6 +236,10 @@ function buildSessions(rows) {
           resumeDownloads: 0,
           viewed: new Set(),
           secondsVisible: null,
+          loads: 0,
+          viewport: null,
+          scheme: null,
+          clicks: [],
         };
         sessions.push(current);
       }
@@ -261,7 +267,13 @@ function buildSessions(rows) {
       }
       if (row.path === '/ping') {
         const params = new URLSearchParams(row.query === '-' ? '' : row.query);
-        if (params.get('e') === 'view' && params.get('s') !== null) {
+        if (params.get('e') === 'load') {
+          current.loads++;
+          current.viewport = params.get('v') ?? current.viewport;
+          current.scheme = params.get('c') ?? current.scheme;
+        } else if (params.get('e') === 'click' && params.get('k') !== null) {
+          current.clicks.push({ kind: params.get('k'), target: params.get('t') ?? '?', from: params.get('f') ?? '?' });
+        } else if (params.get('e') === 'view' && params.get('s') !== null) {
           current.viewed.add(params.get('s'));
         } else if (params.get('e') === 'leave') {
           const seconds = Number.parseInt(params.get('t') ?? '', 10);
@@ -360,6 +372,26 @@ function report(rows, visits, since, options, excluded) {
     console.log(`\nSection reach, of the ${reached.length} visits that sent view pings:`);
     printTable(reachTable);
   }
+
+  const loaded = visits.filter((visit) => visit.loads > 0);
+  if (loaded.length > 0) {
+    console.log(`\nBeacon reach: ${loaded.length} of ${visits.length} visits (${percent(loaded.length, visits.length)}) sent a load ping; the rest ran no script or left before it fired.`);
+    console.log(`Screens:${top(loaded.map((visit) => visit.viewport ?? '?'), 3)}. Color scheme:${top(loaded.map((visit) => visit.scheme ?? '?'), 2)}.`);
+  }
+  const clicksOf = (kind) => visits.flatMap((visit) => visit.clicks.filter((click) => click.kind === kind));
+  const clickLine = (label, kind) => {
+    const clicks = clicksOf(kind);
+    const inVisits = visits.filter((visit) => visit.clicks.some((click) => click.kind === kind)).length;
+    if (clicks.length === 0) {
+      console.log(`${label}: none.`);
+      return;
+    }
+    console.log(`${label}: ${clicks.length} in ${inVisits} visits, to${top(clicks.map((click) => click.target), 6)}; from${top(clicks.map((click) => click.from), 6)}.`);
+  };
+  console.log('');
+  clickLine('Edition links clicked', 'edition');
+  clickLine('GitHub links clicked', 'github');
+  clickLine('LinkedIn and Flickr links clicked', 'social');
 
   console.log(`\nReferrers: ${top(visits.map((visit) => visit.referrer).filter(Boolean), 8) || ' none'}`);
   console.log(`Edge locations: ${top(visits.map((visit) => visit.pop), 10)}`);

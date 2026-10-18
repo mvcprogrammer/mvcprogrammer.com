@@ -448,17 +448,24 @@
   }
 
   /* ---------- Engagement beacon ----------
-     Two kinds of GET /ping, answered at the CloudFront edge with 204 and read back
-     from the access logs by tools/cf-stats.mjs: "view" when a section reaches the
-     middle of the viewport (once per section) and "leave" with the seconds the page
-     has been visible, each time the tab is hidden. No cookies and no identifiers;
-     skipped when the browser asks not to be tracked and when the page runs locally. */
+     Small GET /ping requests, answered at the CloudFront edge with 204 and read back
+     from the access logs by tools/cf-stats.mjs: "load" once, with the viewport class
+     and color scheme; "view" when a section reaches the middle of the viewport (once
+     per section); "click" when a link to another edition of this site or to the GitHub,
+     LinkedIn, or Flickr profile is followed, with which link and which part of the page
+     it sat in; and "leave" with the seconds the page has been visible, each time the
+     tab is hidden. No cookies and no identifiers; skipped when the page runs locally. */
   var LOCAL_HOSTS = ["localhost", "127.0.0.1", "[::1]"];
-  var optedOut = navigator.doNotTrack === "1" || navigator.globalPrivacyControl === true;
-  if (window.fetch && !optedOut && LOCAL_HOSTS.indexOf(location.hostname) === -1) {
+  if (window.fetch && LOCAL_HOSTS.indexOf(location.hostname) === -1) {
     var ping = function (query) {
       fetch("/ping?" + query, { keepalive: true, credentials: "omit", cache: "no-store" }).catch(function () {});
     };
+
+    // Phones below 768 px, tablets below 1024 px, desktops from there: the same bands the stylesheet uses.
+    var viewportClass = window.innerWidth < 768 ? "phone" : window.innerWidth < 1024 ? "tablet" : "desktop";
+    var colorScheme =
+      typeof window.matchMedia === "function" && window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light";
+    ping("e=load&v=" + viewportClass + "&c=" + colorScheme);
 
     var pageSections = document.querySelectorAll("main .section[id]");
     if ("IntersectionObserver" in window && pageSections.length) {
@@ -477,6 +484,50 @@
         viewObserver.observe(section);
       });
     }
+
+    // Which links count, keyed by what they point at. Only absolute links qualify, so the
+    // in-page section links never match the edition's own host.
+    var EDITION_HOSTS = {
+      "mvcprogrammer.com": "js",
+      "www.mvcprogrammer.com": "js",
+      "angular.mvcprogrammer.com": "angular",
+      "react.mvcprogrammer.com": "react",
+      "blazor.mvcprogrammer.com": "blazor"
+    };
+    var classifyLink = function (anchor) {
+      var href = anchor.getAttribute("href") || "";
+      if (!/^https?:/i.test(href)) return null;
+      var url;
+      try {
+        url = new URL(href);
+      } catch (error) {
+        return null;
+      }
+      var host = url.hostname.toLowerCase();
+      if (EDITION_HOSTS[host] && (url.pathname === "/" || url.pathname === "")) {
+        return { kind: "edition", target: EDITION_HOSTS[host] };
+      }
+      if (host === "github.com" || host === "www.github.com") {
+        var parts = url.pathname.split("/").filter(Boolean);
+        return { kind: "github", target: parts.length > 1 ? parts[1] : "profile" };
+      }
+      if (host === "linkedin.com" || host.slice(-13) === ".linkedin.com") return { kind: "social", target: "linkedin" };
+      if (host === "flickr.com" || host.slice(-11) === ".flickr.com") return { kind: "social", target: "flickr" };
+      return null;
+    };
+    var linkPlace = function (anchor) {
+      if (anchor.closest(".site-header")) return "header";
+      if (anchor.closest("footer")) return "footer";
+      var section = anchor.closest("main .section[id]");
+      return section ? section.id : "page";
+    };
+    document.addEventListener("click", function (event) {
+      var anchor = event.target && event.target.closest ? event.target.closest("a[href]") : null;
+      if (!anchor) return;
+      var link = classifyLink(anchor);
+      if (!link) return;
+      ping("e=click&k=" + link.kind + "&t=" + encodeURIComponent(link.target) + "&f=" + encodeURIComponent(linkPlace(anchor)));
+    });
 
     var visibleSince = document.visibilityState === "hidden" ? null : Date.now();
     var visibleMs = 0;
