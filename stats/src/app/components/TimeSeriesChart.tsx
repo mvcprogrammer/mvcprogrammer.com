@@ -187,7 +187,7 @@ export function TimeSeriesChart({ points, previous = null, weekly, onPick }: Tim
       <div className="chart-frame is-tall" role="img" aria-label={`${METRIC_LABELS[metric]} per ${weekly ? 'week' : 'day'}`}>
         <Line data={data} options={options} plugins={plugins} />
       </div>
-      <TableTwin columns={columns} rows={rows} />
+      <TableTwin name={`${METRIC_LABELS[metric]} per ${weekly ? 'week' : 'day'} ${points[0]?.key ?? ''} to ${points[points.length - 1]?.key ?? ''}`} columns={columns} rows={rows} />
     </>
   );
 }

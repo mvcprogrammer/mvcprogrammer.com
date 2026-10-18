@@ -33,7 +33,7 @@ export function HourChart({ byHour }: HourChartProps) {
       <div className="chart-frame is-short" role="img" aria-label="Visits by hour of the day">
         <Bar data={data} options={options} />
       </div>
-      <TableTwin columns={['Hour', 'Visits']} rows={byHour.map((count, hour) => [formatHour(hour), formatNumber(count)])} />
+      <TableTwin name="Visits by hour" columns={['Hour', 'Visits']} rows={byHour.map((count, hour) => [formatHour(hour), formatNumber(count)])} />
     </>
   );
 }

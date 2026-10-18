@@ -37,7 +37,7 @@ export function TimeOnPageChart({ seconds }: TimeOnPageChartProps) {
       <div className="chart-frame is-short" role="img" aria-label="Time on page histogram">
         <Bar data={data} options={options} />
       </div>
-      <TableTwin columns={['Seconds visible', 'Visits']} rows={buckets.map((count, index) => [TIME_BUCKET_LABELS[index] ?? '', formatNumber(count)])} />
+      <TableTwin name="Time on page" columns={['Seconds visible', 'Visits']} rows={buckets.map((count, index) => [TIME_BUCKET_LABELS[index] ?? '', formatNumber(count)])} />
     </>
   );
 }

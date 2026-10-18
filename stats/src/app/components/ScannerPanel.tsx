@@ -47,7 +47,7 @@ export function ScannerPanel({ points, weekly }: ScannerPanelProps) {
         <div className="chart-frame is-short" role="img" aria-label="Requests and scanner requests per period">
           <Line data={data} options={options} />
         </div>
-        <TableTwin columns={['Period', 'Requests', 'Scanner requests']} rows={points.map((point, index) => [labels[index] ?? point.key, formatNumber(point.requests), formatNumber(point.scannerRequests)])} />
+        <TableTwin name="Scanner share" columns={['Period', 'Requests', 'Scanner requests']} rows={points.map((point, index) => [labels[index] ?? point.key, formatNumber(point.requests), formatNumber(point.scannerRequests)])} />
       </details>
     </section>
   );

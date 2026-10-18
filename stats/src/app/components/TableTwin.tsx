@@ -1,5 +1,9 @@
+import { csvFileName, downloadText, toCsv } from '../formatters/csv';
+
 /** Props of TableTwin. */
 export interface TableTwinProps {
+  /** What the table holds, for the CSV file name; the download button appears when set. */
+  readonly name?: string;
   /** Column headings; the first is the row label, the rest are numbers. */
   readonly columns: readonly string[];
   readonly rows: ReadonlyArray<readonly (string | number)[]>;
@@ -7,11 +11,16 @@ export interface TableTwinProps {
   readonly summary?: string;
 }
 
-/** The accessible twin of a chart: the same numbers as a table behind a disclosure. Also the source for an export. */
-export function TableTwin({ columns, rows, summary = 'Show as table' }: TableTwinProps) {
+/** The accessible twin of a chart: the same numbers as a table behind a disclosure, with a CSV download of exactly those rows. */
+export function TableTwin({ name, columns, rows, summary = 'Show as table' }: TableTwinProps) {
   return (
     <details className="table-twin">
       <summary>{summary}</summary>
+      {name !== undefined && (
+        <button type="button" className="table-twin-export" onClick={() => downloadText(csvFileName(name), toCsv(columns, rows))}>
+          Download CSV
+        </button>
+      )}
       <div className="table-twin-scroll">
         <table>
           <thead>
