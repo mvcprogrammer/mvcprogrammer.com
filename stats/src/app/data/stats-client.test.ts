@@ -63,6 +63,16 @@ describe('createFetchStatsClient', () => {
     expect(attempts).toBe(2);
   });
 
+  it('should treat an HTML answer (the page fallback or a sign-in redirect) as a missing file', async () => {
+    // Arrange
+    const fetchFn: FetchLike = async () => new Response('<!doctype html><title>Stats</title>', { status: 200, headers: { 'Content-Type': 'text/html' } });
+    const client = createFetchStatsClient('/data', fetchFn);
+
+    // Act, Assert
+    expect((await client.loadDays(['2026-10-17']))[0]?.file).toBeNull();
+    await expect(client.loadIndex()).rejects.toMatchObject({ status: 404 });
+  });
+
   it('should refuse a file from a newer schema', async () => {
     // Arrange
     const fetchFn: FetchLike = async () => jsonResponse(200, { schemaVersion: SCHEMA_VERSION + 1, days: [] });

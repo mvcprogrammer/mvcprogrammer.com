@@ -40,7 +40,7 @@ export function Donut({ title, counts, dimension, onSelect, selected }: DonutPro
   return (
     <div className="donut">
       <h3 className="sr-only">{title}</h3>
-      <div className="chart-frame is-donut" role="img" aria-label={`${title}: ${entries.map(([label, count]) => `${capitalize(label)} ${formatNumber(count)}`).join(', ')}`}>
+      <div className="chart-frame is-donut" role="figure" aria-label={`${title}: ${entries.map(([label, count]) => `${capitalize(label)} ${formatNumber(count)}`).join(', ')}`}>
         <Doughnut data={data} options={options} />
       </div>
       <ul className="donut-legend" aria-label={title}>

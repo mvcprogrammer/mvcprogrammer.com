@@ -1,5 +1,5 @@
 import { makeDay, makeVisit } from '../../testing/fixtures';
-import { buildSeries, sparkline, type DayVisits } from './series';
+import { bucketSpans, buildPreviousSeries, buildSeries, sparkline, type DayVisits } from './series';
 
 function dayVisits(day: string, count: number, missing = false): DayVisits {
   const visits = Array.from({ length: count }, (_, i) => makeVisit({ token: `t${i}`, loads: i % 2, seconds: i % 2 === 0 ? undefined : 30 }));
@@ -37,6 +37,23 @@ describe('series', () => {
     expect(points).toHaveLength(13);
     expect(points[0]).toMatchObject({ key: '2026-07-20', visits: 5, missing: true });
     expect(points[12]).toMatchObject({ key: '2026-10-12', visits: 1 });
+  });
+
+  it('should align the previous period to the current spans even when the weeks start on different days', () => {
+    // Arrange: 95 days starting on a Saturday; the previous period starts on a Tuesday
+    const current = { from: '2026-07-11', to: '2026-10-13' };
+    const previous = { from: '2026-04-07', to: '2026-07-10' };
+    const days = [dayVisits('2026-04-07', 2), dayVisits('2026-04-08', 3), dayVisits('2026-04-09', 1)];
+
+    // Act
+    const spans = bucketSpans(current);
+    const aligned = buildPreviousSeries(current, previous, days);
+
+    // Assert
+    expect(spans[0]).toEqual({ from: '2026-07-11', to: '2026-07-12' }); // the partial first week, Saturday and Sunday
+    expect(aligned).toHaveLength(spans.length);
+    expect(aligned[0]).toMatchObject({ key: '2026-04-07', visits: 5 }); // the same two-day span, shifted back 95 days
+    expect(aligned[1]).toMatchObject({ key: '2026-04-09', visits: 1 });
   });
 
   it('should give the last seven values for a sparkline with nulls as zero', () => {

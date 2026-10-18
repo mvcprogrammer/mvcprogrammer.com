@@ -6,14 +6,14 @@
   "main": "index.js",
   "scripts": {
     "test": "node --test",
-    "build": "esbuild index.js --bundle --platform=node --target=node22 --minify --external:@aws-sdk/* --outfile=dist/index.js --log-level=warning",
+    "build": "esbuild index.js --bundle --platform=node --target=node22 --minify --outfile=dist/index.js --log-level=warning",
     "package": "npm run build && rm -f stats-auth.zip && cd dist && zip -q ../stats-auth.zip index.js && cd .. && ls -la stats-auth.zip"
   },
   "dependencies": {
+    "@aws-sdk/client-ssm": "^3.700.0",
     "cognito-at-edge": "^1.5.5"
   },
   "devDependencies": {
-    "@aws-sdk/client-ssm": "^3.700.0",
     "esbuild": "^0.27.0"
   }
 }

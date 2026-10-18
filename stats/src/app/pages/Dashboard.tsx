@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { EMPTY_SUMMARY, delta, filterVisits, quantile, returningVisitors, share, splitClick, summarize, type Counts, type Summary } from '../aggregation/aggregate';
-import { WEEKLY_FROM_DAYS, buildSeries, sparkline, type DayVisits } from '../aggregation/series';
+import { WEEKLY_FROM_DAYS, buildPreviousSeries, buildSeries, sparkline, type DayVisits } from '../aggregation/series';
 import { Bars, type BarRow } from '../components/Bars';
 import { Donut } from '../components/DonutPanel';
 import { HourChart } from '../components/HourChart';
@@ -14,7 +14,7 @@ import type { DayLoad, StatsClient } from '../data/stats-client';
 import { EDITION_LABELS, SECTION_LABELS, type Edition, type StatsIndex } from '../data/types';
 import { addDays, dayKeysBetween, previousPeriod, rangeLength, type DayKey, type DayRange } from '../dates';
 import { countryName, flagOf, formatDayShort, formatDelta, formatDuration, formatNumber, formatPercent, formatPoints, formatRange } from '../formatters/format';
-import { DIRECT, segmentOn, withSegment, type Dimension, type Query } from '../query/query';
+import { DIRECT, segmentOn, withSegment, withoutSegment, type Dimension, type Query } from '../query/query';
 
 /** Props of Dashboard. */
 export interface DashboardProps {
@@ -89,7 +89,11 @@ export function Dashboard({ client, index, query, setQuery, today }: DashboardPr
     return () => controller.abort();
   }, [client, range, previousRange, compare, available, attempt]);
 
-  const select = useCallback((dimension: Dimension, value: string) => setQuery(withSegment(query, { dimension, value })), [query, setQuery]);
+  // Clicking the row that is already the filter clears it, so the pressed buttons toggle.
+  const select = useCallback(
+    (dimension: Dimension, value: string) => setQuery(segmentOn(query, dimension)?.value === value ? withoutSegment(query, dimension) : withSegment(query, { dimension, value })),
+    [query, setQuery],
+  );
   const pickRange = useCallback((from: DayKey, to: DayKey) => setQuery({ ...query, preset: null, range: { from, to } }), [query, setQuery]);
 
   const view = useMemo(() => {
@@ -103,7 +107,7 @@ export function Dashboard({ client, index, query, setQuery, today }: DashboardPr
     const previousSummary = previous === null ? null : summarize(previous.flatMap((day) => day.visits));
     const weekly = rangeLength(range) > WEEKLY_FROM_DAYS;
     const series = buildSeries(range, current);
-    const previousSeries = previous === null ? null : buildSeries(previousRange, previous);
+    const previousSeries = previous === null ? null : buildPreviousSeries(range, previousRange, previous);
     const missing = dayKeysBetween(range.from, range.to).filter((day) => !available.has(day) && day <= today);
     return { current, summary, previousSummary, weekly, series, previousSeries, missing, returning: returningVisitors(current.map((day) => day.visits)) };
   }, [phase, segments, range, previousRange, available, today]);
@@ -238,7 +242,15 @@ export function Dashboard({ client, index, query, setQuery, today }: DashboardPr
           points={series}
           previous={previousSeries}
           weekly={weekly}
-          onPick={(key) => (weekly ? pickRange(key, addDays(key, 6) < range.to ? addDays(key, 6) : range.to) : pickRange(key, key))}
+          onPick={(key) => {
+            if (!weekly) {
+              pickRange(key, key);
+              return;
+            }
+            const from = key < range.from ? range.from : key;
+            const end = addDays(key, 6);
+            pickRange(from, end < range.to ? end : range.to);
+          }}
         />
       </Panel>
 

@@ -110,7 +110,12 @@ export function parseQuery(search: string, today: DayKey): Query {
       continue;
     }
     const dimension = part.slice(0, colon);
-    const value = decodeURIComponent(part.slice(colon + 1));
+    let value: string;
+    try {
+      value = decodeURIComponent(part.slice(colon + 1));
+    } catch {
+      continue; // a stray percent sign in a hand-edited URL is not a crash
+    }
     if (isDimension(dimension) && value !== '' && !segments.some((segment) => segment.dimension === dimension)) {
       segments.push({ dimension, value });
     }

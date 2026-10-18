@@ -44,7 +44,7 @@ export function ScannerPanel({ points, weekly }: ScannerPanelProps) {
         <summary>
           Scanner share: {formatPercent(scanners / total)} of {formatNumber(total)} requests were bots, empty user agents, or 4xx probes (operations)
         </summary>
-        <div className="chart-frame is-short" role="img" aria-label="Requests and scanner requests per period">
+        <div className="chart-frame is-short" role="figure" aria-label="Requests and scanner requests per period">
           <Line data={data} options={options} />
         </div>
         <TableTwin name="Scanner share" columns={['Period', 'Requests', 'Scanner requests']} rows={points.map((point, index) => [labels[index] ?? point.key, formatNumber(point.requests), formatNumber(point.scannerRequests)])} />

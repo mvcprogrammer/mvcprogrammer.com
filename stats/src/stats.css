@@ -752,6 +752,18 @@
   padding: 0.45rem 0.9rem;
 }
 
+.state .button-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  justify-content: center;
+}
+
+.state-note {
+  font-size: 0.8rem;
+  margin: 0;
+}
+
 .day-links {
   display: flex;
   flex-wrap: wrap;

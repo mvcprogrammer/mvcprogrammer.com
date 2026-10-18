@@ -34,7 +34,7 @@ export function TimeOnPageChart({ seconds }: TimeOnPageChartProps) {
       <p className="panel-note">
         Median {formatDuration(quantile(seconds, 0.5))} · 75th percentile {formatDuration(quantile(seconds, 0.75))} · {formatNumber(seconds.length)} visits reported it
       </p>
-      <div className="chart-frame is-short" role="img" aria-label="Time on page histogram">
+      <div className="chart-frame is-short" role="figure" aria-label="Time on page histogram">
         <Bar data={data} options={options} />
       </div>
       <TableTwin name="Time on page" columns={['Seconds visible', 'Visits']} rows={buckets.map((count, index) => [TIME_BUCKET_LABELS[index] ?? '', formatNumber(count)])} />

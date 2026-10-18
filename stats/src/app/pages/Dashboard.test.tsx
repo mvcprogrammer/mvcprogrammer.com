@@ -92,6 +92,21 @@ describe('Dashboard', () => {
     expect(setQuery).toHaveBeenCalledWith({ ...SEVEN_DAYS, segments: [{ dimension: 'edition', value: 'react' }] });
   });
 
+  it('should clear a filter when its pressed row is clicked again', async () => {
+    // Arrange
+    const user = userEvent.setup();
+    const query: Query = { ...SEVEN_DAYS, segments: [{ dimension: 'edition', value: 'react' }] };
+    const { setQuery, view } = renderDashboard(query);
+    await view;
+    await waitFor(() => expect(screen.getByRole('button', { name: 'Filter by React' })).toBeTruthy());
+
+    // Act
+    await user.click(screen.getByRole('button', { name: 'Filter by React' }));
+
+    // Assert
+    expect(setQuery).toHaveBeenCalledWith({ ...query, segments: [] });
+  });
+
   it('should apply the query segments to the numbers', async () => {
     // Arrange
     const query: Query = { ...SEVEN_DAYS, segments: [{ dimension: 'country', value: 'DE' }] };

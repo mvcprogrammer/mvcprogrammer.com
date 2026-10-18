@@ -20,9 +20,9 @@ const DAY_KEY_PATTERN = /^\d{4}-(0[1-9]|1[0-2])-(0[1-9]|[12]\d|3[01])$/;
 
 const KEY_FORMAT = new Intl.DateTimeFormat('en-CA', { timeZone: TIME_ZONE, year: 'numeric', month: '2-digit', day: '2-digit' });
 
-/** True for a well-formed day key. */
+/** True for a well-formed day key that names a real calendar day (so 2026-02-31 is refused). */
 export function isDayKey(value: string): value is DayKey {
-  return DAY_KEY_PATTERN.test(value);
+  return DAY_KEY_PATTERN.test(value) && addDays(value, 0) === value;
 }
 
 /** The day an instant falls on in the site's time zone. */

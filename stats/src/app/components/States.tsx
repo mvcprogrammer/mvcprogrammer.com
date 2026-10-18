@@ -15,9 +15,15 @@ export function ErrorState({ message, onRetry }: ErrorStateProps) {
       <p>
         <code>{message}</code>
       </p>
-      <button type="button" className="button button-primary" onClick={onRetry}>
-        Try again
-      </button>
+      <div className="button-row">
+        <button type="button" className="button button-primary" onClick={onRetry}>
+          Try again
+        </button>
+        <button type="button" className="button button-secondary" onClick={() => window.location.reload()}>
+          Reload the page
+        </button>
+      </div>
+      <p className="state-note">A session that has run out ends here too: reloading goes through sign-in again.</p>
     </div>
   );
 }
@@ -56,7 +62,7 @@ export function EmptyRange({ earliest, latest, onPick }: EmptyRangeProps) {
 /** The dashboard's shape while the first data loads, so nothing jumps. */
 export function LoadingSkeleton() {
   return (
-    <div aria-busy="true" aria-label="Loading">
+    <div role="status" aria-busy="true" aria-label="Loading">
       <div className="tiles">
         {Array.from({ length: 6 }, (_, index) => (
           <div key={index} className="tile">

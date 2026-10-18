@@ -6,26 +6,31 @@
 // token, the local hour, the editions loaded, the referrer host, the country of the serving edge,
 // and what the beacon reported (screen, color scheme, sections reached, seconds visible, links
 // clicked), plus Experience API and resume activity. The dashboard filters and sums these in the
-// browser, so no server is involved and no IP address, browser string, or raw path leaves the logs.
+// browser, so no server is involved and no IP address or browser string leaves the logs; beacon and
+// query values are reduced to the vocabulary the page sends, so a hand-made request cannot plant text.
 // The parsing and the definition of a visit are shared with tools/cf-stats.mjs through
 // tools/lib/cf-logs.mjs.
 //
 //   node tools/stats-export.mjs                              # rebuild the last 3 days into stats/public/data
 //   node tools/stats-export.mjs --days 365 --out /tmp/stats  # a year, somewhere else
 //   STATS_VISITOR_SALT=... node tools/stats-export.mjs       # the salt that makes visitor tokens stable across runs
+//   node tools/stats-export.mjs --allow-local-salt            # a laptop run with the fixed salt "local"
 //
 // Shares --days, --bucket, --prefix, --exclude-ip, and --no-sync with cf-stats.mjs. The salt comes
-// from --salt or STATS_VISITOR_SALT; without one the tokens are salted with "local", which is fine on
-// a laptop and wrong for the published data. Every run rebuilds the whole window, because CloudFront
-// can deliver a log file hours after the requests in it.
+// from --salt or STATS_VISITOR_SALT and is required: a known salt would make the tokens guessable
+// from an IP address and browser string, so a laptop run without one must say --allow-local-salt.
+// Every run rebuilds the whole window, because CloudFront can deliver a log file hours after the
+// requests in it. The index merges the days an earlier run listed with the files already on disk
+// under <out>/days/, so a run never forgets a day it did not rebuild.
 import { createHash } from 'node:crypto';
-import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
+import { existsSync, mkdirSync, readFileSync, readdirSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { pathToFileURL } from 'node:url';
 
 import {
   EDITION_ORDER,
   SECTION_ORDER,
+  SESSION_GAP_MINUTES,
   TIME_ZONE,
   classifyRows,
   dayKey,
@@ -43,6 +48,20 @@ import { countryOfEdge } from './lib/edge-locations.mjs';
 
 /** Bumped whenever a day file's shape changes in a way the dashboard must know about. */
 export const SCHEMA_VERSION = 1;
+
+/** The beacon values the page can send; anything else came from a hand-made request and is reduced to "?" or dropped. */
+const SCREENS = new Set(['phone', 'tablet', 'desktop']);
+const SCHEMES = new Set(['light', 'dark']);
+const CLICK_KINDS = new Set(['edition', 'github', 'social']);
+
+/** A leave ping larger than a day is a forged or broken value. */
+const MAX_SECONDS = 86_400;
+
+/** A click target, place, or skill as the page sends it: a short token of plain characters, else "?". */
+function clean(value) {
+  const text = String(value ?? '').slice(0, 40);
+  return /^[A-Za-z0-9 .+#_-]+$/.test(text) ? text : '?';
+}
 
 /** Where the dashboard's dev server reads the data from. */
 const DEFAULT_OUT = 'stats/public/data';
@@ -65,20 +84,29 @@ function main() {
         parsed.salt = next();
         return true;
       }
+      if (arg === '--allow-local-salt') {
+        parsed.allowLocalSalt = true;
+        return true;
+      }
       return false;
     },
   });
   const out = options.out ?? DEFAULT_OUT;
   const salt = options.salt ?? process.env.STATS_VISITOR_SALT ?? null;
-  if (salt === null) {
-    process.stderr.write('No STATS_VISITOR_SALT; visitor tokens are salted with "local".\n');
+  if (salt === null && !options.allowLocalSalt) {
+    throw new Error('No visitor salt: set STATS_VISITOR_SALT or pass --salt. A fixed salt would make the tokens guessable, so a laptop run must say --allow-local-salt.');
   }
 
   const now = new Date();
   const since = windowSince(options.days, now);
-  const rows = classifyRows(loadRows(options, since), options.excludeIps).filter((row) => !row.own);
-  const visits = selectVisits(rows);
-  const days = dayKeysBetween(dayKey(since), dayKey(now));
+  // Parse from one session gap before the window, so a visit that began before midnight and ran into
+  // the first day is seen whole and stays on the day it started; only visits that started inside the
+  // window are written, and the request totals count the window's rows alone.
+  const margin = new Date(since.getTime() - SESSION_GAP_MINUTES * 60_000);
+  const rows = classifyRows(loadRows(options, margin), options.excludeIps).filter((row) => !row.own);
+  const firstDay = dayKey(since);
+  const visits = selectVisits(rows).filter((visit) => visit.day >= firstDay);
+  const days = dayKeysBetween(firstDay, dayKey(now));
 
   // A day with no log lines at all (before logging started, or past the bucket's retention) gets no
   // file, so the dashboard shows it as missing rather than as a day nobody visited.
@@ -88,7 +116,8 @@ function main() {
     const file = buildDayFile(day, rows.filter((row) => row.day === day), visits.filter((visit) => visit.day === day), salt ?? 'local');
     writeFileSync(join(out, 'days', `${day}.json`), stableJson(file));
   }
-  const index = buildIndex(readIndex(join(out, 'index.json')), written, now);
+  const onDisk = readdirSync(join(out, 'days')).filter((name) => /^\d{4}-\d{2}-\d{2}\.json$/.test(name)).map((name) => name.slice(0, 10));
+  const index = buildIndex(readIndex(join(out, 'index.json')), [...onDisk, ...written], now);
   writeFileSync(join(out, 'index.json'), stableJson(index));
   const span = written.length === 0 ? 'none' : `${written[0]} to ${written[written.length - 1]}`;
   console.log(`Wrote ${written.length} day files (${span}) and index.json to ${out}; ${visits.length} visits in ${rows.length} requests; ${days.length - written.length} days in the window had no log lines.`);
@@ -133,23 +162,26 @@ export function visitRecord(visit, salt) {
   }
   if (visit.loads > 0) {
     record.loads = visit.loads;
-    record.screen = visit.viewport ?? '?';
-    record.scheme = visit.scheme ?? '?';
+    record.screen = SCREENS.has(visit.viewport) ? visit.viewport : '?';
+    record.scheme = SCHEMES.has(visit.scheme) ? visit.scheme : '?';
   }
-  if (visit.viewed.size > 0) {
-    record.sections = [...SECTION_ORDER.filter((id) => visit.viewed.has(id)), ...[...visit.viewed].filter((id) => !SECTION_ORDER.includes(id)).sort()];
+  const sections = SECTION_ORDER.filter((id) => visit.viewed.has(id));
+  if (sections.length > 0) {
+    record.sections = sections;
   }
   if (visit.secondsVisible !== null) {
-    record.seconds = visit.secondsVisible;
+    record.seconds = Math.min(Math.max(0, visit.secondsVisible), MAX_SECONDS);
   }
-  if (visit.clicks.length > 0) {
-    record.clicks = visit.clicks.map((click) => `${click.kind}/${click.target}/${click.from}`);
+  const clicks = visit.clicks.filter((click) => CLICK_KINDS.has(click.kind)).map((click) => `${click.kind}/${clean(click.target)}/${clean(click.from)}`);
+  if (clicks.length > 0) {
+    record.clicks = clicks;
   }
   if (visit.api > 0) {
     record.apiCalls = visit.api;
   }
-  if (visit.skillClicks.length > 0) {
-    record.skills = [...visit.skillClicks];
+  const skills = visit.skillClicks.map(clean).filter((skill) => skill !== '?');
+  if (skills.length > 0) {
+    record.skills = skills;
   }
   if (visit.resumeDownloads.length > 0) {
     record.resumes = [...visit.resumeDownloads];

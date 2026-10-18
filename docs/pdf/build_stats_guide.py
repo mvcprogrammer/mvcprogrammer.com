@@ -210,8 +210,8 @@ story += [
         ["Suite", "Runs with", "What it proves"],
         [
             [c("tools/test/") + " (26)", c("node --test"), "Parsing and decoding, the window filter, gunzipping a folder, scanner and owner classification, the 30-minute split, a session across local midnight, the visit rule, the command line, the calendar math on both sides of a daylight saving change, every field of a visit record, no IP or browser string in a record, the golden day file byte for byte, determinism, the index merge."],
-            [c("stats/src/**/*.test.ts(x)") + " (80)", c("vitest run"), "Date math, the query round trip, the fetch client (cache, 404 as missing, retry after 500, newer schema refused), every aggregation function, the series (daily, weekly, missing days), the formatters, each component (tiles, sparkline, bars, chips, switcher, picker, updated, table twin, states), the Dashboard over a fake client (numbers, panels, filtering, compare, empty, error), and the App (controls to URL, URL to controls, back button, index failure)."],
-            [c("infra/lambda/stats-auth/") + " (3)", c("node --test"), "The options built from the parameters with hardened cookies, a missing parameter refused, the SSM read with decryption."],
+            [c("stats/src/**/*.test.ts(x)") + " (85)", c("vitest run"), "Date math, the query round trip, the fetch client (cache, 404 as missing, retry after 500, newer schema refused), every aggregation function, the series (daily, weekly, missing days), the formatters, each component (tiles, sparkline, bars, chips, switcher, picker, updated, table twin, states), the Dashboard over a fake client (numbers, panels, filtering, compare, empty, error), and the App (controls to URL, URL to controls, back button, index failure)."],
+            [c("infra/lambda/stats-auth/") + " (6)", c("node --test"), "The options built from the parameters with hardened cookies, a missing parameter refused, the SSM read with decryption, one authenticator per container, and the fail-closed 503 with a retry on the next request."],
         ],
         [1.7 * inch, 1.0 * inch, 4.3 * inch],
         first_style="cellsmall",
@@ -238,7 +238,8 @@ story += [
       "proceeds, " + c("/signout") + " ends it. The function reads its configuration from SSM Parameter Store and fails "
       "closed. Every command, id, secret name, and variable is in the Visitor dashboard section of "
       + link("docs/DEPLOY.md", BLOB + "docs/DEPLOY.md") + "; nothing is repeated here."),
-    p("Costs: Cognito free under 50,000 monthly users, a few hundred Lambda@Edge invocations, kilobytes of S3 and CloudFront, free Actions minutes. Well under a dollar a month."),
+    p("The " + c("stats/") + " prefix sits in the same bucket as the public site, and the apex distribution serves that bucket from its root, so a bucket-policy statement denies the prefix to every distribution but the stats one; without it the page and the day files would answer at mvcprogrammer.com/stats/ with no sign-in. The export workflow uploads nothing until the distribution id is set, which is done only after that statement is in place."),
+    p("Costs: Cognito free under 50,000 monthly users; Lambda@Edge on every request to the distribution (about fifty per page view with the day files), a few thousand a month for one reader at $0.60 per million; kilobytes of S3 and CloudFront; free Actions minutes. Well under a dollar a month."),
 ]
 
 # ---------------------------------------------------------------- 8

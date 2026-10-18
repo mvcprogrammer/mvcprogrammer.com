@@ -1,4 +1,4 @@
-import { dayKeysBetween, weekStart, type DayKey, type DayRange } from '../dates';
+import { addDays, dayKeysBetween, daysBetween, weekStart, type DayKey, type DayRange } from '../dates';
 import type { DayFile } from '../data/types';
 import { quantile, summarize } from './aggregate';
 import type { VisitRecord } from '../data/types';
@@ -46,22 +46,44 @@ function point(key: DayKey, days: readonly DayVisits[]): SeriesPoint {
   };
 }
 
+/** The spans the range is drawn in: one per day, or one per calendar week (Monday to Sunday, clipped to the range) when it is long. */
+export function bucketSpans(range: DayRange): DayRange[] {
+  const keys = dayKeysBetween(range.from, range.to);
+  if (keys.length <= WEEKLY_FROM_DAYS) {
+    return keys.map((key) => ({ from: key, to: key }));
+  }
+  const spans: DayRange[] = [];
+  for (const key of keys) {
+    const last = spans[spans.length - 1];
+    if (last !== undefined && weekStart(key) === weekStart(last.from)) {
+      spans[spans.length - 1] = { from: last.from, to: key };
+    } else {
+      spans.push({ from: key, to: key });
+    }
+  }
+  return spans;
+}
+
+function pointsFor(spans: readonly DayRange[], days: readonly DayVisits[]): SeriesPoint[] {
+  const byDay = new Map(days.map((day) => [day.day, day]));
+  const lookup = (key: DayKey): DayVisits => byDay.get(key) ?? { day: key, file: null, visits: [] };
+  return spans.map((span) => point(span.from, dayKeysBetween(span.from, span.to).map(lookup)));
+}
+
 /** One point per day of the range, or per week when the range is long. */
 export function buildSeries(range: DayRange, days: readonly DayVisits[]): SeriesPoint[] {
-  const byDay = new Map(days.map((day) => [day.day, day]));
-  const keys = dayKeysBetween(range.from, range.to);
-  const lookup = (key: DayKey): DayVisits => byDay.get(key) ?? { day: key, file: null, visits: [] };
-  if (keys.length <= WEEKLY_FROM_DAYS) {
-    return keys.map((key) => point(key, [lookup(key)]));
-  }
-  const weeks = new Map<DayKey, DayVisits[]>();
-  for (const key of keys) {
-    const monday = weekStart(key);
-    const bucket = weeks.get(monday) ?? [];
-    bucket.push(lookup(key));
-    weeks.set(monday, bucket);
-  }
-  return [...weeks.entries()].map(([monday, bucket]) => point(monday, bucket));
+  return pointsFor(bucketSpans(range), days);
+}
+
+/**
+ * The previous period's points, one for one with the current series: each current span is shifted
+ * back by the range length, so the dashed line compares the same number of days at every point even
+ * when the two periods start on different weekdays.
+ */
+export function buildPreviousSeries(current: DayRange, previous: DayRange, days: readonly DayVisits[]): SeriesPoint[] {
+  const shift = daysBetween(previous.from, current.from);
+  const spans = bucketSpans(current).map((span) => ({ from: addDays(span.from, -shift), to: addDays(span.to, -shift) }));
+  return pointsFor(spans, days);
 }
 
 /** The last seven points' values of a field, for a tile's sparkline. */

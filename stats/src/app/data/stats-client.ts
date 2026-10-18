@@ -19,7 +19,7 @@ export interface StatsClient {
   loadDays(days: readonly DayKey[]): Promise<DayLoad[]>;
 }
 
-/** Thrown for a non-2xx response other than a missing day file. */
+/** Thrown for a non-2xx response other than a missing day file, and for a missing index. */
 export class HttpStatusError extends Error {
   /** The response status. */
   readonly status: number;
@@ -51,7 +51,8 @@ export type FetchLike = (input: string, init?: { signal?: AbortSignal }) => Prom
 
 /**
  * The production client: `baseUrl/index.json` and `baseUrl/days/<day>.json`, with the day files
- * cached in memory for the life of the page. A 404 for a day is not an error; the day has no file.
+ * cached in memory for the life of the page. A 404 for a day, or an answer that is not JSON (the
+ * hosted distribution's page fallback), is not an error; the day has no file.
  */
 export function createFetchStatsClient(baseUrl: string, fetchFn: FetchLike = (input, init) => fetch(input, init)): StatsClient {
   const base = baseUrl.endsWith('/') ? baseUrl : `${baseUrl}/`;
@@ -65,6 +66,11 @@ export function createFetchStatsClient(baseUrl: string, fetchFn: FetchLike = (in
     }
     if (!response.ok) {
       throw new HttpStatusError(response.status, url);
+    }
+    // The hosted distribution answers a missing key with the page itself (an SPA fallback), and the
+    // sign-in redirect lands on HTML too: anything that is not JSON means "no file here".
+    if (!(response.headers.get('content-type') ?? '').toLowerCase().includes('json')) {
+      return null;
     }
     const body = (await response.json()) as T & { schemaVersion?: number };
     if (typeof body.schemaVersion === 'number' && body.schemaVersion > SCHEMA_VERSION) {

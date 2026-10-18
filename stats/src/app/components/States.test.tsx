@@ -38,7 +38,7 @@ describe('States', () => {
 
   it('should render a busy skeleton in the final layout', () => {
     const { container } = render(<LoadingSkeleton />);
-    expect(container.querySelector('[aria-busy="true"]')).not.toBeNull();
+    expect(container.querySelector('[role="status"][aria-busy="true"]')).not.toBeNull();
     expect(container.querySelectorAll('.tile')).toHaveLength(6);
     expect(container.querySelectorAll('.panel')).toHaveLength(7);
   });

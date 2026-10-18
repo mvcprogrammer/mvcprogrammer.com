@@ -400,7 +400,7 @@ CF_STATS_EXCLUDE_IPS=203.0.113.7 node tools/cf-stats.mjs  # leave your own visit
 
 The bucket defaults to `mvcprogrammer-cf-logs-<account id>` for the current AWS account (`--bucket` or `CF_LOG_BUCKET` override it), all four prefixes are read unless `--prefix cf/` or `--prefix blazor/,angular/,react/` narrows it, and files are cached under `~/.cache/mvcprogrammer-cf-stats/`, so a second run only downloads what is new. A "By edition" line splits the visits by host. Unique visitors are IP address plus browser string, the best a server log can do; carrier NAT and office networks blur it.
 
-The parsing, the scanner list, the session rule, and the calendar math (days are cut in `America/New_York`, whatever the machine's zone) live in `tools/lib/cf-logs.mjs`, shared with `tools/stats-export.mjs`, which writes the same visits as JSON day files for the visitor dashboard: one `days/YYYY-MM-DD.json` per day plus an `index.json`. A day file holds the request totals and one small record per visit (a salted visitor token, the local hour, editions, referrer host, edge country, and what the beacon reported), never an IP address or browser string; the dashboard filters and sums the records in the browser. A day with no log lines gets no file, so the dashboard shows it as missing rather than quiet. It rebuilds the last three days by default, because CloudFront can deliver a log file hours late; `--days 365 --out <dir>` rebuilds a year. `STATS_VISITOR_SALT` (or `--salt`) keeps the tokens stable across runs. Both tools have tests over a synthetic log and a golden day file:
+The parsing, the scanner list, the session rule, and the calendar math (days are cut in `America/New_York`, whatever the machine's zone; before October 18, 2026 the report used the machine's zone, which is the same thing on the owner's laptop) live in `tools/lib/cf-logs.mjs`, shared with `tools/stats-export.mjs`, which writes the same visits as JSON day files for the visitor dashboard: one `days/YYYY-MM-DD.json` per day plus an `index.json`. A day file holds the request totals and one small record per visit (a salted visitor token, the local hour, editions, referrer host, edge country, and what the beacon reported), never an IP address or browser string; the dashboard filters and sums the records in the browser. A day with no log lines gets no file, so the dashboard shows it as missing rather than quiet. It rebuilds the last three days by default, because CloudFront can deliver a log file hours late; `--days 365 --out <dir>` rebuilds a year. `STATS_VISITOR_SALT` (or `--salt`) keeps the tokens stable across runs and is required; a laptop run that only feeds the dev server can say `--allow-local-salt` instead (the `npm run data` script does). Both tools have tests over a synthetic log and a golden day file:
 
 ```sh
 node tools/stats-export.mjs --days 30 --out stats/public/data   # day files for the dashboard's dev server
@@ -785,9 +785,11 @@ other alerting and none is needed.
 | Secret | `STATS_VISITOR_SALT` | a random string (`openssl rand -hex 32`); hashed into every visitor token, so the same browser gets the same token on every run and nobody can recompute a token from an IP. Changing it makes every visitor new from that day on |
 | Variable | `CF_LOG_BUCKET` | `mvcprogrammer-cf-logs-334383610383` |
 | Variable | `CF_STATS_EXCLUDE_IPS` | your own IP address(es), comma-separated, left out of every count |
-| Variable | `STATS_DISTRIBUTION_ID` | the stats distribution id, once created; until it is set the invalidation step and the `deploy-stats` job in `deploy.yml` are skipped |
+| Variable | `STATS_DISTRIBUTION_ID` | the stats distribution id, set only after the bucket policy below denies every other distribution the `stats/` prefix; until it is set the export runs as a dry run (nothing uploaded) and the `deploy-stats` job in `deploy.yml` is skipped |
 
-The deploy role needs to read the log bucket and read back the index; `infra/iam/github-actions-deploy-role-policy.json` now carries the two extra statements (`s3:ListBucket` on the log bucket, `s3:GetObject` on its objects, plus `s3:GetObject` on the site bucket). Apply it with the `put-role-policy` command in the Blazor section.
+The deploy role needs to read the log bucket and read back the index; `infra/iam/github-actions-deploy-role-policy.json` now carries the extra statements (`s3:ListBucket` on the log bucket, `s3:GetObject` on its objects, and `s3:GetObject` on `stats/data/index.json` only, so the role still cannot read the resume PDF). Apply it with the `put-role-policy` command in the Blazor section. The export runs under the same role as the deploys for simplicity; it reads raw logs, so keep that in mind if the role's trust policy ever widens beyond pushes to `main`.
+
+GitHub pauses a scheduled workflow after 60 days without a commit to the repository; the Updated stamp on the dashboard is the tell, and the Actions page has a button to re-enable it. The exporter refuses to run without the salt, so a missing secret fails the run rather than publishing guessable tokens.
 
 A full rebuild (after a schema change, or to backfill the 30 days the log bucket keeps) is the same
 workflow with `days` set to `30`, or locally:
@@ -812,13 +814,20 @@ aws cloudfront get-response-headers-policy-config --id 28b549c3-c562-418c-a803-a
 aws cloudfront create-response-headers-policy --response-headers-policy-config file://stats-headers.json
 
 # 3. Distribution, cloned from the React edition's config (E2C51AKAKJUCBO):
-#    origin path /stats, same S3 OAC E2KEES7ZY0UA4S, the new headers policy, 403 -> /index.html 200,
+#    origin path /stats, same S3 OAC E2KEES7ZY0UA4S, the new headers policy, no custom error pages
+#    (the dashboard has one route, so a missing key should stay a 403, which the page reads as "no file"),
 #    remove the /api/* behavior and the www-redirect function association, logging off,
 #    alias stats.mvcprogrammer.com with the new certificate; no Lambda association yet (step 6 adds it)
 aws cloudfront get-distribution-config --id E2C51AKAKJUCBO --query DistributionConfig > stats-dist.json   # then edit as above
 aws cloudfront create-distribution --distribution-config file://stats-dist.json
 
-# 4. Bucket policy: add the new distribution ARN to the AWS:SourceArn list (section 3)
+# 4. Bucket policy: add the new distribution ARN to the AWS:SourceArn list (section 3), AND deny the stats/ prefix
+#    to every other distribution. The apex distribution serves the bucket root with no origin path, so without
+#    this statement https://mvcprogrammer.com/stats/data/days/<day>.json would answer with no sign-in at all:
+#    { "Sid": "StatsOnlyThroughStatsDistribution", "Effect": "Deny", "Principal": { "Service": "cloudfront.amazonaws.com" },
+#      "Action": "s3:GetObject", "Resource": "arn:aws:s3:::mvcprogrammer.com/stats/*",
+#      "Condition": { "StringNotEquals": { "AWS:SourceArn": "arn:aws:cloudfront::334383610383:distribution/<STATS_DISTRIBUTION_ID>" } } }
+#    Then check: curl -sI https://mvcprogrammer.com/stats/index.html must NOT be 200 (the site's 403 page is right).
 # 5. DNS: A and AAAA aliases for stats.mvcprogrammer.com (CloudFront zone Z2FDTNDATAQYW2), same change batch shape as the apex
 # 6. Sign-in: see below; then set the published function ARN as the viewer-request association on the default behavior
 # 7. Deploy role and GitHub: add the distribution ARN under cloudfront:CreateInvalidation in
@@ -879,10 +888,13 @@ is a console toggle on the pool's sign-in experience page at the time of writing
 days with refresh; `https://stats.mvcprogrammer.com/signout` ends one.
 
 Verification, signed out: `https://stats.mvcprogrammer.com/` and
-`https://stats.mvcprogrammer.com/data/index.json` both redirect to the hosted sign-in. Signed in: the
-dashboard loads on a phone and a laptop, `Updated` shows the last export, and a data URL answers
-JSON. `curl -sI https://stats.mvcprogrammer.com/` shows the security headers plus `X-Robots-Tag`.
+`https://stats.mvcprogrammer.com/data/index.json` both redirect to the hosted sign-in, and
+`https://mvcprogrammer.com/stats/data/index.json` is not a 200 (the bucket policy deny in Hosting
+step 4). Signed in: the dashboard loads on a phone and a laptop, `Updated` shows the last export, and
+a data URL answers JSON. `curl -sI https://stats.mvcprogrammer.com/` shows the security headers plus
+`X-Robots-Tag`.
 
-Costs: Cognito is free under 50,000 monthly active users; Lambda@Edge is a few hundred invocations a
-month; the data is kilobytes; GitHub Actions minutes are free on a public repository. Well under a
-dollar a month.
+Costs: Cognito is free under 50,000 monthly active users; Lambda@Edge runs on every request to the
+distribution, about fifty per page view with the day files, so a few thousand invocations a month for
+one reader, at $0.60 per million; the data is kilobytes; GitHub Actions minutes are free on a public
+repository. Well under a dollar a month.

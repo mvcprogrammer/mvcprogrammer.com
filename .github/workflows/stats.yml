@@ -52,19 +52,26 @@ jobs:
           aws-region: ${{ env.AWS_REGION }}
 
       # The exporter syncs the window's log files into ~/.cache and parses them; the index already in
-      # the bucket is fetched first so the days it lists are kept.
+      # the bucket is fetched first so the days it lists are kept. s3 sync succeeds when there is
+      # nothing to copy yet and fails on a real error, so a denied read can never wipe the history.
       - name: Fetch the current index
         run: |
           mkdir -p out
-          aws s3 cp "s3://${S3_BUCKET}/stats/data/index.json" out/index.json || echo "No index yet"
+          aws s3 sync "s3://${S3_BUCKET}/stats/data/" out/ --exclude "*" --include "index.json"
 
       - name: Export
         env:
           STATS_VISITOR_SALT: ${{ secrets.STATS_VISITOR_SALT }}
           CF_STATS_EXCLUDE_IPS: ${{ vars.CF_STATS_EXCLUDE_IPS }}
-        run: node tools/stats-export.mjs --days "${{ inputs.days || '3' }}" --out out
+          DAYS: ${{ inputs.days || '3' }}
+        run: |
+          test -n "${STATS_VISITOR_SALT}" || { echo "STATS_VISITOR_SALT is not set"; exit 1; }
+          node tools/stats-export.mjs --days "${DAYS}" --out out
 
+      # Until the stats distribution exists (and the bucket policy denies every other distribution the
+      # stats/ prefix, see docs/DEPLOY.md), nothing is uploaded: the run only proves the export works.
       - name: Sync the day files (one-hour browser TTL)
+        if: env.STATS_DISTRIBUTION_ID != ''
         run: |
           aws s3 sync out/ "s3://${S3_BUCKET}/stats/data/" \
             --cache-control "public, max-age=3600, s-maxage=3600" \

@@ -24,14 +24,14 @@ through because the check broke.
 
 Lambda@Edge functions live in us-east-1, are attached by version (not `$LATEST`), and a
 viewer-request package must stay under 1 MB compressed. `cognito-at-edge` with its dependencies
-zips to 1.5 MB as installed, so `npm run build` bundles and minifies everything into one file with
-esbuild (the AWS SDK stays external; it is in the runtime), and the zip comes in under 100 KB.
+zips to 1.5 MB as installed, so `npm run build` bundles and minifies everything, the SSM client
+included, into one file with esbuild, and the zip stays well under the limit.
 
 ```bash
 cd infra/lambda/stats-auth
 npm ci
 npm test
-npm run package                       # dist/index.js, then stats-auth.zip (about 100 KB)
+npm run package                       # dist/index.js, then stats-auth.zip (about 300 KB)
 
 # One time: the execution role, trusted by both Lambda and Lambda@Edge, allowed to read the parameters
 aws iam create-role --role-name mvcprogrammer-stats-auth --assume-role-policy-document '{

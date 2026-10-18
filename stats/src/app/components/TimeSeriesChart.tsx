@@ -1,5 +1,5 @@
 import type { ChartData, ChartOptions, Plugin } from 'chart.js';
-import { useMemo, useState } from 'react';
+import { useMemo, useRef, useState } from 'react';
 import { Line } from 'react-chartjs-2';
 import type { SeriesPoint } from '../aggregation/series';
 import { useChartTheme } from '../charts/use-chart-theme';
@@ -38,8 +38,8 @@ function pick(metric: Metric, point: SeriesPoint): number | null {
   }
 }
 
-function formatValue(metric: Metric, value: number | null): string {
-  if (value === null) {
+function formatValue(metric: Metric, value: number | null | undefined): string {
+  if (value === null || value === undefined || !Number.isFinite(value)) {
     return '–';
   }
   switch (metric) {
@@ -52,17 +52,25 @@ function formatValue(metric: Metric, value: number | null): string {
   }
 }
 
+/** What the shade plugin reads on every draw; a ref, because react-chartjs-2 hands plugins to Chart.js once, at construction. */
+interface Shade {
+  indices: readonly number[];
+  color: string;
+}
+
 /** Shades the columns of points that have no day file, so a gap is never read as a quiet day. */
-function missingShadePlugin(indices: readonly number[], color: string): Plugin<'line'> {
+function missingShadePlugin(shade: { readonly current: Shade }): Plugin<'line'> {
   return {
     id: 'missingShade',
     beforeDatasetsDraw(chart) {
       const x = chart.scales['x'];
+      const { indices, color } = shade.current;
       if (x === undefined || indices.length === 0) {
         return;
       }
       const { ctx, chartArea } = chart;
       ctx.save();
+      ctx.globalAlpha = 0.35;
       ctx.fillStyle = color;
       for (const index of indices) {
         const left = x.getPixelForValue(index - 0.5);
@@ -123,8 +131,9 @@ export function TimeSeriesChart({ points, previous = null, weekly, onPick }: Tim
     return { labels, datasets };
   }, [labels, metric, points, previous, theme]);
 
-  const missing = points.flatMap((point, index) => (point.missing ? [index] : []));
-  const plugins = useMemo(() => [missingShadePlugin(missing, theme.border.length > 0 ? `${theme.border}66` : 'rgba(0,0,0,0.08)')], [missing, theme.border]);
+  const shade = useRef<Shade>({ indices: [], color: theme.border });
+  shade.current = { indices: points.flatMap((point, index) => (point.missing ? [index] : [])), color: theme.border };
+  const plugins = useMemo(() => [missingShadePlugin(shade)], []);
 
   const options: ChartOptions<'line'> = {
     responsive: true,
@@ -172,7 +181,7 @@ export function TimeSeriesChart({ points, previous = null, weekly, onPick }: Tim
     labels[index] ?? point.key,
     formatValue(metric, pick(metric, point)),
     ...(metric === 'visits' ? [formatNumber(point.visitors)] : []),
-    ...(previous === null ? [] : [formatValue(metric, pick(metric, previous[index] ?? ({} as SeriesPoint)))]),
+    ...(previous === null ? [] : [formatValue(metric, previous[index] === undefined ? null : pick(metric, previous[index]))]),
   ]);
 
   return (
@@ -184,7 +193,7 @@ export function TimeSeriesChart({ points, previous = null, weekly, onPick }: Tim
           </button>
         ))}
       </div>
-      <div className="chart-frame is-tall" role="img" aria-label={`${METRIC_LABELS[metric]} per ${weekly ? 'week' : 'day'}`}>
+      <div className="chart-frame is-tall" role="figure" aria-label={`${METRIC_LABELS[metric]} per ${weekly ? 'week' : 'day'}`}>
         <Line data={data} options={options} plugins={plugins} />
       </div>
       <TableTwin name={`${METRIC_LABELS[metric]} per ${weekly ? 'week' : 'day'} ${points[0]?.key ?? ''} to ${points[points.length - 1]?.key ?? ''}`} columns={columns} rows={rows} />

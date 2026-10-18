@@ -26,8 +26,6 @@ const COOKIE_EXPIRATION_DAYS = 30;
 /** Where /signout sends the visitor. */
 const SIGN_OUT_REDIRECT = 'https://mvcprogrammer.com/';
 
-let authenticatorPromise = null;
-
 /**
  * Builds the Authenticator options from a map of parameter name (without the prefix) to value.
  * Exported for the test; throws when a parameter is missing so a misconfigured deploy fails loudly
@@ -69,19 +67,36 @@ async function createAuthenticator() {
   return new Authenticator(buildOptions(await readParameters(client)));
 }
 
-exports.handler = async (event) => {
-  try {
-    authenticatorPromise ??= createAuthenticator();
-    const authenticator = await authenticatorPromise;
-    return await authenticator.handle(event);
-  } catch (error) {
-    authenticatorPromise = null; // try the parameters again on the next request
-    console.error('stats-auth failed', error);
-    // Fail closed: never let a request through because the check broke.
-    return { status: '503', statusDescription: 'Service Unavailable', headers: { 'content-type': [{ key: 'Content-Type', value: 'text/plain' }], 'cache-control': [{ key: 'Cache-Control', value: 'no-store' }] }, body: 'Sign-in is unavailable right now.' };
-  }
-};
+/** The answer when the check itself fails: never let a request through because sign-in broke. */
+const UNAVAILABLE = Object.freeze({
+  status: '503',
+  statusDescription: 'Service Unavailable',
+  headers: { 'content-type': [{ key: 'Content-Type', value: 'text/plain' }], 'cache-control': [{ key: 'Cache-Control', value: 'no-store' }] },
+  body: 'Sign-in is unavailable right now.',
+});
 
+/**
+ * The handler over a given authenticator factory: the factory runs once per container and again
+ * after a failure, so a bad parameter is retried on the next request instead of sticking. Exported
+ * so the test can feed it a factory that throws or a fake authenticator.
+ */
+function createHandler(factory) {
+  let pending = null;
+  return async (event) => {
+    try {
+      pending ??= factory();
+      const authenticator = await pending;
+      return await authenticator.handle(event);
+    } catch (error) {
+      pending = null;
+      console.error('stats-auth failed', error);
+      return UNAVAILABLE;
+    }
+  };
+}
+
+exports.handler = createHandler(createAuthenticator);
+exports.createHandler = createHandler;
 exports.buildOptions = buildOptions;
 exports.readParameters = readParameters;
 exports.PARAMETER_PREFIX = PARAMETER_PREFIX;

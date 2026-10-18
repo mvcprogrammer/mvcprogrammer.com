@@ -11,6 +11,8 @@ describe('dates', () => {
   it('should validate day keys', () => {
     expect(isDayKey('2026-10-17')).toBe(true);
     expect(isDayKey('2026-13-01')).toBe(false);
+    expect(isDayKey('2026-02-31')).toBe(false);
+    expect(isDayKey('2024-02-29')).toBe(true);
     expect(isDayKey('2026-1-1')).toBe(false);
     expect(isDayKey('yesterday')).toBe(false);
   });

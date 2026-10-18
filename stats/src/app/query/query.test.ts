@@ -51,6 +51,10 @@ describe('query', () => {
     expect(query.segments).toEqual([{ dimension: 'edition', value: 'js' }]);
   });
 
+  it('should skip a segment whose value is not valid percent encoding instead of throwing', () => {
+    expect(parseQuery('?seg=referrer:100%,edition:react', TODAY).segments).toEqual([{ dimension: 'edition', value: 'react' }]);
+  });
+
   it('should serialize to the shortest search string that reproduces the query', () => {
     // Arrange
     const base: Query = { range: resolvePreset('30d', TODAY), preset: '30d', compare: false, segments: [] };

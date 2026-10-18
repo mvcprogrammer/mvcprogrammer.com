@@ -76,5 +76,6 @@ chart has a "Show as table" twin for screen readers and for copying the numbers 
 ## Hosting
 
 Published to the `stats/` prefix of the site bucket and served by its own CloudFront distribution
-behind a Cognito sign-in checked at the edge; the day files are written to `stats/data/` by the
+behind a Cognito sign-in checked at the edge; a bucket policy denies the prefix to every other
+distribution, so the apex site cannot serve it. The day files are written to `stats/data/` by the
 scheduled workflow. Details in [docs/DEPLOY.md](../docs/DEPLOY.md).
