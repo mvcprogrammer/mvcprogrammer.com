@@ -68,6 +68,20 @@ describe('App', () => {
     expect(screen.queryByRole('button', { name: /Remove filter/ })).toBeNull();
   });
 
+  it('should clean the sign-in return parameters out of the URL on load', async () => {
+    // Arrange
+    window.history.replaceState(null, '', '/?code=abc123&state=eyJub25jZSI6IjEifQ&range=7d');
+    const client = fakeStatsClient(generateDays('2026-10-01', '2026-10-18'));
+
+    // Act
+    render(<App client={client} today={TODAY} />);
+    await waitFor(() => expect(screen.getByText('Visitors', { selector: '.tile-label' })).toBeTruthy());
+
+    // Assert
+    expect(window.location.search).toBe('?range=7d');
+    expect((screen.getByLabelText('Range') as HTMLSelectElement).value).toBe('7d');
+  });
+
   it('should show the error state with retry when the index fails', async () => {
     // Arrange
     const good = fakeStatsClient(generateDays('2026-10-01', '2026-10-18'));
