@@ -24,3 +24,6 @@ CLAUDE.md
 
 # Python
 __pycache__/
+
+# The dashboard reads generated day files from here (tools/stats-export.mjs writes them)
+stats/public/
