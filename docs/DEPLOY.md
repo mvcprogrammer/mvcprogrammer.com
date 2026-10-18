@@ -827,7 +827,7 @@ aws cloudfront create-distribution --distribution-config file://stats-dist.json
 #    { "Sid": "StatsOnlyThroughStatsDistribution", "Effect": "Deny", "Principal": { "Service": "cloudfront.amazonaws.com" },
 #      "Action": "s3:GetObject", "Resource": "arn:aws:s3:::mvcprogrammer.com/stats/*",
 #      "Condition": { "StringNotEquals": { "AWS:SourceArn": "arn:aws:cloudfront::334383610383:distribution/<STATS_DISTRIBUTION_ID>" } } }
-#    Then check: curl -sI https://mvcprogrammer.com/stats/index.html must NOT be 200 (the site's 403 page is right).
+#    Then check: curl -sI https://mvcprogrammer.com/stats/index.html must NOT be 200 (the site's 404 page, status 404, is right).
 # 5. DNS: A and AAAA aliases for stats.mvcprogrammer.com (CloudFront zone Z2FDTNDATAQYW2), same change batch shape as the apex
 # 6. Sign-in: see below; then set the published function ARN as the viewer-request association on the default behavior
 # 7. Deploy role and GitHub: add the distribution ARN under cloudfront:CreateInvalidation in
