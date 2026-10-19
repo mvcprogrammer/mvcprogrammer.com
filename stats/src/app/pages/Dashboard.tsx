@@ -282,7 +282,7 @@ export function Dashboard({ client, index, query, setQuery, today }: DashboardPr
         <Panel title="GitHub and profile clicks" note="share of beacon-reached visits" empty={profileRows.length === 0 ? 'No profile clicks in this range' : null}>
           <Bars rows={profileRows} />
         </Panel>
-        <Panel title="Time of day" note="visit starts, America/New_York" empty={summary.visits === 0 ? 'No visits in this range' : null}>
+        <Panel title="Time of day" note="visit starts, Eastern time" empty={summary.visits === 0 ? 'No visits in this range' : null}>
           <HourChart byHour={summary.byHour} />
         </Panel>
         <Panel title="Experience API" note={`${formatPercent(share(summary.apiLoads, summary.visits))} of visits loaded it`} empty={summary.apiLoads === 0 ? 'No API calls in this range' : null}>
