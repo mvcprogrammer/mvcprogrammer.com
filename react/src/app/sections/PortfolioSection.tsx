@@ -49,10 +49,9 @@ export function PortfolioSection() {
                   You are reading the fourth edition: the same page rebuilt as a React 19 app,
                   TypeScript and hooks in the browser, bundled by Vite and served the same way from
                   a <code>react/</code> prefix of the same bucket. The second and third editions do
-                  it again in Blazor WebAssembly and in Angular. The JavaScript, Angular, React, and
-                  Blazor skill chips in the Core skills area in the 01 / About Me section are links;
-                  each one switches to the edition built on that stack. The colophon at the bottom
-                  has the details.
+                  it again in Blazor WebAssembly and in Angular. Every content change ships to all
+                  four in the same commit; the edition menu in the header switches between them. The
+                  colophon at the bottom has the details.
                 </p>
                 <ul
                   className="tag-list card-tags"

@@ -34,20 +34,15 @@ public sealed class StaticSectionTests : BunitContext
 
     #region HeroSection Tests
 
-    /// <summary>The Angular and React highlights link to their editions with a hint; C# / .NET and the database one stay plain.</summary>
+    /// <summary>The three highlights are plain text: no highlight links to the editions (removed 2026-10-19), the edition menu and the About chips carry those.</summary>
     [Fact]
-    public void HeroSection_ShouldLinkHighlightsToEditions()
+    public void HeroSection_ShouldRenderPlainHighlights()
     {
         // Arrange and Act
         var cut = Render<HeroSection>();
 
         // Assert
-        var links = cut.FindAll(".highlight-value a").Select(a => (a.TextContent, a.GetAttribute("href"), a.GetAttribute("title"))).ToList();
-        Assert.Equal(
-        [
-            ("Angular", "https://angular.mvcprogrammer.com/", "See the Angular edition of this site"),
-            ("React", "https://react.mvcprogrammer.com/", "See the React edition of this site"),
-        ], links);
+        Assert.Empty(cut.FindAll(".highlight-value a"));
         Assert.Equal(3, cut.FindAll(".highlights li").Count);
         Assert.Equal("C# / .NET", cut.FindAll(".highlight-value")[0].TextContent);
         Assert.Equal("Angular / React", cut.FindAll(".highlight-value")[1].TextContent);

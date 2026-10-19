@@ -45,6 +45,22 @@ export function FreelanceSection() {
           </article>
           <article className="card service-card">
             <div className="service-icon" aria-hidden="true">
+              <Icon name="savings" />
+            </div>
+            <h3>Cloud cost savings</h3>
+            <p>
+              A review of your AWS or Azure bill and the architecture behind it: idle and oversized
+              resources, servers doing work that serverless does for pennies, and the slow queries
+              and missing caches that inflate compute.
+            </p>
+            <p>
+              You get the savings quantified and ranked by payoff against effort, in a plan your
+              team can act on itself or hand to me. This site runs on S3, CloudFront, Lambda, and
+              DynamoDB for a few dollars a month.
+            </p>
+          </article>
+          <article className="card service-card">
+            <div className="service-icon" aria-hidden="true">
               <Icon name="audit" />
             </div>
             <h3>Audits for developers</h3>

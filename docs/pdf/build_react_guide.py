@@ -46,9 +46,8 @@ story += [
     p("No exceptions", "h2"),
     p("Content is identical on every edition. The editions cross-link through the About core-skill chips "
       "(<b>Angular</b>, <b>React</b>, <b>Blazor</b>, <b>JavaScript</b>, each with a title hint such as <i>See the React edition of "
-      "this site</i>) and the hero highlights (<b>Angular</b> and <b>React</b> of "
-      "<i>Angular / React</i> to their editions), and through the edition menu in the header: a pill naming the open "
-      "edition that lists all four. A link to the edition already open simply reloads it. The portfolio card carries no edition links. The test in " + c("sections/static-sections.test.tsx") + " pins the React side of it."),
+      "this site</i>) and through the edition menu in the header: a pill naming the open "
+      "edition that lists all four. The hero highlights are plain text (their Angular and React links were removed on 2026-10-19). A link to the edition already open simply reloads it. The portfolio card carries no edition links. The test in " + c("sections/static-sections.test.tsx") + " pins the React side of it."),
     KeepTogether([
         p("The one exception: color", "h2"),
         p("Each edition carries its own palette. One small file per edition, loaded after the shared " + c("styles.css")
@@ -204,7 +203,7 @@ story += [
             [link("components/IconSprite.test.tsx", BLOB + SRC + "components/IconSprite.test.tsx"), "15", "Every symbol the page references exists in the sprite; the sprite is hidden."],
             [link("components/Icon, SocialLinks, SiteFooter", TREE + SRC + "components"), "3", "Icon references a sprite symbol, three social profiles, footer year and legal links."],
             [link("sections/ContactSection.test.tsx", BLOB + SRC + "sections/ContactSection.test.tsx"), "25", "Phone field hidden by default, reveal and hide, topic preselection and unsubscribe, post and both confirmations with reset, honeypot forwarded, disabled while sending, 429, generic failure, timeout, non-HTTP error, values kept after failure, no post when invalid, when a call has no number, or the message is too short, blur marks a field, fixing clears it, and the message table."],
-            [link("sections/static-sections.test.tsx", BLOB + SRC + "sections/static-sections.test.tsx"), "7", "Hero with the edition links, the four About chips, the quote, the portfolio links and kiosk button, the iframe removed on close, the resume URL and education, the colophon."],
+            [link("sections/static-sections.test.tsx", BLOB + SRC + "sections/static-sections.test.tsx"), "7", "Hero with plain highlights, the four About chips, the quote, the portfolio links and kiosk button, the iframe removed on close, the resume URL and education, the colophon."],
             [link("sections/call-to-action.test.tsx", BLOB + SRC + "sections/call-to-action.test.tsx"), "2", "The Services and Freelance buttons select their contact topic."],
             [link("pages/Home, pages/NotFound, App.test.tsx", TREE + SRC), "6", "Home renders every section in order and starts and stops the tracker, NotFound, the layout around the routed page, an unknown path routes to NotFound, App under the browser router."],
             [link("providers/site-services.test.ts, SiteProvider.test.tsx", TREE + SRC + "providers"), "14", "Every service built, invalid options rejected before building, each required key, each URL key, every problem named at once, the provider hands services down, useSite throws without one."],
@@ -249,7 +248,7 @@ story += [
             ["3", "If the React behavior changed, add or update the test that proves it. Follow the conventions in section 6."],
             ["4", "Run " + c("npm test") + " and " + c("npm run build") + " in " + c("react/") + " and make both green. Warnings in the build are errors in review."],
             ["5", "Preview the editions locally: " + c("python3 -m http.server 8080") + " at the root, " + c("dotnet run --project blazor/src/Portfolio.Blazor") + ", and " + c("npm start") + " in " + c("angular/") + " and in " + c("react/") + "."],
-            ["6", "Check the cross-links survived: the edition menu in the header, the four About chips, and the two hero highlights, identical on every edition, with their hints."],
+            ["6", "Check the cross-links survived: the edition menu in the header and the four About chips, identical on every edition, with their hints; the hero highlights stay plain."],
             ["7", "Never add a " + c("style") + " attribute, a CSS-in-JS library, or an inline " + c("&lt;script&gt;") + "; the CSP blocks them in production. New rules go in " + c("react.css") + "; a color change edits its palette block, and the other three palette files if it is meant to be shared."],
             ["8", "Commit all editions together. No AI attribution trailers in the message."],
             ["9", "Push to " + c("main") + " only when asked. The workflow tests, builds, and deploys every edition."],

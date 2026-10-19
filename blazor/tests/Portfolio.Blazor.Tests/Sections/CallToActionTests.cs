@@ -45,7 +45,7 @@ public sealed class CallToActionTests : BunitContext
 
         // Assert
         Assert.Equal("Freelance", selected);
-        Assert.Equal(3, cut.FindAll(".service-card").Count);
+        Assert.Equal(4, cut.FindAll(".service-card").Count);
     }
 
     #endregion

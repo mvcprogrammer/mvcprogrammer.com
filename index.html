@@ -99,6 +99,9 @@
     <symbol id="icon-audit" viewBox="0 0 24 24">
       <path fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" d="M10.5 17a6.5 6.5 0 1 0 0-13 6.5 6.5 0 0 0 0 13zM15.5 15.5 21 21M7.75 10.5l1.9 1.9 3.6-3.9"/>
     </symbol>
+    <symbol id="icon-savings" viewBox="0 0 24 24">
+      <path fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" d="M12 21.5a9.5 9.5 0 1 0 0-19 9.5 9.5 0 0 0 0 19zM15.5 8.5h-5a2 2 0 1 0 0 4h3a2 2 0 1 1 0 4h-5M12 6.5v2M12 15.5v2"/>
+    </symbol>
     <symbol id="icon-data" viewBox="0 0 24 24">
       <path fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" d="M12 3c4.4 0 8 1.3 8 3s-3.6 3-8 3-8-1.3-8-3 3.6-3 8-3zM4 6v12c0 1.7 3.6 3 8 3s8-1.3 8-3V6M4 12c0 1.7 3.6 3 8 3s8-1.3 8-3"/>
     </symbol>
@@ -174,7 +177,7 @@
 
         <ul class="highlights" role="list" aria-label="Highlights">
           <li><span class="highlight-value">C# / .NET</span><span class="highlight-label">15+ Years Backend</span></li>
-          <li><span class="highlight-value"><a href="https://angular.mvcprogrammer.com/" title="See the Angular edition of this site">Angular</a> / <a href="https://react.mvcprogrammer.com/" title="See the React edition of this site">React</a></span><span class="highlight-label">TypeScript front ends</span></li>
+          <li><span class="highlight-value">Angular / React</span><span class="highlight-label">TypeScript front ends</span></li>
           <li><span class="highlight-value">SQL Server + NoSQL</span><span class="highlight-label">T-SQL &amp; performance tuning</span></li>
         </ul>
 
@@ -194,7 +197,7 @@
           <div class="about-body">
             <p>I've spent 15+ years building enterprise API applications on C# / .NET and SQL Server, with Angular front ends over ASP.NET Core Web APIs. My SQL Server work runs deep: complex queries, stored procedures, indexing, execution plan analysis, and performance tuning under concurrent load.</p>
             <p>Most recently I re-architected a legacy interval-polling Windows service into an event-driven RabbitMQ pipeline that handles 1M+ API requests around the clock. Before that I developed and maintained TOPS Software's proprietary accounting system, covering general ledger, receivables, payables, bank reconciliation, and financial reporting.</p>
-            <p>I follow SOLID principles and modern patterns like CQRS and dependency injection, and I own work from Sprint 0 and architecture review through delivery, including code review, mentoring, and production root-cause analysis. AI-assisted tools like Claude Code are part of my daily workflow.</p>
+            <p>I build on SOLID principles and modern software engineering patterns, and I own my work end to end, from Sprint 0 and architecture review through delivery, code review, mentoring, and production root-cause analysis. Teams count on me to ship on schedule and to leave the codebase better than I found it. AI-assisted tools like Claude Code are part of my daily workflow.</p>
             <a class="button button-primary" href="https://github.com/mvcprogrammer" target="_blank" rel="noopener noreferrer">
               <svg class="icon" aria-hidden="true" focusable="false"><use href="#icon-github"></use></svg>
               See my code on GitHub
@@ -331,6 +334,14 @@
           </article>
           <article class="card service-card">
             <div class="service-icon" aria-hidden="true">
+              <svg class="icon" focusable="false"><use href="#icon-savings"></use></svg>
+            </div>
+            <h3>Cloud cost savings</h3>
+            <p>A review of your AWS or Azure bill and the architecture behind it: idle and oversized resources, servers doing work that serverless does for pennies, and the slow queries and missing caches that inflate compute.</p>
+            <p>You get the savings quantified and ranked by payoff against effort, in a plan your team can act on itself or hand to me. This site runs on S3, CloudFront, Lambda, and DynamoDB for a few dollars a month.</p>
+          </article>
+          <article class="card service-card">
+            <div class="service-icon" aria-hidden="true">
               <svg class="icon" focusable="false"><use href="#icon-audit"></use></svg>
             </div>
             <h3>Audits for developers</h3>
@@ -360,7 +371,7 @@
               <p class="card-subtitle">The tech behind this site, in four editions</p>
               <p>The default edition of this site follows the KISS principle: keep it simple, and add nothing that is not earning its place. Plain HTML, CSS, and JavaScript with no framework, no build step, and no dependencies. The files live in a private S3 bucket that only CloudFront can read through Origin Access Control. CloudFront serves them worldwide over HTTPS with an ACM certificate, Route 53 points the domain at the distribution, and a GitHub Actions workflow authenticated with OIDC syncs the bucket and invalidates the cache on every push to main. No servers, no load balancer, no auto scaling group.</p>
               <p>The Experience section is served by a C# API on Lambda and DynamoDB, with default HTML as a fallback.</p>
-              <p>Three other editions produce the same webpage, but with Angular, React, or Blazor WebAssembly. The JavaScript, Angular, React, and Blazor skill chips in the Core skills area in the 01 / About Me section are links; each one switches to the edition built on that stack.</p>
+              <p>You are reading the first edition, the reference the other three are built to match. The same page is rebuilt in Blazor WebAssembly, Angular, and React, each served from its own prefix of the same bucket, and every content change ships to all four in the same commit. The edition menu in the header switches between them.</p>
               <ul class="tag-list card-tags" role="list" aria-label="Technologies used on mvcprogrammer.com">
                 <li class="tag">HTML</li>
                 <li class="tag">CSS</li>

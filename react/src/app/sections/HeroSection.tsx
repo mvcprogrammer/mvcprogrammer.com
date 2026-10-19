@@ -16,18 +16,7 @@ export function HeroSection() {
             <span className="highlight-label">15+ Years Backend</span>
           </li>
           <li>
-            <span className="highlight-value">
-              <a
-                href="https://angular.mvcprogrammer.com/"
-                title="See the Angular edition of this site"
-              >
-                Angular
-              </a>{' '}
-              /{' '}
-              <a href="https://react.mvcprogrammer.com/" title="See the React edition of this site">
-                React
-              </a>
-            </span>
+            <span className="highlight-value">Angular / React</span>
             <span className="highlight-label">TypeScript front ends</span>
           </li>
           <li>

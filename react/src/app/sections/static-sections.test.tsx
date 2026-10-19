@@ -9,7 +9,7 @@ import { ResumeSection } from './ResumeSection';
 
 describe('static sections', () => {
   describe('HeroSection', () => {
-    it('should render the name, the three highlights with the edition links, and both calls to action', () => {
+    it('should render the name, the three plain highlights, and both calls to action', () => {
       // Arrange, Act
       const { container } = render(<HeroSection />);
 
@@ -20,13 +20,8 @@ describe('static sections', () => {
         a.getAttribute('href'),
       );
       expect(hrefs).toEqual(['#portfolio', '#contact']);
-      const highlights = Array.from(
-        container.querySelectorAll<HTMLAnchorElement>('.highlight-value a'),
-      ).map((a) => [a.textContent, a.getAttribute('href'), a.getAttribute('title')]);
-      expect(highlights).toEqual([
-        ['Angular', 'https://angular.mvcprogrammer.com/', 'See the Angular edition of this site'],
-        ['React', 'https://react.mvcprogrammer.com/', 'See the React edition of this site'],
-      ]);
+      // No highlight links to the editions (removed 2026-10-19): the edition menu and the About chips carry those
+      expect(container.querySelectorAll('.highlight-value a').length).toBe(0);
       expect(container.querySelectorAll('.highlight-value')[0]?.textContent).toBe('C# / .NET');
       expect(container.querySelectorAll('.highlight-value')[1]?.textContent).toBe(
         'Angular / React',

@@ -14,6 +14,7 @@ describe('IconSprite', () => {
     'preview',
     'wrench',
     'audit',
+    'savings',
     'data',
     'mail',
     'download',
@@ -35,6 +36,6 @@ describe('IconSprite', () => {
     const svg = container.querySelector('svg');
     expect(svg?.getAttribute('class')).toBe('sr-only');
     expect(svg?.getAttribute('aria-hidden')).toBe('true');
-    expect(container.querySelectorAll('symbol').length).toBe(14);
+    expect(container.querySelectorAll('symbol').length).toBe(15);
   });
 });

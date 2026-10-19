@@ -41,7 +41,7 @@ describe('call to action', () => {
 
       // Assert
       expect(selected).toEqual(['Freelance']);
-      expect(host.querySelectorAll('.service-card').length).toBe(3);
+      expect(host.querySelectorAll('.service-card').length).toBe(4);
     });
   });
 });

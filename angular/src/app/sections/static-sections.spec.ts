@@ -9,7 +9,7 @@ import { createSiteTestServices } from '../../testing/site-testing';
 
 describe('static sections', () => {
   describe('HeroSection', () => {
-    it('should render the name, the three highlights with the edition links, and both calls to action', async () => {
+    it('should render the name, the three plain highlights, and both calls to action', async () => {
       // Arrange
       const fixture = TestBed.createComponent(HeroSection);
 
@@ -22,11 +22,8 @@ describe('static sections', () => {
       expect(host.querySelectorAll('.highlights li').length).toBe(3);
       const hrefs = Array.from(host.querySelectorAll('.button-row a')).map((a) => a.getAttribute('href'));
       expect(hrefs).toEqual(['#portfolio', '#contact']);
-      const highlights = Array.from(host.querySelectorAll<HTMLAnchorElement>('.highlight-value a')).map((a) => [a.textContent, a.getAttribute('href'), a.getAttribute('title')]);
-      expect(highlights).toEqual([
-        ['Angular', 'https://angular.mvcprogrammer.com/', 'See the Angular edition of this site'],
-        ['React', 'https://react.mvcprogrammer.com/', 'See the React edition of this site'],
-      ]);
+      // No highlight links to the editions (removed 2026-10-19): the edition menu and the About chips carry those
+      expect(host.querySelectorAll('.highlight-value a').length).toBe(0);
       expect(host.querySelectorAll('.highlight-value')[0].textContent).toBe('C# / .NET');
       expect(host.querySelectorAll('.highlight-value')[1].textContent).toBe('Angular / React');
     });

@@ -55,7 +55,7 @@ The same page is built four ways from this repository. Every edition shows the s
 | React | React 19 with Vite: function components, hooks, and React Router in TypeScript. | [`react/`](react/) | [react.mvcprogrammer.com](https://react.mvcprogrammer.com) |
 | Blazor | Blazor WebAssembly on .NET 10: Razor components and C# running in the browser. | [`blazor/`](blazor/) | [blazor.mvcprogrammer.com](https://blazor.mvcprogrammer.com) |
 
-Each framework edition has its own test suite, README, and guideline PDF, its own CloudFront distribution and certificate under the same bucket, and its own job in the deploy workflow. The editions mirror each other: a change to one is made to the others in the same commit, and the stylesheet, fonts, images, icons, and seed data are shared from the root rather than copied by hand. The edition menu in the header, the skill chips in the About section, and the hero highlights link between the editions, so each one is a click away from the others.
+Each framework edition has its own test suite, README, and guideline PDF, its own CloudFront distribution and certificate under the same bucket, and its own job in the deploy workflow. The editions mirror each other: a change to one is made to the others in the same commit, and the stylesheet, fonts, images, icons, and seed data are shared from the root rather than copied by hand. The edition menu in the header and the skill chips in the About section link between the editions, so each one is a click away from the others.
 
 ### Palettes
 

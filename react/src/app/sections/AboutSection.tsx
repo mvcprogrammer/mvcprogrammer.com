@@ -23,10 +23,11 @@ export function AboutSection() {
               reporting.
             </p>
             <p>
-              I follow SOLID principles and modern patterns like CQRS and dependency injection, and
-              I own work from Sprint 0 and architecture review through delivery, including code
-              review, mentoring, and production root-cause analysis. AI-assisted tools like Claude
-              Code are part of my daily workflow.
+              I build on SOLID principles and modern software engineering patterns, and I own my
+              work end to end, from Sprint 0 and architecture review through delivery, code review,
+              mentoring, and production root-cause analysis. Teams count on me to ship on schedule
+              and to leave the codebase better than I found it. AI-assisted tools like Claude Code
+              are part of my daily workflow.
             </p>
             <a
               className="button button-primary"
