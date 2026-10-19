@@ -56,8 +56,8 @@ export function ServicesSection() {
             <h3>Code</h3>
             <p>
               Maintainable, efficient code written to industry-standard conventions refined over 15
-              years, built on SOLID principles and modern patterns like CQRS and dependency
-              injection.
+              years, built on SOLID principles and modern software engineering patterns, and
+              delivered on schedule.
             </p>
             <p>
               Clean, consistent C# and TypeScript the next engineer can read without a tour, kept
