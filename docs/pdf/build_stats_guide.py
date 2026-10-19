@@ -172,7 +172,7 @@ story += [
             ["Time on page", "Histogram over six fixed buckets with the median and 75th percentile.", "No time-on-page data in this range"],
             ["Edition clicks", "By target edition with where the link was, share of beacon-reached visits.", "No edition clicks in this range"],
             ["GitHub and profile clicks", "Profile first, then repositories, then LinkedIn and Flickr, with places.", "No profile clicks in this range"],
-            ["Time of day", "24 columns of visit starts in EST.", "No visits in this range"],
+            ["Time of day", "24 columns of visit starts in Eastern time.", "No visits in this range"],
             ["Experience API", "Share of visits that loaded it and the skill-filter clicks.", "No API calls in this range"],
             ["Scanner share", "Requests against scanner requests per period; collapsed, for operations.", "Hidden with no requests"],
         ],

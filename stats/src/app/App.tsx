@@ -85,7 +85,7 @@ export function App({ client, today = todayKey() }: AppProps) {
       </main>
 
       <footer className="dash-footer">
-        <span>Days are cut in EST.</span>
+        <span>Days are cut in Eastern time.</span>
         <span>A visit is a non-bot browser that loaded a page and at least one asset, API call, or ping, in 30-minute sessions; the owner's visits are excluded.</span>
         <span>Source: CloudFront access logs and the first-party beacon. No cookies, no third parties.</span>
       </footer>
