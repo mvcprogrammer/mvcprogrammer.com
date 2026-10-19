@@ -1,13 +1,20 @@
 name: Export visitor stats
 
-# Rebuilds the dashboard's day files from the CloudFront access logs four times a day and syncs them
-# to the stats/data/ prefix of the site bucket. Every run rewrites the last three days, because
-# CloudFront can deliver a log file hours after the requests in it. The visitor salt keeps the
-# tokens stable across runs; without it every run would count every visitor as new.
+# Rebuilds the dashboard's day files from the CloudFront access logs every hour from 6 am to 6 pm
+# Eastern, once more at 9 pm, and syncs them to the stats/data/ prefix of the site bucket. Every run
+# rewrites the last three days, because CloudFront can deliver a log file hours after the requests in
+# it. The visitor salt keeps the tokens stable across runs; without it every run would count every
+# visitor as new.
+#
+# Actions cron is UTC only, so the schedule covers every UTC hour that is one of those Eastern hours
+# under either daylight or standard time (10:00-23:00, 01:00, and 02:00 UTC), and the first job
+# checks the clock in America/New_York and skips the hours that are not wanted on that day. A
+# manual run never skips. The minute is 7 rather than 0 or 15 because runs queued on the busiest
+# minutes start late, often by an hour or more.
 
 on:
   schedule:
-    - cron: "15 0,6,12,18 * * *"
+    - cron: "7 1,2,10-23 * * *"
   workflow_dispatch:
     inputs:
       days:
@@ -30,8 +37,32 @@ env:
   STATS_DISTRIBUTION_ID: ${{ vars.STATS_DISTRIBUTION_ID }}
 
 jobs:
+  gate:
+    name: Check the Eastern hour
+    runs-on: ubuntu-24.04
+    outputs:
+      wanted: ${{ steps.clock.outputs.wanted }}
+    steps:
+      # The schedule fires on more UTC hours than are wanted so that it is right under both EDT and EST;
+      # this decides which firings go on. Wanted: 6 am to 6 pm on the hour, and 9 pm, Eastern.
+      - name: Compare the clock with the wanted hours
+        id: clock
+        run: |
+          if [ "${{ github.event_name }}" != "schedule" ]; then
+            echo "wanted=true" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          hour=$(TZ=America/New_York date +%-H)
+          echo "It is ${hour}:00 in America/New_York"
+          case "$hour" in
+            6|7|8|9|10|11|12|13|14|15|16|17|18|21) echo "wanted=true" >> "$GITHUB_OUTPUT" ;;
+            *) echo "wanted=false" >> "$GITHUB_OUTPUT" ;;
+          esac
+
   export:
     name: Export the day files
+    needs: gate
+    if: needs.gate.outputs.wanted == 'true'
     runs-on: ubuntu-24.04
     steps:
       - name: Check out

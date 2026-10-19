@@ -772,8 +772,12 @@ of the site bucket), and the sign-in (a Cognito user pool checked by a Lambda@Ed
 
 ### Data pipeline
 
-`.github/workflows/stats.yml` runs at 00:15, 06:15, 12:15, and 18:15 UTC (and on demand, with a
-`days` input) and does what the local export does: runs the parser tests, downloads the window's
+`.github/workflows/stats.yml` runs every hour from 6 am to 6 pm Eastern, once more at 9 pm (since
+2026-10-19; before that four times a day), and on demand with a `days` input. Actions cron is UTC
+only, so the cron line fires on every UTC hour that is one of those Eastern hours under either EDT
+or EST (`7 1,2,10-23 * * *`), and a first `gate` job reads the clock in `America/New_York` and skips
+the firings that are not wanted that day; a manual run never skips. The export job does what the
+local export does: runs the parser tests, downloads the window's
 log files, writes `days/YYYY-MM-DD.json` for the last three days plus a refreshed `index.json`
 (fetched from the bucket first so earlier days stay listed), syncs them to
 `s3://mvcprogrammer.com/stats/data/` with a one-hour browser TTL, and invalidates `/data/*` on the
