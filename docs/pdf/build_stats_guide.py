@@ -49,7 +49,7 @@ story += [
       "It is private, behind a sign-in, and reads static JSON files; there is no server, no database, and no cookie on "
       "the public site."),
     p("Non-goals", "h2"),
-    b("Not real time. The files are rebuilt every six hours; the Updated stamp says when."),
+    b("Not real time. The files are rebuilt hourly from 6 am to 6 pm Eastern and once more at 9 pm; the Updated stamp says when."),
     b("Not a general analytics product. The panels are the ones that answer the site's questions; anything else is a text-report change first."),
     b("Not public. The page and its data sit behind Cognito; a data URL without a session is redirected to sign-in."),
     b("Not a fifth edition. The dashboard wears the shared stylesheet's base JetBrains Rider palette, which none of the public editions uses, and it has no mirror in the other stacks."),
@@ -226,7 +226,9 @@ story += [
 story += [
     p("7. Deploying and signing in", "h1"),
     p("Two workflows and one distribution. " + link(".github/workflows/stats.yml", BLOB + ".github/workflows/stats.yml")
-      + " runs at 00:15, 06:15, 12:15, and 18:15 UTC: it tests the parser, downloads the window's logs, rebuilds the "
+      + " runs every hour from 6 am to 6 pm Eastern and once more at 9 pm (a UTC cron that covers both EDT and EST, with a "
+      "first job that checks the clock in America/New_York and skips the hours not wanted that day): it tests the parser, "
+      "downloads the window's logs, rebuilds the "
       "last three days (CloudFront delivers some files hours late), syncs them to " + c("stats/data/") + " with a one-hour "
       "browser TTL, and invalidates " + c("/data/*") + ". The " + c("deploy-stats") + " job in "
       + link("deploy.yml", BLOB + ".github/workflows/deploy.yml") + " builds and syncs the page on every push to "
