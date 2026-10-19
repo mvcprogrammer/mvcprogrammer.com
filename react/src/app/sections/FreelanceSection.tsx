@@ -54,9 +54,10 @@ export function FreelanceSection() {
               and missing caches that inflate compute.
             </p>
             <p>
-              You get the savings quantified and ranked by payoff against effort, in a plan your
-              team can act on itself or hand to me. This site runs on S3, CloudFront, Lambda, and
-              DynamoDB for a few dollars a month.
+              You get the savings quantified and ranked by payoff against effort, in a
+              plan your team can act on itself or hand to me. This site, including its
+              fully functional API, runs on S3, CloudFront, Lambda, and DynamoDB for a
+              few dollars a month.
             </p>
           </article>
           <article className="card service-card">
