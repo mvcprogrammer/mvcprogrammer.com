@@ -222,7 +222,7 @@
             <h3 class="aside-title">Domains</h3>
             <ul class="tag-list" role="list" aria-label="Domain expertise">
               <li class="tag">Accounting</li>
-              <li class="tag">Healthcare (HL7, FHIR, HIPAA)</li>
+              <li class="tag"><a href="https://mvcprogrammer.com/fhir" title="Open the FHIR R4 patient explorer, a live demo on this site">Healthcare (HL7, FHIR, HIPAA)</a></li>
               <li class="tag">Real estate (Stellar MLS, Bridge API)</li>
               <li class="tag">Financial trading systems</li>
             </ul>
@@ -617,11 +617,11 @@
       <div class="container">
         <p class="eyebrow">07 / Colophon</p>
         <h2 id="colophon-title">How This Site Is Built</h2>
-        <p class="section-intro">A footnote for the curious. The whole site follows the KISS principle, keep it simple: there is no server behind this page, only static files on a CDN, three Lambdas, and a CloudFront Function.</p>
+        <p class="section-intro">A footnote for the curious. The whole site follows the KISS principle, keep it simple: there is no server behind this page, only static files on a CDN, four Lambdas, and a CloudFront Function.</p>
         <dl class="colophon-list">
           <div class="colophon-item">
             <dt>Front end</dt>
-            <dd>I kept the front end simple: plain HTML, CSS, and vanilla JavaScript. No framework, no build step, no bundler, and no dependencies: one stylesheet, a short palette override, and one deferred script of under 500 lines, shipped exactly as written. The Experience timeline is in the HTML, so it reads without JavaScript; when the Experience API answers, the script re-renders it from the JSON and reveals a skill filter.</dd>
+            <dd>I kept the front end simple: plain HTML, CSS, and vanilla JavaScript. No framework, no build step, no bundler, and no dependencies: one stylesheet, a short palette override, and one deferred script, shipped exactly as written. The Experience timeline is in the HTML, so it reads without JavaScript; when the Experience API answers, the script re-renders it from the JSON and reveals a skill filter.</dd>
           </div>
           <div class="colophon-item">
             <dt>Styling</dt>
@@ -650,6 +650,10 @@
           <div class="colophon-item">
             <dt>API integration</dt>
             <dd>The work history above is served by an API at <code>/api/experience</code>, with a skill filter and an aggregated <code>/api/skills</code> view. It is C# on .NET 10, run on AWS Lambda (arm64) behind this same CloudFront distribution and reading a single DynamoDB table. The OpenAPI contract was written and committed before any code. Responses carry ETags and cache headers so CloudFront answers most requests itself, errors follow RFC 9457 problem details, and the function URL accepts only requests signed by CloudFront. Write endpoints are specified and stubbed for an admin API to come. The contract is public: <a href="https://github.com/mvcprogrammer/mvcprogrammer.com/blob/main/api/openapi.yaml" target="_blank" rel="noopener">OpenAPI spec</a>.</dd>
+          </div>
+          <div class="colophon-item">
+            <dt>Healthcare demo</dt>
+            <dd>The <a href="/fhir">FHIR R4 patient explorer</a> is a second page with its own script, backed by a second C# Lambda at <code>/api/fhir</code>. It reads a public FHIR sandbox of synthetic records through the Firely SDK, maps the resources to small DTOs at the boundary, and reports every upstream call so the page can show what happened. Bounded searches, a short upstream timeout with retries, a per-address budget, and ETags with CloudFront caching keep it polite to the third-party server. Nothing is stored, and no real patient data is involved.</dd>
           </div>
           <div class="colophon-item">
             <dt>Deploys</dt>
