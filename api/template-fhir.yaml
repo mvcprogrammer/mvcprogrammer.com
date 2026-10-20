@@ -1,0 +1,127 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Transform: AWS::Serverless-2016-10-31
+
+Description: >
+  FHIR API for mvcprogrammer.com/fhir. A read-only C# (.NET 10, arm64) Lambda behind a
+  CloudFront behavior at /api/fhir/*, a facade over a public FHIR R4 sandbox holding
+  synthetic data. Holds no data of its own. Spec: api/openapi.yaml (FHIR tag).
+
+# Deployed beside the Experience API's stack (template.yaml), by hand, with:
+#   sam build -t api/template-fhir.yaml && sam deploy --guided
+# The CloudFront distribution predates both stacks and is not managed here. This stack
+# creates the function, its locked function URL, an origin access control, and a cache
+# policy; attaching them as a third origin and an /api/fhir/* behavior ordered ahead of
+# /api/* is a documented one-time step in docs/DEPLOY.md.
+
+Parameters:
+  DistributionArn:
+    Type: String
+    Description: ARN of the existing CloudFront distribution that will call the function URL.
+    AllowedPattern: '^arn:aws:cloudfront::\d{12}:distribution/[A-Z0-9]+$'
+  FhirBaseUrl:
+    Type: String
+    Default: https://hapi.fhir.org/baseR4
+    Description: FHIR R4 base URL. Switch to https://r4.smarthealthit.org when HAPI is wiped or down.
+    AllowedPattern: '^https://[^\s]+$'
+  FhirSourceName:
+    Type: String
+    Default: HAPI FHIR R4 public test server
+    Description: Shown in the trace's data source on the page.
+  ApiVersion:
+    Type: String
+    Default: 1.0.0
+    Description: Reported by /api/fhir/health. The function's own version, independent of info.version in openapi.yaml.
+  LogRetentionDays:
+    Type: Number
+    Default: 14
+
+Resources:
+
+  # ---------------------------------------------------------------- Compute
+
+  ApiLogGroup:
+    Type: AWS::Logs::LogGroup
+    Properties:
+      LogGroupName: /aws/lambda/mvcprogrammer-fhir-api
+      RetentionInDays: !Ref LogRetentionDays
+
+  ApiFunction:
+    Type: AWS::Serverless::Function
+    DependsOn: ApiLogGroup
+    Properties:
+      FunctionName: mvcprogrammer-fhir-api
+      Description: Read-only FHIR R4 patient explorer API, ASP.NET Core minimal API hosted on Lambda.
+      Runtime: dotnet10
+      Architectures: [arm64]
+      # With Amazon.Lambda.AspNetCoreServer.Hosting the handler is the assembly name.
+      Handler: Fhir.Api
+      CodeUri: ./src/Fhir.Api/
+      MemorySize: 1024
+      # A summary walks up to five pages per search with retries; the upstream budget is 22 s,
+      # which keeps this under CloudFront's 30 s origin response timeout.
+      Timeout: 25
+      Environment:
+        Variables:
+          FHIR_BASE_URL: !Ref FhirBaseUrl
+          FHIR_SOURCE_NAME: !Ref FhirSourceName
+          API_VERSION: !Ref ApiVersion
+      # No policies: the function reads a public server and touches no AWS service.
+      FunctionUrlConfig:
+        # IAM auth plus the permission below means only CloudFront, signing with the
+        # origin access control, can invoke the URL. Hitting it directly returns 403.
+        AuthType: AWS_IAM
+        InvokeMode: BUFFERED
+
+  CloudFrontInvokePermission:
+    Type: AWS::Lambda::Permission
+    Properties:
+      FunctionName: !Ref ApiFunction
+      Action: lambda:InvokeFunctionUrl
+      Principal: cloudfront.amazonaws.com
+      SourceArn: !Ref DistributionArn
+      FunctionUrlAuthType: AWS_IAM
+
+  # ---------------------------------------------------------------- CloudFront pieces
+
+  ApiOriginAccessControl:
+    Type: AWS::CloudFront::OriginAccessControl
+    Properties:
+      OriginAccessControlConfig:
+        Name: mvcprogrammer-fhir-api
+        Description: Lets the mvcprogrammer.com distribution sign requests to the FHIR API function URL.
+        OriginAccessControlOriginType: lambda
+        SigningBehavior: always
+        SigningProtocol: sigv4
+
+  ApiCachePolicy:
+    Type: AWS::CloudFront::CachePolicy
+    Properties:
+      CachePolicyConfig:
+        Name: mvcprogrammer-fhir-api
+        Comment: Cache by path and the three search query strings; TTLs defer to the origin's Cache-Control.
+        MinTTL: 0
+        DefaultTTL: 60
+        MaxTTL: 3600
+        ParametersInCacheKeyAndForwardedToOrigin:
+          EnableAcceptEncodingGzip: true
+          EnableAcceptEncodingBrotli: true
+          CookiesConfig:
+            CookieBehavior: none
+          HeadersConfig:
+            HeaderBehavior: none
+          QueryStringsConfig:
+            QueryStringBehavior: whitelist
+            QueryStrings: [family, birthdate, identifier]
+
+Outputs:
+  FunctionUrl:
+    Description: Origin domain for the CloudFront behavior (strip the scheme and trailing slash).
+    Value: !GetAtt ApiFunctionUrl.FunctionUrl
+  FunctionArn:
+    Value: !GetAtt ApiFunction.Arn
+  OriginAccessControlId:
+    Description: Attach to the FHIR API origin on the distribution.
+    Value: !GetAtt ApiOriginAccessControl.Id
+  CachePolicyId:
+    Description: Use on the /api/fhir/* behavior.
+    Value: !Ref ApiCachePolicy

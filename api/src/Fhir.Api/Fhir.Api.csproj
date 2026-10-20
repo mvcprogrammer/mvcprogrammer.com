@@ -1,0 +1,32 @@
+<Project Sdk="Microsoft.NET.Sdk.Web">
+
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
+    <InvariantGlobalization>true</InvariantGlobalization>
+    <AssemblyName>Fhir.Api</AssemblyName>
+    <RootNamespace>Fhir.Api</RootNamespace>
+    <!-- Lambda: the handler in template-fhir.yaml is this assembly name. -->
+    <AWSProjectType>Lambda</AWSProjectType>
+    <!-- Pre-compiles IL to native code at publish time to cut cold start. The Firely SDK is not
+         trim-safe, so this stays a plain (not Native AOT) deployment like the Experience API. -->
+    <PublishReadyToRun>true</PublishReadyToRun>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Amazon.Lambda.AspNetCoreServer.Hosting" Version="2.2.1" />
+    <PackageReference Include="Hl7.Fhir.R4" Version="6.8.0" />
+    <PackageReference Include="Microsoft.Extensions.Http.Resilience" Version="10.11.0" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="../Api.Shared/Api.Shared.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <InternalsVisibleTo Include="Fhir.Api.Tests" />
+  </ItemGroup>
+
+</Project>
