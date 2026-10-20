@@ -171,43 +171,85 @@ export function syncLogs(bucket, prefix, cacheDir, since) {
   }
 }
 
-/** Syncs (unless told not to) and parses every prefix, returning the rows in the window sorted by time. */
-export function loadRows(options, since) {
+/**
+ * Syncs (unless told not to) and parses every prefix, returning the rows in the window sorted by
+ * time. When `trace` is an array, one `newLogCounters()` record per prefix is pushed onto it, with
+ * the prefix name and the seconds the sync and the parse took, so a run can report what it read.
+ */
+export function loadRows(options, since, trace = null) {
   const bucket = resolveBucket(options);
   const rows = [];
   for (const prefix of options.prefixes) {
     const cacheDir = cacheDirFor(bucket, prefix);
+    const counters = newLogCounters();
+    counters.prefix = prefix;
+    const syncStarted = performance.now();
     if (!options.noSync) {
       syncLogs(bucket, prefix, cacheDir, since);
     }
-    rows.push(...readLogs(cacheDir, since));
+    counters.syncSeconds = seconds(syncStarted);
+    const parseStarted = performance.now();
+    rows.push(...readLogs(cacheDir, since, counters));
+    counters.parseSeconds = seconds(parseStarted);
+    trace?.push(counters);
   }
   rows.sort((a, b) => a.at - b.at);
   return rows;
 }
 
-/** Parses every cached file whose lines fall inside the window into plain objects. */
-export function readLogs(cacheDir, since) {
+/** Elapsed seconds since a `performance.now()` mark, to the millisecond. */
+export function seconds(since) {
+  return Math.round(performance.now() - since) / 1000;
+}
+
+/**
+ * A fresh tally of what `readLogs` and `parseLogText` saw: files and compressed bytes read, every
+ * non-empty line, and how each line was handled. `comments` are the `#Version` and `#Fields` lines,
+ * `orphans` are data lines before any `#Fields` header (never seen in a real file), `beforeWindow`
+ * are data lines older than the window, and `rows` are the lines that became rows.
+ */
+export function newLogCounters() {
+  return { files: 0, bytes: 0, lines: 0, comments: 0, orphans: 0, beforeWindow: 0, rows: 0 };
+}
+
+/** Parses every cached file whose lines fall inside the window into plain objects, tallying into `counters` when given. */
+export function readLogs(cacheDir, since, counters = null) {
   if (!existsSync(cacheDir)) {
     return [];
   }
   const rows = [];
   for (const name of readdirSync(cacheDir).filter((file) => file.endsWith('.gz')).sort()) {
-    rows.push(...parseLogText(gunzipSync(readFileSync(join(cacheDir, name))).toString('utf8'), since));
+    const compressed = readFileSync(join(cacheDir, name));
+    if (counters !== null) {
+      counters.files++;
+      counters.bytes += compressed.length;
+    }
+    rows.push(...parseLogText(gunzipSync(compressed).toString('utf8'), since, counters));
   }
   return rows;
 }
 
-/** Parses the text of one W3C log file, keeping the lines at or after `since`. */
-export function parseLogText(text, since) {
+/** Parses the text of one W3C log file, keeping the lines at or after `since`, tallying into `counters` when given. */
+export function parseLogText(text, since, counters = null) {
+  const tally = counters ?? newLogCounters();
   const rows = [];
   let fields = null;
   for (const line of text.split('\n')) {
-    if (line.startsWith('#Fields:')) {
-      fields = line.slice('#Fields:'.length).trim().split(/\s+/);
+    if (line === '') {
       continue;
     }
-    if (line === '' || line.startsWith('#') || fields === null) {
+    tally.lines++;
+    if (line.startsWith('#Fields:')) {
+      fields = line.slice('#Fields:'.length).trim().split(/\s+/);
+      tally.comments++;
+      continue;
+    }
+    if (line.startsWith('#')) {
+      tally.comments++;
+      continue;
+    }
+    if (fields === null) {
+      tally.orphans++;
       continue;
     }
 
@@ -215,8 +257,10 @@ export function parseLogText(text, since) {
     const get = (field) => values[fields.indexOf(field)] ?? '-';
     const at = new Date(`${get('date')}T${get('time')}Z`);
     if (at < since) {
+      tally.beforeWindow++;
       continue;
     }
+    tally.rows++;
 
     rows.push({
       at,

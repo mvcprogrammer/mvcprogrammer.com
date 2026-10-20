@@ -19,6 +19,7 @@ import {
   editionOf,
   hourOf,
   isVisit,
+  newLogCounters,
   parseCommonArgs,
   parseLogText,
   readLogs,
@@ -69,6 +70,26 @@ test('readLogs gunzips every .gz file in a folder and skips a folder that does n
   writeFileSync(join(dir, 'notes.txt'), 'ignored');
   assert.equal(readLogs(dir, EPOCH).length, ROWS.length);
   assert.deepEqual(readLogs(join(dir, 'missing'), EPOCH), []);
+});
+
+test('parseLogText and readLogs tally what they saw when given counters', () => {
+  const counters = newLogCounters();
+  assert.deepEqual(counters, { files: 0, bytes: 0, lines: 0, comments: 0, orphans: 0, beforeWindow: 0, rows: 0 });
+  parseLogText(sampleLogText(), new Date('2026-10-17T04:00:00Z'), counters);
+  assert.deepEqual(counters, { files: 0, bytes: 0, lines: ROWS.length + 2, comments: 2, orphans: 0, beforeWindow: 2, rows: ROWS.length - 2 }, 'the #Version and #Fields lines, and the two rows from the 16th');
+  parseLogText('2026-10-17\t14:00:00\t203.0.113.10\n', EPOCH, counters);
+  assert.equal(counters.orphans, 1, 'a data line before any #Fields header');
+  assert.equal(parseLogText(sampleLogText(), EPOCH).length, ROWS.length, 'counters are optional');
+
+  const dir = mkdtempSync(join(tmpdir(), 'cf-logs-'));
+  const file = gzipSync(sampleLogText());
+  writeFileSync(join(dir, 'E1.2026-10-17-14.abc.gz'), file);
+  writeFileSync(join(dir, 'E1.2026-10-17-15.def.gz'), file);
+  const tally = newLogCounters();
+  readLogs(dir, EPOCH, tally);
+  assert.equal(tally.files, 2);
+  assert.equal(tally.bytes, file.length * 2, 'compressed bytes');
+  assert.equal(tally.rows, ROWS.length * 2);
 });
 
 // ---------------------------------------------------------------------------------------------------

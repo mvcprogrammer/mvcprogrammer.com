@@ -15,13 +15,17 @@
 //   node tools/stats-export.mjs --days 365 --out /tmp/stats  # a year, somewhere else
 //   STATS_VISITOR_SALT=... node tools/stats-export.mjs       # the salt that makes visitor tokens stable across runs
 //   node tools/stats-export.mjs --allow-local-salt            # a laptop run with the fixed salt "local"
+//   node tools/stats-export.mjs --report report.json          # also write an account of the run (see stats-report.mjs)
 //
 // Shares --days, --bucket, --prefix, --exclude-ip, and --no-sync with cf-stats.mjs. The salt comes
 // from --salt or STATS_VISITOR_SALT and is required: a known salt would make the tokens guessable
 // from an IP address and browser string, so a laptop run without one must say --allow-local-salt.
 // Every run rebuilds the whole window, because CloudFront can deliver a log file hours after the
 // requests in it. The index merges the days an earlier run listed with the files already on disk
-// under <out>/days/, so a run never forgets a day it did not rebuild.
+// under <out>/days/, so a run never forgets a day it did not rebuild. --report writes a JSON
+// account of the run (files and lines read per prefix, how the rows were classified, the totals of
+// every day written, and the seconds each stage took) that tools/stats-report.mjs renders for the
+// workflow's job summary; it holds counts and day keys only, never a row.
 import { createHash } from 'node:crypto';
 import { existsSync, mkdirSync, readFileSync, readdirSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
@@ -32,16 +36,19 @@ import {
   SECTION_ORDER,
   SESSION_GAP_MINUTES,
   TIME_ZONE,
+  buildSessions,
   classifyRows,
   dayKey,
   dayKeysBetween,
   editionOf,
   headerComment,
   hourOf,
+  isVisit,
   loadRows,
   parseCommonArgs,
+  resolveBucket,
   run,
-  selectVisits,
+  seconds,
   windowSince,
 } from './lib/cf-logs.mjs';
 import { countryOfEdge } from './lib/edge-locations.mjs';
@@ -88,6 +95,10 @@ function main() {
         parsed.allowLocalSalt = true;
         return true;
       }
+      if (arg === '--report') {
+        parsed.report = next();
+        return true;
+      }
       return false;
     },
   });
@@ -97,30 +108,90 @@ function main() {
     throw new Error('No visitor salt: set STATS_VISITOR_SALT or pass --salt. A fixed salt would make the tokens guessable, so a laptop run must say --allow-local-salt.');
   }
 
+  const started = performance.now();
   const now = new Date();
   const since = windowSince(options.days, now);
   // Parse from one session gap before the window, so a visit that began before midnight and ran into
   // the first day is seen whole and stays on the day it started; only visits that started inside the
   // window are written, and the request totals count the window's rows alone.
   const margin = new Date(since.getTime() - SESSION_GAP_MINUTES * 60_000);
-  const rows = classifyRows(loadRows(options, margin), options.excludeIps).filter((row) => !row.own);
+  // Resolved once here, so the report does not ask STS for the account id a second time.
+  options.bucket = resolveBucket(options);
+  const prefixes = [];
+  const allRows = classifyRows(loadRows(options, margin, prefixes), options.excludeIps);
+  const rows = allRows.filter((row) => !row.own);
   const firstDay = dayKey(since);
-  const visits = selectVisits(rows).filter((visit) => visit.day >= firstDay);
+  const sessions = buildSessions(rows.filter((row) => !row.bot)).filter((session) => session.day >= firstDay);
+  const visits = sessions.filter(isVisit);
   const days = dayKeysBetween(firstDay, dayKey(now));
+  const loaded = seconds(started);
 
   // A day with no log lines at all (before logging started, or past the bucket's retention) gets no
   // file, so the dashboard shows it as missing rather than as a day nobody visited.
   const written = days.filter((day) => rows.some((row) => row.day === day));
   mkdirSync(join(out, 'days'), { recursive: true });
+  const files = [];
   for (const day of written) {
-    const file = buildDayFile(day, rows.filter((row) => row.day === day), visits.filter((visit) => visit.day === day), salt ?? 'local');
-    writeFileSync(join(out, 'days', `${day}.json`), stableJson(file));
+    const dayRows = rows.filter((row) => row.day === day);
+    const file = buildDayFile(day, dayRows, visits.filter((visit) => visit.day === day), salt ?? 'local');
+    const text = stableJson(file);
+    writeFileSync(join(out, 'days', `${day}.json`), text);
+    files.push(dayTotals(file, dayRows, Buffer.byteLength(text)));
   }
   const onDisk = readdirSync(join(out, 'days')).filter((name) => /^\d{4}-\d{2}-\d{2}\.json$/.test(name)).map((name) => name.slice(0, 10));
   const index = buildIndex(readIndex(join(out, 'index.json')), [...onDisk, ...written], now);
   writeFileSync(join(out, 'index.json'), stableJson(index));
   const span = written.length === 0 ? 'none' : `${written[0]} to ${written[written.length - 1]}`;
   console.log(`Wrote ${written.length} day files (${span}) and index.json to ${out}; ${visits.length} visits in ${rows.length} requests; ${days.length - written.length} days in the window had no log lines.`);
+
+  if (options.report !== undefined) {
+    const total = seconds(started);
+    const report = buildReport({
+      now,
+      days: options.days,
+      since,
+      margin,
+      bucket: options.bucket,
+      prefixes,
+      rows: { total: allRows.length, own: allRows.length - rows.length, scanners: rows.filter((row) => row.bot).length, sessions: sessions.length, visits: visits.length },
+      files,
+      missingDays: days.filter((day) => !written.includes(day)),
+      index,
+      timing: { load: loaded, build: Math.round((total - loaded) * 1000) / 1000, total },
+    });
+    writeFileSync(options.report, stableJson(report));
+  }
+}
+
+/** What a run read, kept, and wrote, in counts and day keys only (no row ever lands in the report), for tools/stats-report.mjs. */
+export function buildReport({ now, days, since, margin, bucket, prefixes, rows, files, missingDays, index, timing }) {
+  return {
+    schemaVersion: SCHEMA_VERSION,
+    generatedAt: now.toISOString(),
+    timeZone: TIME_ZONE,
+    window: { days, firstDay: dayKey(since), lastDay: dayKey(now), since: since.toISOString(), parsedFrom: margin.toISOString() },
+    bucket,
+    prefixes,
+    rows,
+    files,
+    missingDays,
+    index: { days: index.days.length, firstDay: index.days[0] ?? null, lastDay: index.days[index.days.length - 1] ?? null },
+    timing,
+  };
+}
+
+/** The figures of one day file for the report: the totals it carries, the beacon and API rows behind it, and its size. */
+export function dayTotals(file, rows, bytes) {
+  return {
+    day: file.day,
+    requests: file.requests,
+    scannerRequests: file.scannerRequests,
+    pings: rows.filter((row) => row.path === '/ping').length,
+    apiRequests: rows.filter((row) => row.path.startsWith('/api/')).length,
+    visits: file.visits.length,
+    visitors: new Set(file.visits.map((visit) => visit.token)).size,
+    bytes,
+  };
 }
 
 /**
