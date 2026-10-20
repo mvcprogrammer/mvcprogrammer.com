@@ -1,0 +1,13 @@
+{
+  "Information": [
+    "Defaults for the Amazon.Lambda.Tools CLI (dotnet lambda). See docs/DEPLOY.md, section FHIR API.",
+    "Values that identify the account (S3 bucket, distribution ARN) are passed on the command line, not stored here."
+  ],
+  "region": "us-east-1",
+  "configuration": "Release",
+  "function-runtime": "dotnet10",
+  "function-architecture": "arm64",
+  "msbuild-parameters": "--self-contained false",
+  "template": "../../template-fhir.yaml",
+  "stack-name": "mvcprogrammer-fhir-api"
+}

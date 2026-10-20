@@ -1,9 +1,11 @@
 // mvcprogrammer.com — CloudFront Function "mvcprogrammer-www-redirect" (viewer-request, cloudfront-js-2.0).
-// Attached to every behavior of the main distribution. Two jobs:
+// Attached to every behavior of the main distribution. Three jobs:
 //   1. Send www.mvcprogrammer.com to the apex with a 301.
 //   2. Answer the engagement beacon (GET /ping?e=view&s=<section> and /ping?e=leave&t=<seconds>, sent by
 //      main.js and its Blazor and Angular mirrors) with an empty 204 at the edge. The request is still
 //      written to the access logs, which is all tools/cf-stats.mjs needs; nothing reaches S3.
+//   3. Serve the clean URL of the FHIR patient explorer: /fhir (with or without a trailing slash) reads
+//      fhir.html from the bucket. The URL in the address bar does not change.
 // Deploy: see docs/DEPLOY.md, section 4b.
 function handler(event) {
   var request = event.request;
@@ -21,6 +23,9 @@ function handler(event) {
       statusDescription: 'No Content',
       headers: { 'cache-control': { value: 'no-store' } }
     };
+  }
+  if (request.uri === '/fhir' || request.uri === '/fhir/') {
+    request.uri = '/fhir.html';
   }
   return request;
 }
