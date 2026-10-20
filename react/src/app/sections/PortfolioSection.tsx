@@ -12,8 +12,8 @@ export function PortfolioSection() {
           <p className="eyebrow">04 / Portfolio</p>
           <h2 id="portfolio-title">Selected Work</h2>
           <p className="section-intro">
-            Most of my career has gone into enterprise systems that belong to the companies I built
-            them for, so that code stays behind their walls. The projects below are my own. They are
+            My entire career has gone into enterprise systems that belong to the companies I built
+            them for, so that code stays in their private repositories. The projects below are my own. They are
             here to show how I design, write, test, and ship software when every decision is mine.
           </p>
           <div className="card-grid portfolio-grid">
@@ -68,7 +68,6 @@ export function PortfolioSection() {
                   <li className="tag">Amazon S3</li>
                   <li className="tag">CloudFront + OAC</li>
                   <li className="tag">CloudFront Functions</li>
-                  <li className="tag">ACM</li>
                   <li className="tag">Route 53</li>
                   <li className="tag">IAM</li>
                   <li className="tag">GitHub Actions (OIDC)</li>
@@ -174,8 +173,8 @@ export function PortfolioSection() {
                 <h3>lightsplitters.com</h3>
                 <p className="card-subtitle">Photography studio, Angular on AWS</p>
                 <p>
-                  The website for LightSplitters Media, a Tampa Bay photography studio I have a
-                  vested interest in: weddings, portraits, family albums, and archival prints. An
+                  The website for LightSplitters Media, a fictional Tampa Bay photography studio I
+                  created as a portfolio piece: weddings, portraits, family albums, and archival prints. An
                   Angular 22 workspace with standalone components and signals, prerendered to static
                   HTML with no server. A second app in the same workspace is a template for client
                   sites, so each couple's wedding site or family album lives at its own subdomain
