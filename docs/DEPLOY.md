@@ -6,11 +6,13 @@ The site follows the KISS principle. Plain HTML, CSS, and vanilla JavaScript. No
 
 ```
 index.html                  the single page
+fhir.html, fhir.js          the FHIR R4 patient explorer at /fhir (its own script; see FHIR API)
 404.html                    small not-found page, served by CloudFront for any missing path
 privacy.html, terms.html    privacy policy and SMS terms (required for the toll-free SMS registration)
 styles.css                  mobile-first styles shared by all four editions, light/dark via prefers-color-scheme
 vanilla.css                 eggshell palette override for this edition (design tokens only, loaded after styles.css)
 main.js                     nav toggle, active-section highlighting, footer year, image fallback
+tools/serve.mjs             local preview that forwards /api/* to the functions (see Preview locally)
 favicon.svg                 tab icon (follows dark mode)
 favicon.ico, apple-touch-icon.png  raster fallbacks rendered from favicon.svg (16/32/48 px ICO, 180 px PNG)
 site.webmanifest
@@ -32,6 +34,15 @@ From a terminal, any static file server works. With Python:
 ```sh
 python3 -m http.server 8080
 # open http://localhost:8080
+```
+
+The explorer at `/fhir` and the Experience timeline call `/api/*` same-origin, which a plain file
+server cannot answer. To preview them with the functions, run the function(s) and the small proxy
+in `tools/serve.mjs`, which serves the repository root and forwards `/api/*`:
+
+```sh
+API_VERSION=1.0.0 dotnet run --project api/src/Fhir.Api      # http://localhost:5000
+node tools/serve.mjs                                          # http://localhost:8080, /fhir works
 ```
 
 ## Before you deploy
@@ -169,14 +180,14 @@ Attach the returned policy ID to the default cache behavior (console: Behaviors 
 
 ### 4b. Redirect www to the apex (optional)
 
-Both hostnames point at the same distribution, so without a redirect the site is reachable at two URLs. A CloudFront Function on viewer-request fixes that. The same function answers the engagement beacon (`GET /ping`, see [Visitor stats](#visitor-stats)) with an empty 204 at the edge, so those requests are logged but never reach S3. The code is checked in at [infra/cloudfront/www-redirect.js](../infra/cloudfront/www-redirect.js).
+Both hostnames point at the same distribution, so without a redirect the site is reachable at two URLs. A CloudFront Function on viewer-request fixes that. The same function answers the engagement beacon (`GET /ping`, see [Visitor stats](#visitor-stats)) with an empty 204 at the edge, so those requests are logged but never reach S3, and rewrites `/fhir` (with or without a trailing slash) to `/fhir.html` so the patient explorer has a clean URL (since 2026-10-20; see [FHIR API](#fhir-api)). The code is checked in at [infra/cloudfront/www-redirect.js](../infra/cloudfront/www-redirect.js).
 
 Create it under CloudFront > Functions as `mvcprogrammer-www-redirect` (runtime `cloudfront-js-2.0`), publish it, and associate it with the viewer request event of the default behavior and of the `/api/*` behavior. To change it later, update the DEVELOPMENT stage, test it, then publish; each call needs the stage's current ETag:
 
 ```sh
 ETAG=$(aws cloudfront describe-function --name mvcprogrammer-www-redirect --stage DEVELOPMENT --query ETag --output text)
 ETAG=$(aws cloudfront update-function --name mvcprogrammer-www-redirect --if-match "$ETAG" \
-  --function-config '{"Comment":"301 www to apex; 204 for the /ping engagement beacon","Runtime":"cloudfront-js-2.0"}' \
+  --function-config '{"Comment":"301 www to apex; 204 for the /ping engagement beacon; /fhir to fhir.html","Runtime":"cloudfront-js-2.0"}' \
   --function-code fileb://infra/cloudfront/www-redirect.js --query ETag --output text)
 aws cloudfront test-function --name mvcprogrammer-www-redirect --if-match "$ETAG" --stage DEVELOPMENT --event-object fileb://event.json
 aws cloudfront publish-function --name mvcprogrammer-www-redirect --if-match "$ETAG"
@@ -228,6 +239,7 @@ aws s3 sync . s3://mvcprogrammer.com/ --delete \
   --cache-control "public, max-age=300, s-maxage=31536000" \
   --exclude "*" \
   --include "index.html" --include "privacy.html" --include "terms.html" --include "404.html" \
+  --include "fhir.html" --include "fhir.js" \
   --include "styles.css" --include "vanilla.css" --include "main.js" \
   --include "favicon.svg" --include "favicon.ico" --include "apple-touch-icon.png" --include "site.webmanifest" \
   --include "robots.txt" --include "sitemap.xml" --include "assets/*" \
@@ -603,6 +615,84 @@ curl -s -w " [%{http_code} %{content_type}]\n" https://mvcprogrammer.com/api/exp
 
 ```bash
 aws logs tail /aws/lambda/mvcprogrammer-experience-api --since 1h --format short
+```
+
+## FHIR API
+
+The function behind the patient explorer at [/fhir](https://mvcprogrammer.com/fhir). Code and design notes:
+[api/README.md](../api/README.md), section FHIR API. Stack: `mvcprogrammer-fhir-api` (CloudFormation, SAM
+transform) from `api/template-fhir.yaml`. The function reads a public FHIR sandbox and touches no AWS
+service, so its role has no policies beyond logging.
+
+Prerequisites are the same as for the Experience API.
+
+### 1. Deploy the stack
+
+```bash
+cd api/src/Fhir.Api
+dotnet lambda deploy-serverless \
+  --s3-bucket aws-sam-cli-managed-default-samclisourcebucket-113mxhhn8smh9 \
+  --template-parameters "DistributionArn=arn:aws:cloudfront::334383610383:distribution/E23085GR2SZJHC"
+```
+
+`FhirBaseUrl` defaults to `https://hapi.fhir.org/baseR4`; pass `FhirBaseUrl=https://r4.smarthealthit.org`
+(and `FhirSourceName=SMART Health IT sandbox`) to switch when HAPI is wiped or down. Then read the outputs;
+the CloudFront step needs three of them:
+
+```bash
+aws cloudformation describe-stacks --stack-name mvcprogrammer-fhir-api \
+  --query 'Stacks[0].Outputs[].[OutputKey,OutputValue]' --output table
+```
+
+### 2. Wire CloudFront (one time)
+
+Same shape as the Experience API: a third origin at the function URL and an `/api/fhir/*` behavior. The
+behavior must come **before** `/api/*` in `CacheBehaviors.Items`, because CloudFront takes the first pattern
+that matches in list order; appended after it, `/api/*` would swallow every FHIR request.
+
+```bash
+aws cloudfront get-distribution-config --id E23085GR2SZJHC > /tmp/dist.json
+ETAG=$(python3 -c 'import json;print(json.load(open("/tmp/dist.json"))["ETag"])')
+```
+
+Edit `/tmp/dist.json` `DistributionConfig`:
+
+- `Origins.Items`: append an origin with `"Id": "fhir-api"`, the FHIR function URL host as `DomainName`, the
+  `OriginAccessControlId` output of this stack, and otherwise the same `CustomOriginConfig` as the
+  `experience-api` origin (https-only, TLSv1.2, `OriginReadTimeout` 30). Bump `Origins.Quantity`.
+- `CacheBehaviors.Items`: **insert at index 0** a copy of the `/api/*` behavior with `"PathPattern": "/api/fhir/*"`,
+  `"TargetOriginId": "fhir-api"`, and this stack's `CachePolicyId` output. Keep the same origin request policy
+  (AllViewerExceptHostHeader), response headers policy, and the `mvcprogrammer-www-redirect` function association.
+  Bump `CacheBehaviors.Quantity`.
+
+Apply and verify:
+
+```bash
+python3 -c 'import json;d=json.load(open("/tmp/dist.json"));json.dump(d["DistributionConfig"],open("/tmp/dist-config.json","w"))'
+aws cloudfront update-distribution --id E23085GR2SZJHC --if-match "$ETAG" --distribution-config file:///tmp/dist-config.json --query Distribution.Status
+aws cloudfront wait distribution-deployed --id E23085GR2SZJHC
+curl -si https://mvcprogrammer.com/api/fhir/health
+curl -si "https://mvcprogrammer.com/api/fhir/patients?family=Smith" | grep -i "etag\|cache-control\|x-cache"
+curl -si "https://mvcprogrammer.com/api/fhir/patients?family=Smith" | grep -i "x-cache"       # second call: Hit from cloudfront
+curl -si "https://<FHIR FunctionUrl host>/api/fhir/health"                                      # 403: the raw URL is CloudFront-only
+```
+
+The site's CSP needs no change: `/api/fhir` is same-origin, covered by `connect-src 'self'`. The 404 passthrough
+from the Experience section applies here too, so a missing patient reaches the page as `application/problem+json`.
+
+### 3. The clean URL
+
+Publish the updated `mvcprogrammer-www-redirect` function (section 4b): it rewrites `/fhir` to `/fhir.html` on
+the default behavior. Then:
+
+```bash
+curl -s -o /dev/null -w "%{http_code} %{content_type}\n" https://mvcprogrammer.com/fhir     # 200 text/html
+```
+
+### Logs
+
+```bash
+aws logs tail /aws/lambda/mvcprogrammer-fhir-api --since 1h --format short
 ```
 
 ## Blazor edition (blazor.mvcprogrammer.com)
