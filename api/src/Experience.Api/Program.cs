@@ -1,6 +1,6 @@
 using Experience.Api.Data;
 using Experience.Api.Endpoints;
-using Experience.Api.Http;
+using Api.Shared.Http;
 using Experience.Api.Services;
 
 var builder = WebApplication.CreateSlimBuilder(args);

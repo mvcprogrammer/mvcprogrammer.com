@@ -1,7 +1,7 @@
 using System.Net;
 using System.Net.Http.Json;
 using System.Text.Json;
-using Experience.Api.Http;
+using Api.Shared.Http;
 using Experience.Api.Models;
 using Microsoft.AspNetCore.Mvc.Testing;
 

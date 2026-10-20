@@ -1,4 +1,4 @@
-using Experience.Api.Http;
+using Api.Shared.Http;
 using Experience.Api.Models;
 using Experience.Api.Services;
 
@@ -39,7 +39,7 @@ public static class ExperienceEndpoints
     {
         var position = await service.GetPositionAsync(positionId, cancellationToken);
         return position is null
-            ? Problems.NotFound(context, $"No position with id '{positionId}'.")
+            ? Problems.NotFound(context, "Position not found", $"No position with id '{positionId}'.")
             : CacheableJson.Ok(context, position);
     }
 

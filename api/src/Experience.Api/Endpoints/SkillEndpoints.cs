@@ -1,4 +1,4 @@
-using Experience.Api.Http;
+using Api.Shared.Http;
 using Experience.Api.Services;
 
 namespace Experience.Api.Endpoints;
