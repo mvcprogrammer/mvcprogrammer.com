@@ -30,7 +30,7 @@ describe('static sections', () => {
   });
 
   describe('AboutSection', () => {
-    it('should link the Angular, React, Blazor, and JavaScript tags to the four editions with a hint', async () => {
+    it('should link the edition tags to the four editions and the Healthcare tag to the FHIR explorer, each with a hint', async () => {
       // Arrange
       const fixture = TestBed.createComponent(AboutSection);
 
@@ -45,6 +45,7 @@ describe('static sections', () => {
         ['React', 'https://react.mvcprogrammer.com/', 'See the React edition of this site'],
         ['Blazor', 'https://blazor.mvcprogrammer.com/', 'See the Blazor edition of this site'],
         ['JavaScript', 'https://mvcprogrammer.com/', 'See the plain JavaScript edition of this site'],
+        ['Healthcare (HL7, FHIR, HIPAA)', 'https://mvcprogrammer.com/fhir', 'Open the FHIR R4 patient explorer, a live demo on this site'],
       ]);
       const tags = Array.from(host.querySelectorAll('ul[aria-label="Skills"] .tag')).map((tag) => tag.textContent?.trim());
       expect(tags.length).toBe(12);
@@ -120,7 +121,7 @@ describe('static sections', () => {
       const host = fixture.nativeElement as HTMLElement;
       expect(host.querySelector('a.card-link')?.getAttribute('href')).toBe('https://github.com/mvcprogrammer/mvcprogrammer.com/tree/main/angular');
       expect(host.querySelector('.section-intro')?.textContent).toContain('Angular edition');
-      expect(host.querySelectorAll('.colophon-item').length).toBe(9);
+      expect(host.querySelectorAll('.colophon-item').length).toBe(10);
     });
   });
 });

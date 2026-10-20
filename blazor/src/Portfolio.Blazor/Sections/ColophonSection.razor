@@ -3,7 +3,7 @@
   <div class="container">
     <p class="eyebrow">07 / Colophon</p>
     <h2 id="colophon-title">How This Site Is Built</h2>
-    <p class="section-intro">A footnote for the curious. This is the Blazor WebAssembly edition of <a href="https://mvcprogrammer.com/">mvcprogrammer.com</a>: the same content and the same stylesheet under its own palette, with the page rebuilt as C# components that run in the browser on the .NET runtime. There is still no server behind it, only static files on a CDN, three Lambdas, and the same API.</p>
+    <p class="section-intro">A footnote for the curious. This is the Blazor WebAssembly edition of <a href="https://mvcprogrammer.com/">mvcprogrammer.com</a>: the same content and the same stylesheet under its own palette, with the page rebuilt as C# components that run in the browser on the .NET runtime. There is still no server behind it, only static files on a CDN, four Lambdas, and the same API.</p>
     <dl class="colophon-list">
       <div class="colophon-item">
         <dt>Front end</dt>
@@ -16,6 +16,10 @@
       <div class="colophon-item">
         <dt>API integration</dt>
         <dd>The work history is read from the same Experience API (<code>/api/experience</code> and <code>/api/skills</code>) through a typed <code>HttpClient</code> created by <code>IHttpClientFactory</code>, with source-generated <code>System.Text.Json</code> serialisation so the trimmed build needs no reflection. CloudFront routes <code>/api</code> on this subdomain to the same Lambda, so the calls stay same-origin. If the API is unreachable the timeline renders from a bundled copy of the seed file.</dd>
+      </div>
+      <div class="colophon-item">
+        <dt>Healthcare demo</dt>
+        <dd>The Healthcare chip above opens the <a href="https://mvcprogrammer.com/fhir">FHIR R4 patient explorer</a>, a live demo over a public sandbox of synthetic records. It is one plain page with its own script rather than a Razor component, because it exists once for the whole site; the C# Lambda behind it at <code>/api/fhir</code> is a cousin of this app's own language, reading the sandbox through the Firely SDK, mapping the resources to small DTOs, and reporting every upstream call so the page can show what happened. Nothing is stored, and no real patient data is involved.</dd>
       </div>
       <div class="colophon-item">
         <dt>Configuration</dt>

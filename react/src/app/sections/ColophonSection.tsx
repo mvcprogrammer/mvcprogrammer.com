@@ -9,7 +9,7 @@ export function ColophonSection() {
           A footnote for the curious. This is the React edition of{' '}
           <a href="https://mvcprogrammer.com/">mvcprogrammer.com</a>: the same content and the same
           stylesheet under its own palette, with the page rebuilt as React function components in
-          TypeScript. There is still no server behind it, only static files on a CDN, three Lambdas,
+          TypeScript. There is still no server behind it, only static files on a CDN, four Lambdas,
           and the same API.
         </p>
         <dl className="colophon-list">
@@ -49,6 +49,18 @@ export function ColophonSection() {
               routes <code>/api</code> on this subdomain to the same Lambda, so the calls stay
               same-origin. If the API is unreachable the timeline renders from a bundled copy of the
               seed file.
+            </dd>
+          </div>
+          <div className="colophon-item">
+            <dt>Healthcare demo</dt>
+            <dd>
+              The Healthcare chip above opens the{' '}
+              <a href="https://mvcprogrammer.com/fhir">FHIR R4 patient explorer</a>, a live demo over
+              a public sandbox of synthetic records. It is one plain page with its own script rather
+              than a React route, because it exists once for the whole site; the C# Lambda behind it
+              at <code>/api/fhir</code> reads the sandbox through the Firely SDK, maps the resources
+              to small DTOs, and reports every upstream call so the page can show what happened.
+              Nothing is stored, and no real patient data is involved.
             </dd>
           </div>
           <div className="colophon-item">
