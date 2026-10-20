@@ -32,6 +32,8 @@ public static class VitalSignMapper
         ["8462-4"] = "Diastolic",
     };
 
+    private static readonly string[] COMPONENT_ORDER = ["8480-6", "8462-4"];
+
     /// <summary>Keeps the observations with a known LOINC code and a usable value, newest first, at most <paramref name="max"/>.</summary>
     public static IReadOnlyList<VitalSign> Select(IEnumerable<Observation> observations, int max)
     {
@@ -66,9 +68,11 @@ public static class VitalSignMapper
             return new VitalSign(date, name, code, quantity.Value, UnitOf(quantity), null);
         }
 
+        // Systolic before diastolic whatever order the sandbox sent them in, so the page can print 120/80.
         var components = observation.Component
             .Select(c => (Code: LoincOf(c.Code), Quantity: c.Value as Quantity))
             .Where(c => c.Code is not null && COMPONENTS.ContainsKey(c.Code) && c.Quantity?.Value is not null)
+            .OrderBy(c => Array.IndexOf(COMPONENT_ORDER, c.Code!))
             .Select(c => new VitalComponent(COMPONENTS[c.Code!], c.Code!, c.Quantity!.Value!.Value, UnitOf(c.Quantity)))
             .ToArray();
         return components.Length == 0 ? null : new VitalSign(date, name, code, null, null, components);

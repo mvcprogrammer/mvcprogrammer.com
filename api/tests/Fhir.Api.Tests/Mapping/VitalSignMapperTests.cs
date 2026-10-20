@@ -49,6 +49,19 @@ public sealed class VitalSignMapperTests
     }
 
     [Fact]
+    public void Blood_pressure_components_are_ordered_systolic_first_whatever_the_sandbox_sent()
+    {
+        var reversed = Fixtures.BloodPressure("bp", "2026-03-31T10:47:00Z", 108, 82);
+        reversed.Component.Reverse();
+
+        var vital = VitalSignMapper.ToVitalSign(reversed);
+
+        Assert.NotNull(vital);
+        Assert.Equal(["Systolic", "Diastolic"], vital.Components!.Select(c => c.Name));
+        Assert.Equal([108m, 82m], vital.Components!.Select(c => c.Value));
+    }
+
+    [Fact]
     public void Drops_an_observation_without_a_quantity_or_components()
     {
         var text = Fixtures.Vital("t", "8867-4", "2025-01-01", 72, "/min");
