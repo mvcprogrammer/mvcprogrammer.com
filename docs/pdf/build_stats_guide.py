@@ -63,7 +63,8 @@ story += [
         [
             [c("tools/lib/cf-logs.mjs"), "The shared parser: log download with the AWS CLI, W3C line parsing, the scanner list, sessions with a 30-minute gap, the visit rule, and the calendar math that cuts days in America/New_York whatever the machine's zone."],
             [c("tools/cf-stats.mjs"), "The text report, unchanged in output, now a thin caller of the library."],
-            [c("tools/stats-export.mjs"), "The exporter: one JSON day file per day plus an index, from the same rows and visits as the report."],
+            [c("tools/stats-export.mjs"), "The exporter: one JSON day file per day plus an index, from the same rows and visits as the report; " + c("--report") + " adds a JSON account of the run."],
+            [c("tools/stats-report.mjs"), "Renders that account as the Markdown job summary on the run's Actions page: files and lines read per prefix, row classification, day file totals, uploads, invalidation, and timing."],
             [c("tools/test/"), "Node test-runner tests over a synthetic log (" + c("fixtures/sample-log.mjs") + ", nine named scenarios) and a golden day file."],
             [c("stats/"), "The dashboard: React 19, TypeScript strict, Vite, Chart.js 4 through react-chartjs-2, Vitest with Testing Library. Same conventions as " + c("react/") + ": no CSS-in-JS, no " + c("style") + " attribute, bundles under " + c("bundles/") + ", " + c("cssTarget") + " pinned."],
             [c("stats/src/app/pages/Dashboard.tsx"), "Loads the days in the range (and the previous period when comparing), derives every number in one " + c("useMemo") + ", and lays out the tiles, the chart, and the panels."],
@@ -73,7 +74,7 @@ story += [
             [c("stats/src/app/components/"), "Tiles, sparkline, bars, panel, table twin with CSV download, the controls, the charts, and the loading, empty, and error states."],
             [c("stats/src/app/charts/"), "Chart.js registration (only the controllers and elements used) and " + c("useChartTheme()") + ", which reads the chart colors from the stylesheet tokens through probe classes, so both themes match the page."],
             [c("stats/src/stats.css"), "Everything the dashboard adds to " + c("styles.css") + "; the six-color categorical ramp, the up and down colors, and the skeleton tone are " + c("light-dark()") + " tokens at the top."],
-            [c(".github/workflows/stats.yml"), "The scheduled export: tests, download, export, sync to " + c("stats/data/") + ", invalidate."],
+            [c(".github/workflows/stats.yml"), "The scheduled export: tests, download, export, sync to " + c("stats/data/") + ", invalidate, and a job summary of what the run did."],
             [c("infra/lambda/stats-auth/"), "The Lambda@Edge sign-in check (cognito-at-edge), its tests, and its packaging."],
             [c("docs/DEPLOY.md"), "The Visitor dashboard section: pipeline secrets and variables, the distribution, Cognito, and the edge function, step by step."],
         ],
@@ -230,7 +231,9 @@ story += [
       "first job that checks the clock in America/New_York and skips the hours not wanted that day): it tests the parser, "
       "downloads the window's logs, rebuilds the "
       "last three days (CloudFront delivers some files hours late), syncs them to " + c("stats/data/") + " with a one-hour "
-      "browser TTL, and invalidates " + c("/data/*") + ". The " + c("deploy-stats") + " job in "
+      "browser TTL, invalidates " + c("/data/*") + ", and writes a job summary (what it read, how it classified the rows, "
+      "what each day file holds, what it uploaded, and how long each stage took) that is there even when a step failed. The "
+      + c("deploy-stats") + " job in "
       + link("deploy.yml", BLOB + ".github/workflows/deploy.yml") + " builds and syncs the page on every push to "
       + c("main") + " once " + c("STATS_DISTRIBUTION_ID") + " is set, and never touches " + c("data/") + "."),
     p("The page is served from the " + c("stats/") + " prefix of the site bucket by its own distribution with the site's "
@@ -278,6 +281,7 @@ story += [
             ["Dashboard README", link("stats/README.md", BLOB + "stats/README.md")],
             ["Shared parser", link("tools/lib/cf-logs.mjs", BLOB + "tools/lib/cf-logs.mjs")],
             ["Exporter", link("tools/stats-export.mjs", BLOB + "tools/stats-export.mjs")],
+            ["Run summary", link("tools/stats-report.mjs", BLOB + "tools/stats-report.mjs")],
             ["Text report", link("tools/cf-stats.mjs", BLOB + "tools/cf-stats.mjs")],
             ["Export workflow", link(".github/workflows/stats.yml", BLOB + ".github/workflows/stats.yml")],
             ["Deploy workflow", link(".github/workflows/deploy.yml", BLOB + ".github/workflows/deploy.yml")],

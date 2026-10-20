@@ -11,6 +11,12 @@ name: Export visitor stats
 # checks the clock in America/New_York and skips the hours that are not wanted on that day. A
 # manual run never skips. The minute is 7 rather than 0 or 15 because runs queued on the busiest
 # minutes start late, often by an hour or more.
+#
+# Every run writes a job summary on its Actions page: the gate's decision, then what the export read
+# (files and lines per log prefix), how it classified the rows, what each day file holds, what was
+# uploaded and invalidated, and the seconds each stage took. The exporter writes the figures to
+# run/report.json (outside out/, which is synced to the bucket) and tools/stats-report.mjs renders
+# them; the summary step runs even when an earlier step failed, so a failed run says how far it got.
 
 on:
   schedule:
@@ -42,22 +48,38 @@ jobs:
     runs-on: ubuntu-24.04
     outputs:
       wanted: ${{ steps.clock.outputs.wanted }}
+      trigger: ${{ steps.clock.outputs.trigger }}
     steps:
       # The schedule fires on more UTC hours than are wanted so that it is right under both EDT and EST;
-      # this decides which firings go on. Wanted: 6 am to 6 pm on the hour, and 9 pm, Eastern.
+      # this decides which firings go on. Wanted: 6 am to 6 pm on the hour, and 9 pm, Eastern. The
+      # decision goes to the job summary, and a one-line description of the trigger to the export job.
       - name: Compare the clock with the wanted hours
         id: clock
+        env:
+          EVENT: ${{ github.event_name }}
+          ACTOR: ${{ github.actor }}
+          DAYS: ${{ inputs.days || '3' }}
         run: |
-          if [ "${{ github.event_name }}" != "schedule" ]; then
+          if [ "${EVENT}" != "schedule" ]; then
             echo "wanted=true" >> "$GITHUB_OUTPUT"
+            echo "trigger=manual run by ${ACTOR} (days = ${DAYS}); the Eastern-hour check does not apply" >> "$GITHUB_OUTPUT"
+            echo "Manual run by ${ACTOR} with days = ${DAYS}; the Eastern-hour check does not apply." >> "$GITHUB_STEP_SUMMARY"
             exit 0
           fi
           hour=$(TZ=America/New_York date +%-H)
-          echo "It is ${hour}:00 in America/New_York"
+          clock=$(TZ=America/New_York date '+%-I:%M %p')
+          echo "It is ${clock} in America/New_York"
           case "$hour" in
-            6|7|8|9|10|11|12|13|14|15|16|17|18|21) echo "wanted=true" >> "$GITHUB_OUTPUT" ;;
-            *) echo "wanted=false" >> "$GITHUB_OUTPUT" ;;
+            6|7|8|9|10|11|12|13|14|15|16|17|18|21) wanted=true ;;
+            *) wanted=false ;;
           esac
+          echo "wanted=${wanted}" >> "$GITHUB_OUTPUT"
+          echo "trigger=scheduled firing that started at ${clock} Eastern (the cron minute is :07)" >> "$GITHUB_OUTPUT"
+          if [ "${wanted}" = true ]; then
+            echo "Scheduled firing started at ${clock} Eastern (the cron minute is :07): a wanted hour, so the export runs." >> "$GITHUB_STEP_SUMMARY"
+          else
+            echo "Scheduled firing started at ${clock} Eastern (the cron minute is :07): not a wanted hour (6 am to 6 pm and 9 pm), so the export is skipped." >> "$GITHUB_STEP_SUMMARY"
+          fi
 
   export:
     name: Export the day files
@@ -87,7 +109,7 @@ jobs:
       # nothing to copy yet and fails on a real error, so a denied read can never wipe the history.
       - name: Fetch the current index
         run: |
-          mkdir -p out
+          mkdir -p out run
           aws s3 sync "s3://${S3_BUCKET}/stats/data/" out/ --exclude "*" --include "index.json"
 
       - name: Export
@@ -97,20 +119,43 @@ jobs:
           DAYS: ${{ inputs.days || '3' }}
         run: |
           test -n "${STATS_VISITOR_SALT}" || { echo "STATS_VISITOR_SALT is not set"; exit 1; }
-          node tools/stats-export.mjs --days "${DAYS}" --out out
+          node tools/stats-export.mjs --days "${DAYS}" --out out --report run/report.json
 
       # Until the stats distribution exists (and the bucket policy denies every other distribution the
       # stats/ prefix, see docs/DEPLOY.md), nothing is uploaded: the run only proves the export works.
+      # What s3 sync and the invalidation print is kept under run/ for the summary step.
       - name: Sync the day files (one-hour browser TTL)
         if: env.STATS_DISTRIBUTION_ID != ''
         run: |
           aws s3 sync out/ "s3://${S3_BUCKET}/stats/data/" \
             --cache-control "public, max-age=3600, s-maxage=3600" \
-            --content-type "application/json"
+            --content-type "application/json" \
+            --no-progress > run/sync.log
+          cat run/sync.log
 
       - name: Invalidate the data on the stats distribution
         if: env.STATS_DISTRIBUTION_ID != ''
         run: |
           aws cloudfront create-invalidation \
             --distribution-id "${STATS_DISTRIBUTION_ID}" \
-            --paths "/data/*"
+            --paths "/data/*" \
+            --output json > run/invalidation.json
+          cat run/invalidation.json
+
+      # Runs after a failure too, so the summary says how far the run got. Before the checkout
+      # there is no renderer, so that case gets one line instead.
+      - name: Write the run summary
+        if: always()
+        env:
+          TRIGGER: ${{ needs.gate.outputs.trigger }}
+        run: |
+          if [ ! -f tools/stats-report.mjs ]; then
+            echo "The run failed before the checkout; see the log." >> "$GITHUB_STEP_SUMMARY"
+            exit 0
+          fi
+          node tools/stats-report.mjs \
+            --report run/report.json \
+            --out out \
+            --sync-log run/sync.log \
+            --invalidation run/invalidation.json \
+            --trigger "${TRIGGER}" >> "$GITHUB_STEP_SUMMARY"

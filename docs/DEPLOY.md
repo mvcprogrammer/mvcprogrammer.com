@@ -400,7 +400,7 @@ CF_STATS_EXCLUDE_IPS=203.0.113.7 node tools/cf-stats.mjs  # leave your own visit
 
 The bucket defaults to `mvcprogrammer-cf-logs-<account id>` for the current AWS account (`--bucket` or `CF_LOG_BUCKET` override it), all four prefixes are read unless `--prefix cf/` or `--prefix blazor/,angular/,react/` narrows it, and files are cached under `~/.cache/mvcprogrammer-cf-stats/`, so a second run only downloads what is new. A "By edition" line splits the visits by host. Unique visitors are IP address plus browser string, the best a server log can do; carrier NAT and office networks blur it.
 
-The parsing, the scanner list, the session rule, and the calendar math (days are cut in `America/New_York`, whatever the machine's zone; before October 18, 2026 the report used the machine's zone, which is the same thing on the owner's laptop) live in `tools/lib/cf-logs.mjs`, shared with `tools/stats-export.mjs`, which writes the same visits as JSON day files for the visitor dashboard: one `days/YYYY-MM-DD.json` per day plus an `index.json`. A day file holds the request totals and one small record per visit (a salted visitor token, the local hour, editions, referrer host, edge country, and what the beacon reported), never an IP address or browser string; the dashboard filters and sums the records in the browser. A day with no log lines gets no file, so the dashboard shows it as missing rather than quiet. It rebuilds the last three days by default, because CloudFront can deliver a log file hours late; `--days 365 --out <dir>` rebuilds a year. `STATS_VISITOR_SALT` (or `--salt`) keeps the tokens stable across runs and is required; a laptop run that only feeds the dev server can say `--allow-local-salt` instead (the `npm run data` script does). Both tools have tests over a synthetic log and a golden day file:
+The parsing, the scanner list, the session rule, and the calendar math (days are cut in `America/New_York`, whatever the machine's zone; before October 18, 2026 the report used the machine's zone, which is the same thing on the owner's laptop) live in `tools/lib/cf-logs.mjs`, shared with `tools/stats-export.mjs`, which writes the same visits as JSON day files for the visitor dashboard: one `days/YYYY-MM-DD.json` per day plus an `index.json`. A day file holds the request totals and one small record per visit (a salted visitor token, the local hour, editions, referrer host, edge country, and what the beacon reported), never an IP address or browser string; the dashboard filters and sums the records in the browser. A day with no log lines gets no file, so the dashboard shows it as missing rather than quiet. It rebuilds the last three days by default, because CloudFront can deliver a log file hours late; `--days 365 --out <dir>` rebuilds a year. `STATS_VISITOR_SALT` (or `--salt`) keeps the tokens stable across runs and is required; a laptop run that only feeds the dev server can say `--allow-local-salt` instead (the `npm run data` script does). `--report <file>` also writes a JSON account of the run (counts, day keys, and seconds; never a row) that `tools/stats-report.mjs` renders as Markdown for the workflow's job summary. All three tools have tests over a synthetic log and a golden day file:
 
 ```sh
 node tools/stats-export.mjs --days 30 --out stats/public/data   # day files for the dashboard's dev server
@@ -781,8 +781,13 @@ local export does: runs the parser tests, downloads the window's
 log files, writes `days/YYYY-MM-DD.json` for the last three days plus a refreshed `index.json`
 (fetched from the bucket first so earlier days stay listed), syncs them to
 `s3://mvcprogrammer.com/stats/data/` with a one-hour browser TTL, and invalidates `/data/*` on the
-stats distribution once that exists. A failed run shows up as a failed workflow email; there is no
-other alerting and none is needed.
+stats distribution once that exists. Every run writes a job summary on its Actions page: the gate's
+decision, then the files and lines read per log prefix, how the rows were classified (owner,
+scanners, browsers, sessions, visits), what each day file holds, what was uploaded and invalidated,
+and the seconds each stage took. The exporter writes those figures to `run/report.json` with
+`--report` and `tools/stats-report.mjs` renders them; the summary step runs after a failed step
+too, so a failed run says how far it got. A failed run also shows up as a failed workflow email;
+there is no other alerting and none is needed.
 
 | Where | Name | Value |
 | --- | --- | --- |
