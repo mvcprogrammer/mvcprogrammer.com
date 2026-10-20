@@ -1,0 +1,49 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="880" height="440" viewBox="0 0 880 440" role="img" aria-labelledby="t d">
+  <title id="t">mvcprogrammer.com Sprint 1 burndown</title>
+  <desc id="d">Story points remaining per day against the ideal line. 2026-10-19 to 2026-11-01 · 8 items, 27 points · 7 done · 0.14 h/point from git</desc>
+  <style>
+    .bg { fill: #ffffff; }
+    text { font: 13px -apple-system, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; fill: #57606a; }
+    .title { font-size: 18px; font-weight: 600; fill: #24292f; }
+    .grid { stroke: #d0d7de; stroke-width: 1; }
+    .axis { stroke: #8c959f; stroke-width: 1; }
+    .ideal { fill: none; stroke: #8c959f; stroke-width: 2; stroke-dasharray: 6 5; }
+    .actual { fill: none; stroke: #1f6feb; stroke-width: 3; stroke-linejoin: round; stroke-linecap: round; }
+    .dot { fill: #1f6feb; }
+    .today { stroke: #cf222e; stroke-width: 1; stroke-dasharray: 3 4; }
+    @media (prefers-color-scheme: dark) {
+      .bg { fill: #0d1117; } text { fill: #8b949e; } .title { fill: #e6edf3; } .grid { stroke: #30363d; } .axis { stroke: #484f58; }
+      .ideal { stroke: #6e7681; } .actual { stroke: #58a6ff; } .dot { fill: #58a6ff; } .today { stroke: #f85149; }
+    }
+  </style>
+  <rect class="bg" width="880" height="440" rx="8"/>
+  <text class="title" x="56" y="26">Sprint 1 burndown</text>
+  <text x="56" y="44">2026-10-19 to 2026-11-01 · 8 items, 27 points · 7 done · 0.14 h/point from git</text>
+  <line class="grid" x1="56" x2="852" y1="376.0" y2="376.0"/><text x="46" y="380.0" text-anchor="end">0</text>
+  <line class="grid" x1="56" x2="852" y1="293.0" y2="293.0"/><text x="46" y="297.0" text-anchor="end">7</text>
+  <line class="grid" x1="56" x2="852" y1="210.1" y2="210.1"/><text x="46" y="214.1" text-anchor="end">14</text>
+  <line class="grid" x1="56" x2="852" y1="139.0" y2="139.0"/><text x="46" y="143.0" text-anchor="end">20</text>
+  <line class="grid" x1="56" x2="852" y1="56.0" y2="56.0"/><text x="46" y="60.0" text-anchor="end">27</text>
+  <line class="axis" x1="56" x2="56" y1="56" y2="376"/>
+  <line class="axis" x1="56" x2="852" y1="376" y2="376"/>
+  <text x="56.0" y="396" text-anchor="middle">Mon 19</text>
+  <text x="117.2" y="396" text-anchor="middle">Tue 20</text>
+  <text x="178.5" y="396" text-anchor="middle">Wed 21</text>
+  <text x="239.7" y="396" text-anchor="middle">Thu 22</text>
+  <text x="300.9" y="396" text-anchor="middle">Fri 23</text>
+  <text x="362.2" y="396" text-anchor="middle">Sat 24</text>
+  <text x="423.4" y="396" text-anchor="middle">Sun 25</text>
+  <text x="484.6" y="396" text-anchor="middle">Mon 26</text>
+  <text x="545.8" y="396" text-anchor="middle">Tue 27</text>
+  <text x="607.1" y="396" text-anchor="middle">Wed 28</text>
+  <text x="668.3" y="396" text-anchor="middle">Thu 29</text>
+  <text x="729.5" y="396" text-anchor="middle">Fri 30</text>
+  <text x="790.8" y="396" text-anchor="middle">Sat 31</text>
+  <text x="852.0" y="396" text-anchor="middle">Sun 1</text>
+  <path class="ideal" d="M56.0,56.0 L117.2,80.6 L178.5,105.2 L239.7,129.8 L300.9,154.5 L362.2,179.1 L423.4,203.7 L484.6,228.3 L545.8,252.9 L607.1,277.5 L668.3,302.2 L729.5,326.8 L790.8,351.4 L852.0,376.0"/>
+  <path class="actual" d="M56.0,103.4 L117.2,316.7"/>
+  <circle class="dot" cx="56.0" cy="103.4" r="4"><title>2026-10-19: 23 points remaining</title></circle>
+  <circle class="dot" cx="117.2" cy="316.7" r="4"><title>2026-10-20: 5 points remaining</title></circle>
+  <line class="today" x1="117.2" x2="117.2" y1="56" y2="376"/>
+  <text x="852" y="426" text-anchor="end">points remaining · dashed: ideal · solid: actual</text>
+</svg>

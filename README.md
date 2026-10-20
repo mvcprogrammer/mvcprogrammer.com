@@ -32,9 +32,9 @@ The site follows the **KISS principle**: keep it simple, and add nothing that is
 | `blazor/` | The Blazor edition: a Blazor WebAssembly app on .NET 10 with bUnit tests. See [blazor/README.md](blazor/README.md) and [docs/BLAZOR-EDITION.pdf](docs/BLAZOR-EDITION.pdf). |
 | `api/` | The Experience API: C# on .NET 10, run on AWS Lambda (arm64) and reading a single DynamoDB table. Spec-first with OpenAPI 3.1, tested over the in-process host, deployed with SAM. See [api/README.md](api/README.md). |
 | `infra/` | The contact-form and resume-download Lambdas (Node.js 22 on arm64), the CloudFront Function that redirects `www` and answers the engagement beacon, and the SES DKIM change batch. |
-| `tools/` | `cf-stats.mjs`, which reads the CloudFront access logs and prints visits, unique visitors, referrers, and what the beacon recorded; `stats-export.mjs`, which writes the same figures as day files for the visitor dashboard; `stats-report.mjs`, which renders an export run's account as the job summary on its Actions page; the shared parser in `lib/` and its tests. See [Visitor stats](docs/DEPLOY.md#visitor-stats). |
+| `tools/` | `cf-stats.mjs`, which reads the CloudFront access logs and prints visits, unique visitors, referrers, and what the beacon recorded; `stats-export.mjs`, which writes the same figures as day files for the visitor dashboard; `stats-report.mjs`, which renders an export run's account as the job summary on its Actions page; the shared parser in `lib/` and its tests; `serve.mjs`, a local preview that forwards `/api/*` to the functions; `board-backfill.mjs` and `burndown.mjs`, which fill the project board's dates and hours from git and draw the sprint burndown. See [Visitor stats](docs/DEPLOY.md#visitor-stats) and [docs/BURNDOWN.md](docs/BURNDOWN.md). |
 | `stats/` | The private visitor dashboard (React 19 + Vite + Chart.js) that reads the day files `tools/stats-export.mjs` writes. See [stats/README.md](stats/README.md) and [docs/STATS-DASHBOARD.pdf](docs/STATS-DASHBOARD.pdf). |
-| `docs/` | [DEPLOY.md](docs/DEPLOY.md), the infrastructure walkthrough; the three edition guidelines and the dashboard guideline; and the screenshots above. |
+| `docs/` | [DEPLOY.md](docs/DEPLOY.md), the infrastructure walkthrough; [BURNDOWN.md](docs/BURNDOWN.md), how the board's dates, hours, and burndown are derived; the three edition guidelines and the dashboard guideline; and the screenshots above. |
 | `.github/workflows/` | The deploy: GitHub Actions authenticated with OIDC, so no AWS keys are stored anywhere. |
 
 ## How it is served
@@ -73,6 +73,12 @@ Swatches are page, accent, and hover, in that order. The Angular build emits its
 | Default | Angular | React | Blazor |
 | :---: | :---: | :---: | :---: |
 | <picture><source media="(prefers-color-scheme: dark)" srcset="docs/images/mvcprogrammer-com-dark.png"><img alt="The default edition, home page" src="docs/images/mvcprogrammer-com-light.png" width="220"></picture> | <picture><source media="(prefers-color-scheme: dark)" srcset="docs/images/mvcprogrammer-com-angular-dark.png"><img alt="The Angular edition, home page" src="docs/images/mvcprogrammer-com-angular-light.png" width="220"></picture> | <picture><source media="(prefers-color-scheme: dark)" srcset="docs/images/mvcprogrammer-com-react-dark.png"><img alt="The React edition, home page" src="docs/images/mvcprogrammer-com-react-light.png" width="220"></picture> | <picture><source media="(prefers-color-scheme: dark)" srcset="docs/images/mvcprogrammer-com-blazor-dark.png"><img alt="The Blazor edition, home page" src="docs/images/mvcprogrammer-com-blazor-light.png" width="220"></picture> |
+
+## Work tracking
+
+Work is planned on the public [project board](https://github.com/users/mvcprogrammer/projects/1): every change is an issue, estimated in story points before it starts, and moved through Backlog, Ready, In progress, In review, and Done. The board's Started, Completed, and Actual hours come from git rather than memory, and the sprint burndown below is drawn from the board by `tools/burndown.mjs` whenever an item closes. How the numbers are derived, and what they do and do not say, is in [docs/BURNDOWN.md](docs/BURNDOWN.md).
+
+<img alt="Sprint 1 burndown: story points remaining per day against the ideal line" src="docs/images/burndown-sprint-1.svg" width="880">
 
 ## Preview locally
 
