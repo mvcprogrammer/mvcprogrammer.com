@@ -5,7 +5,9 @@
 // collects the commits that did the work, from two sources:
 //   - commit hashes written in the issue body ("mvcprogrammer.com ff2815e, 7f7a555; mvcprogrammer dd54882"),
 //     looked up in this repository and, after a repository name, in a sibling clone;
-//   - every commit on the branch of a merged pull request that mentions the issue (#N).
+//   - every commit on the branch of a merged pull request whose title or body closes or references
+//     the issue with a keyword ("Closes #N", "Fixes #N", "Resolves #N", "Refs #N"); a bare mention in
+//     prose does not count, or a pull request that talks about several issues would be charged to all.
 // Started is the earliest author date, Completed the merge time of the last pull request or the
 // latest commit, and Actual hours come from the commit times alone: commits closer together than
 // SESSION_GAP hours belong to one working session, each session counts from FIRST_COMMIT_ALLOWANCE
@@ -85,7 +87,7 @@ const items = fieldsAndItems.items.nodes
 
 const pulls = JSON.parse(gh(["pr", "list", "--state", "merged", "--limit", "200", "--json", "number,body,title,mergedAt,mergeCommit"]));
 const pullsFor = (issueNumber) => {
-  const ref = new RegExp(`(^|[^0-9])#${issueNumber}([^0-9]|$)`);
+  const ref = new RegExp(`\\b(close[sd]?|fix(?:e[sd])?|resolve[sd]?|refs?|references?|part of)\\s*:?\\s*#${issueNumber}(?![0-9])`, "i");
   return pulls.filter((p) => ref.test(p.body ?? "") || ref.test(p.title ?? ""));
 };
 
@@ -148,7 +150,9 @@ const rows = items.map((item) => {
     merges.push(new Date(pr.mergedAt));
   }
   if (dates.length === 0) {
-    return { ...item, note: notInGit(item.body) ? "console work, not in git: Completed kept, no hours" : "no commits found", dates, merges };
+    // Console or browser work: the board's Completed stands if it was set, else the day GitHub closed the issue.
+    const completed = item.completed ?? (item.closedAt ? isoDate(new Date(item.closedAt)) : null);
+    return { ...item, completed, note: notInGit(item.body) ? "console work, not in git: Completed kept, no hours" : "no commits found", dates, merges };
   }
   return { ...item, dates, merges, note: "" };
 });
@@ -194,11 +198,17 @@ const setNumber = (itemId, field, number) => graphql(`mutation($project: ID!, $i
   updateProjectV2ItemFieldValue(input: { projectId: $project, itemId: $item, fieldId: $field, value: { number: ${Number(number)} } }) { projectV2Item { id } }
 }`, { project: PROJECT_ID, item: itemId, field });
 
+const clearField = (itemId, field) => graphql(`mutation($project: ID!, $item: ID!, $field: ID!) {
+  clearProjectV2ItemFieldValue(input: { projectId: $project, itemId: $item, fieldId: $field }) { projectV2Item { id } }
+}`, { project: PROJECT_ID, item: itemId, field });
+
 let written = 0;
 for (const r of planned) {
   if (r.started) setDate(r.itemId, FIELD.started, r.started);
   if (r.completedNew) setDate(r.itemId, FIELD.completed, r.completedNew);
+  // An item without git evidence gets its hours cleared, so a value a looser run once wrote cannot linger.
   if (r.hours != null) setNumber(r.itemId, FIELD.hours, r.hours);
+  else clearField(r.itemId, FIELD.hours);
   written++;
 }
 console.log(`\nwrote ${written} items`);
