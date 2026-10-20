@@ -1,7 +1,7 @@
 using System.Text.Json;
 using System.Text.Json.Serialization;
 
-namespace Experience.Api.Http;
+namespace Api.Shared.Http;
 
 /// <summary>The one JSON configuration used by the endpoints, the seed tool, and the tests.</summary>
 public static class ApiJson

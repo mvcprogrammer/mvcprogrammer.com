@@ -1,5 +1,5 @@
 using System.Text.Json;
-using Experience.Api.Http;
+using Api.Shared.Http;
 using Experience.Api.Models;
 
 namespace Experience.Api.Data;
