@@ -1,24 +1,39 @@
 openapi: 3.1.0
 
 info:
-  title: mvcprogrammer.com Experience API
-  version: 1.0.0
-  summary: Read-only API serving the Experience section of mvcprogrammer.com.
+  title: mvcprogrammer.com API
+  version: 1.1.0
+  summary: "Read-only APIs behind mvcprogrammer.com: the Experience section and the FHIR R4 patient explorer."
   description: |
-    A small, public, read-only API that is the source of truth for the work history
+    Two small, public, read-only functions served same-origin under `/api`.
+
+    **Experience** (`/experience`, `/skills`) is the source of truth for the work history
     shown on [mvcprogrammer.com](https://mvcprogrammer.com). The site's static HTML
     carries a server-rendered copy as a fallback; on load, the page fetches this API
     and re-renders the timeline from it.
 
+    **FHIR** (`/fhir/*`) backs the patient explorer at
+    [mvcprogrammer.com/fhir](https://mvcprogrammer.com/fhir). It is a read-only facade
+    over a public FHIR R4 sandbox holding synthetic data only (HAPI by default, SMART
+    Health IT as the configured fallback). The function parses FHIR resources with the
+    Firely SDK, maps them to the small DTOs below, and returns a `trace` describing the
+    upstream calls so the page can show what happened. Nothing is persisted and nothing
+    beyond request metadata and upstream timing is logged.
+
     **Design notes**
 
     - Spec first. This document was written and committed before any implementation.
-    - Served same-origin at `https://mvcprogrammer.com/api/*` through a CloudFront
-      behavior in front of an AWS Lambda running C# on .NET. No CORS, and the site's
-      strict Content Security Policy is unchanged.
-    - Backed by a single DynamoDB table. All reads are eventually consistent.
-    - Every response is cacheable. CloudFront honours `Cache-Control` and `ETag`, so
-      the Lambda runs rarely. Clients that send `If-None-Match` receive `304`.
+    - Served same-origin at `https://mvcprogrammer.com/api/*` through CloudFront
+      behaviors in front of AWS Lambda functions running C# on .NET. No CORS, and the
+      site's strict Content Security Policy is unchanged. `/api/fhir/*` is its own
+      behavior, function, and cache policy, ordered ahead of `/api/*`.
+    - Experience is backed by a single DynamoDB table; all reads are eventually
+      consistent. FHIR holds no data of its own.
+    - Every data response is cacheable. CloudFront honours `Cache-Control` and `ETag`,
+      so the functions run rarely. Clients that send `If-None-Match` receive `304`.
+    - The FHIR function applies a per-IP request budget (`429` with `Retry-After`),
+      a short per-attempt upstream timeout with retries, and a hard cap on the pages it
+      walks, because every call reaches a third-party server.
     - Errors use RFC 9457 Problem Details (`application/problem+json`).
     - Reads need no authentication; the data is the public resume. Writes (create, update,
       delete) are specified now and stubbed to `501 Not Implemented` until the admin API
@@ -44,6 +59,8 @@ tags:
     description: Write side. Specified, stubbed, not yet implemented.
   - name: Skills
     description: Skills aggregated across positions.
+  - name: FHIR
+    description: Read-only patient explorer over a public FHIR R4 sandbox. Synthetic data only.
   - name: Operations
     description: Liveness.
 
@@ -278,6 +295,223 @@ paths:
                 status: ok
                 version: 1.0.0
 
+  /fhir/patients:
+    get:
+      tags: [FHIR]
+      operationId: searchPatients
+      summary: Search patients
+      description: |
+        Runs `GET Patient?family=&birthdate=&identifier=` against the sandbox and maps the
+        first page (`_count=20`) to list items. `family` is required so the search can never
+        enumerate the whole server. `total` is present only when the sandbox reports it.
+      parameters:
+        - name: family
+          in: query
+          required: true
+          description: Family name, matched by the sandbox with FHIR string-search semantics (prefix, case-insensitive).
+          schema:
+            type: string
+            minLength: 1
+            maxLength: 60
+          example: Dickens
+        - name: birthdate
+          in: query
+          required: false
+          description: Exact date of birth in ISO 8601 `YYYY-MM-DD` form.
+          schema:
+            $ref: '#/components/schemas/IsoDate'
+          example: '1979-04-12'
+        - name: identifier
+          in: query
+          required: false
+          description: An identifier value, or `system|value`, matched exactly by the sandbox. Typically an MRN.
+          schema:
+            type: string
+            minLength: 1
+            maxLength: 120
+          example: 'urn:oid:1.2.36.146.595.217.0.1|12345'
+        - $ref: '#/components/parameters/IfNoneMatch'
+      responses:
+        '200':
+          description: The matching patients, with the upstream trace.
+          headers:
+            ETag:
+              $ref: '#/components/headers/ETag'
+            Cache-Control:
+              $ref: '#/components/headers/FhirCacheControl'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PatientSearchResult'
+              examples:
+                default:
+                  $ref: '#/components/examples/PatientSearchResultExample'
+        '304':
+          $ref: '#/components/responses/NotModified'
+        '400':
+          $ref: '#/components/responses/FhirBadRequest'
+        '429':
+          $ref: '#/components/responses/RateLimited'
+        '500':
+          $ref: '#/components/responses/InternalError'
+        '502':
+          $ref: '#/components/responses/UpstreamUnavailable'
+        '504':
+          $ref: '#/components/responses/UpstreamTimeout'
+
+  /fhir/patients/{patientId}/summary:
+    get:
+      tags: [FHIR]
+      operationId: getPatientSummary
+      summary: Get a patient summary
+      description: |
+        Demographics, resource counts, conditions split into active and resolved, recent
+        vital signs, and a trace of the upstream calls. Built from five bounded requests:
+        `Patient/{id}`, `Condition?patient=`, `Observation?patient=&category=vital-signs`,
+        and `_summary=count` searches for Encounter and Observation. Each search follows
+        `link[rel=next]` up to five pages; `trace.truncated` says whether a cap was hit.
+
+        Conditions are split on `clinicalStatus`: `active`, `recurrence`, and `relapse`
+        are active; `inactive`, `remission`, and `resolved` are resolved. Vital signs are
+        selected by LOINC code (see `VitalSign`), newest first, at most 25.
+      parameters:
+        - $ref: '#/components/parameters/PatientId'
+        - $ref: '#/components/parameters/IfNoneMatch'
+      responses:
+        '200':
+          description: The summary.
+          headers:
+            ETag:
+              $ref: '#/components/headers/ETag'
+            Cache-Control:
+              $ref: '#/components/headers/FhirCacheControl'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PatientSummary'
+              examples:
+                default:
+                  $ref: '#/components/examples/PatientSummaryExample'
+        '304':
+          $ref: '#/components/responses/NotModified'
+        '400':
+          $ref: '#/components/responses/FhirBadRequest'
+        '404':
+          $ref: '#/components/responses/PatientNotFound'
+        '429':
+          $ref: '#/components/responses/RateLimited'
+        '500':
+          $ref: '#/components/responses/InternalError'
+        '502':
+          $ref: '#/components/responses/UpstreamUnavailable'
+        '504':
+          $ref: '#/components/responses/UpstreamTimeout'
+
+  /fhir/patients/{patientId}/raw:
+    get:
+      tags: [FHIR]
+      operationId: getPatientRawBundle
+      summary: Get the raw FHIR resources behind a summary
+      description: |
+        The same resources the summary is built from, returned untouched as one FHIR
+        `Bundle` of type `collection`, pretty-printed, for the "view raw bundle" toggle.
+        This is the only endpoint that passes FHIR JSON through; everything else returns
+        the DTOs above. The same page caps apply.
+      parameters:
+        - $ref: '#/components/parameters/PatientId'
+        - $ref: '#/components/parameters/IfNoneMatch'
+      responses:
+        '200':
+          description: The collection Bundle.
+          headers:
+            ETag:
+              $ref: '#/components/headers/ETag'
+            Cache-Control:
+              $ref: '#/components/headers/FhirCacheControl'
+          content:
+            application/fhir+json:
+              schema:
+                $ref: '#/components/schemas/FhirBundle'
+              examples:
+                default:
+                  $ref: '#/components/examples/FhirBundleExample'
+        '304':
+          $ref: '#/components/responses/NotModified'
+        '400':
+          $ref: '#/components/responses/FhirBadRequest'
+        '404':
+          $ref: '#/components/responses/PatientNotFound'
+        '429':
+          $ref: '#/components/responses/RateLimited'
+        '500':
+          $ref: '#/components/responses/InternalError'
+        '502':
+          $ref: '#/components/responses/UpstreamUnavailable'
+        '504':
+          $ref: '#/components/responses/UpstreamTimeout'
+
+  /fhir/capability:
+    get:
+      tags: [FHIR]
+      operationId: getFhirCapability
+      summary: Get the sandbox capability subset
+      description: |
+        Reads the sandbox `CapabilityStatement` (`GET metadata`) and reports only what the
+        explorer depends on: the FHIR version, the server software, and whether each required
+        resource and search parameter is supported. `ok` is true when every requirement is
+        met. The statement is fetched lazily on first use and cached per function instance
+        for an hour; it is never read on cold start.
+      parameters:
+        - $ref: '#/components/parameters/IfNoneMatch'
+      responses:
+        '200':
+          description: The capability subset.
+          headers:
+            ETag:
+              $ref: '#/components/headers/ETag'
+            Cache-Control:
+              $ref: '#/components/headers/CapabilityCacheControl'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CapabilitySubset'
+              examples:
+                default:
+                  $ref: '#/components/examples/CapabilitySubsetExample'
+        '304':
+          $ref: '#/components/responses/NotModified'
+        '429':
+          $ref: '#/components/responses/RateLimited'
+        '500':
+          $ref: '#/components/responses/InternalError'
+        '502':
+          $ref: '#/components/responses/UpstreamUnavailable'
+        '504':
+          $ref: '#/components/responses/UpstreamTimeout'
+
+  /fhir/health:
+    get:
+      tags: [FHIR, Operations]
+      operationId: getFhirHealth
+      summary: Liveness check for the FHIR function
+      description: Returns `200` when the function is up. Never calls the sandbox. Never cached.
+      responses:
+        '200':
+          description: Alive.
+          headers:
+            Cache-Control:
+              description: Always `no-store`.
+              schema:
+                type: string
+                const: no-store
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Health'
+              example:
+                status: ok
+                version: 1.0.0
+
 components:
   securitySchemes:
     ApiKey:
@@ -296,6 +530,15 @@ components:
         type: string
       example: '"a1b2c3d4"'
 
+    PatientId:
+      name: patientId
+      in: path
+      required: true
+      description: The sandbox's logical id for the Patient resource, as returned by the search. Never hard-coded; the sandbox is wiped periodically.
+      schema:
+        $ref: '#/components/schemas/FhirId'
+      example: '1842'
+
   headers:
     ETag:
       description: Strong validator for the response body. Changes whenever the data changes.
@@ -307,6 +550,22 @@ components:
       schema:
         type: string
       example: public, max-age=300, s-maxage=3600
+    FhirCacheControl:
+      description: Sandbox data can change under the explorer, so shared caches hold FHIR-backed responses for ten minutes and browsers revalidate after one.
+      schema:
+        type: string
+      example: public, max-age=60, s-maxage=600
+    CapabilityCacheControl:
+      description: The capability subset changes only when the sandbox is upgraded; shared caches may hold it for an hour.
+      schema:
+        type: string
+      example: public, max-age=300, s-maxage=3600
+    RetryAfter:
+      description: Seconds until the per-IP budget has room again.
+      schema:
+        type: integer
+        minimum: 1
+      example: 120
 
   responses:
     NotModified:
@@ -360,6 +619,86 @@ components:
             title: Unauthorized
             status: 401
             instance: /api/experience
+    FhirBadRequest:
+      description: A query or path parameter was malformed.
+      content:
+        application/problem+json:
+          schema:
+            $ref: '#/components/schemas/Problem'
+          example:
+            type: https://mvcprogrammer.com/api/problems/invalid-parameter
+            title: Invalid parameter
+            status: 400
+            detail: "'family' is required and must be between 1 and 60 characters."
+            instance: /api/fhir/patients?birthdate=1979-04-12
+    PatientNotFound:
+      description: The sandbox has no patient with that id (it answered `404` or `410`). Ids vanish when the sandbox is wiped.
+      content:
+        application/problem+json:
+          schema:
+            $ref: '#/components/schemas/Problem'
+          example:
+            type: https://mvcprogrammer.com/api/problems/not-found
+            title: Patient not found
+            status: 404
+            detail: The sandbox has no Patient with id '1842'. It may have been wiped; search again.
+            instance: /api/fhir/patients/1842/summary
+    RateLimited:
+      description: |
+        The caller's IP has used its budget (60 requests per 10 minutes per function
+        instance). Nothing is stored; the budget lives in the warm instance's memory.
+      headers:
+        Retry-After:
+          $ref: '#/components/headers/RetryAfter'
+      content:
+        application/problem+json:
+          schema:
+            $ref: '#/components/schemas/Problem'
+          example:
+            type: https://mvcprogrammer.com/api/problems/rate-limited
+            title: Too many requests
+            status: 429
+            detail: This address has made 60 requests in the last 10 minutes. Try again in 120 seconds.
+            instance: /api/fhir/patients?family=Dickens
+    UpstreamUnavailable:
+      description: |
+        The sandbox answered with a server error or something that is not a FHIR Bundle,
+        and retries were exhausted. The public sandbox is occasionally slow or down; the
+        page shows an empty state and suggests trying again.
+      headers:
+        Cache-Control:
+          description: Always `no-store`; failures are never cached.
+          schema:
+            type: string
+            const: no-store
+      content:
+        application/problem+json:
+          schema:
+            $ref: '#/components/schemas/Problem'
+          example:
+            type: https://mvcprogrammer.com/api/problems/upstream-unavailable
+            title: FHIR sandbox unavailable
+            status: 502
+            detail: hapi.fhir.org answered 503 three times in a row.
+            instance: /api/fhir/patients/1842/summary
+    UpstreamTimeout:
+      description: The upstream budget (22 seconds across attempts and pages) ran out before the sandbox finished answering.
+      headers:
+        Cache-Control:
+          description: Always `no-store`; failures are never cached.
+          schema:
+            type: string
+            const: no-store
+      content:
+        application/problem+json:
+          schema:
+            $ref: '#/components/schemas/Problem'
+          example:
+            type: https://mvcprogrammer.com/api/problems/upstream-timeout
+            title: FHIR sandbox timed out
+            status: 504
+            detail: hapi.fhir.org did not finish answering within 22 seconds.
+            instance: /api/fhir/patients/1842/summary
     NotImplemented:
       description: The operation is specified but not built yet.
       content:
@@ -542,6 +881,448 @@ components:
           items:
             $ref: '#/components/schemas/Skill'
 
+    FhirId:
+      type: string
+      description: A FHIR logical id (`[A-Za-z0-9\-\.]{1,64}`), as the sandbox assigns it.
+      pattern: '^[A-Za-z0-9\-\.]{1,64}$'
+      examples: ['1842']
+
+    IsoDate:
+      type: string
+      description: Calendar date in ISO 8601 `YYYY-MM-DD` form.
+      format: date
+      pattern: '^\d{4}-(0[1-9]|1[0-2])-(0[1-9]|[12]\d|3[01])$'
+      examples: ['1979-04-12']
+
+    Sex:
+      type: string
+      description: FHIR `Patient.gender` (AdministrativeGender), passed through unchanged.
+      enum: [male, female, other, unknown]
+
+    SearchQuery:
+      type: object
+      description: The search as the function ran it, echoed back.
+      required: [family]
+      additionalProperties: false
+      properties:
+        family:
+          type: string
+        birthdate:
+          $ref: '#/components/schemas/IsoDate'
+        identifier:
+          type: string
+
+    PatientListItem:
+      type: object
+      description: "One row of the search results. Mapped from `Patient` (US Core Patient: name, gender, birthDate, identifier)."
+      required: [id, name, familyName]
+      additionalProperties: false
+      properties:
+        id:
+          $ref: '#/components/schemas/FhirId'
+        name:
+          type: string
+          description: Display name, `Family, Given` from the first `official` name, else the first name.
+          examples: ['Dickens, Charles']
+        familyName:
+          type: string
+        givenName:
+          type: string
+          description: Given names joined by a space, when present.
+        birthDate:
+          $ref: '#/components/schemas/IsoDate'
+        birthYear:
+          type: integer
+          description: Year of `birthDate`, for the row label.
+          minimum: 1800
+          maximum: 2100
+        sex:
+          $ref: '#/components/schemas/Sex'
+        mrn:
+          type: string
+          description: The value of the first identifier typed `MR`, else the first identifier value.
+
+    PatientSearchResult:
+      type: object
+      required: [count, query, items, trace]
+      additionalProperties: false
+      properties:
+        count:
+          type: integer
+          minimum: 0
+          description: Number of items returned (one page, at most 20).
+        total:
+          type: integer
+          minimum: 0
+          description: Matches on the server, present only when the sandbox reported `Bundle.total`.
+        query:
+          $ref: '#/components/schemas/SearchQuery'
+        items:
+          type: array
+          maxItems: 20
+          items:
+            $ref: '#/components/schemas/PatientListItem'
+        trace:
+          $ref: '#/components/schemas/Trace'
+
+    Identifier:
+      type: object
+      description: One `Patient.identifier`, kept so the page can show the MRN with its system.
+      required: [value]
+      additionalProperties: false
+      properties:
+        system:
+          type: string
+          format: uri
+        value:
+          type: string
+        type:
+          type: string
+          description: The identifier type code (`MR`, `SS`, `DL`, ...), when present.
+
+    PatientDemographics:
+      type: object
+      description: The summary card header. Mapped from `Patient`.
+      required: [id, name, familyName, initials, identifiers]
+      additionalProperties: false
+      properties:
+        id:
+          $ref: '#/components/schemas/FhirId'
+        name:
+          type: string
+        familyName:
+          type: string
+        givenName:
+          type: string
+        initials:
+          type: string
+          description: One or two uppercase letters for the avatar.
+          minLength: 1
+          maxLength: 2
+        sex:
+          $ref: '#/components/schemas/Sex'
+        birthDate:
+          $ref: '#/components/schemas/IsoDate'
+        age:
+          type: integer
+          description: Whole years at the time of the request, when `birthDate` is known.
+          minimum: 0
+          maximum: 150
+        mrn:
+          type: string
+        identifiers:
+          type: array
+          items:
+            $ref: '#/components/schemas/Identifier'
+
+    ResourceCounts:
+      type: object
+      description: Exact counts from `_summary=count` searches, independent of the page caps.
+      required: [conditions, encounters, observations]
+      additionalProperties: false
+      properties:
+        conditions:
+          type: integer
+          minimum: 0
+        encounters:
+          type: integer
+          minimum: 0
+        observations:
+          type: integer
+          minimum: 0
+
+    ConditionItem:
+      type: object
+      description: One `Condition` (US Core Condition). The code is the first `code.coding` whose system is SNOMED CT or ICD-10, else the first coding.
+      required: [display, clinicalStatus]
+      additionalProperties: false
+      properties:
+        display:
+          type: string
+          description: '`code.coding.display`, else `code.text`, else the code itself.'
+          examples: [Essential hypertension]
+        code:
+          type: string
+          examples: ['59621000']
+        system:
+          type: string
+          format: uri
+          description: The coding system URI.
+          examples: ['http://snomed.info/sct']
+        systemLabel:
+          type: string
+          description: Short label for the pill.
+          enum: [SNOMED CT, ICD-10-CM, ICD-10, other]
+        clinicalStatus:
+          type: string
+          description: The `clinicalStatus` code as the sandbox sent it.
+          enum: [active, recurrence, relapse, inactive, remission, resolved, unknown]
+        onsetDate:
+          $ref: '#/components/schemas/IsoDate'
+        recordedDate:
+          $ref: '#/components/schemas/IsoDate'
+
+    Conditions:
+      type: object
+      required: [active, resolved]
+      additionalProperties: false
+      properties:
+        active:
+          type: array
+          description: Clinical status active, recurrence, or relapse. Newest onset first.
+          items:
+            $ref: '#/components/schemas/ConditionItem'
+        resolved:
+          type: array
+          description: Clinical status inactive, remission, or resolved; the page collapses these into a count.
+          items:
+            $ref: '#/components/schemas/ConditionItem'
+
+    VitalComponent:
+      type: object
+      description: One `Observation.component`, used by blood pressure (systolic 8480-6, diastolic 8462-4).
+      required: [name, loincCode, value, unit]
+      additionalProperties: false
+      properties:
+        name:
+          type: string
+        loincCode:
+          type: string
+        value:
+          type: number
+        unit:
+          type: string
+
+    VitalSign:
+      type: object
+      description: |
+        One `Observation` in the `vital-signs` category (US Core Vital Signs), selected by LOINC
+        code: 85354-9 blood pressure, 8867-4 heart rate, 29463-7 body weight, 8302-2 body height,
+        8310-5 body temperature, 9279-1 respiratory rate, 2708-6 and 59408-5 oxygen saturation,
+        39156-5 body mass index. Either `value` and `unit`, or `components`, is present.
+      required: [date, name, loincCode]
+      additionalProperties: false
+      properties:
+        date:
+          type: string
+          description: '`effectiveDateTime` or the start of `effectivePeriod`, as an ISO 8601 date or date-time.'
+          examples: ['2025-11-03T09:14:00Z']
+        name:
+          type: string
+          examples: [Blood pressure]
+        loincCode:
+          type: string
+          examples: ['85354-9']
+        value:
+          type: number
+        unit:
+          type: string
+          description: The UCUM unit as sent (`kg`, `mm[Hg]`, `/min`, `Cel`).
+        components:
+          type: array
+          minItems: 1
+          items:
+            $ref: '#/components/schemas/VitalComponent'
+
+    UpstreamRequest:
+      type: object
+      description: One request the function made to the sandbox, with its paging walk folded in.
+      required: [method, url, status, durationMs, entries, pages]
+      additionalProperties: false
+      properties:
+        method:
+          type: string
+          const: GET
+        url:
+          type: string
+          format: uri
+          description: The first page's URL. Later pages come from `link[rel=next]`.
+        status:
+          type: integer
+          description: HTTP status of the last page fetched.
+        durationMs:
+          type: integer
+          minimum: 0
+          description: Wall time across every attempt and page of this request.
+        entries:
+          type: integer
+          minimum: 0
+          description: Bundle entries received across all pages (or `total` for a `_summary=count` search).
+        pages:
+          type: integer
+          minimum: 1
+          description: Pages walked, including the first.
+
+    Trace:
+      type: object
+      description: |
+        What happened upstream, for the "under the hood" panel. When CloudFront answers from
+        its cache the trace is the one recorded by the original request; the page labels it
+        with `generatedAt` and shows the response's `X-Cache` header beside it.
+      required: [dataSource, requests, totalDurationMs, bundleEntries, pagesWalked, pageCap, truncated, generatedAt]
+      additionalProperties: false
+      properties:
+        dataSource:
+          type: object
+          required: [name, baseUrl]
+          additionalProperties: false
+          properties:
+            name:
+              type: string
+              examples: [HAPI FHIR R4 public test server]
+            baseUrl:
+              type: string
+              format: uri
+              examples: ['https://hapi.fhir.org/baseR4']
+        requests:
+          type: array
+          minItems: 1
+          items:
+            $ref: '#/components/schemas/UpstreamRequest'
+        totalDurationMs:
+          type: integer
+          minimum: 0
+        bundleEntries:
+          type: integer
+          minimum: 0
+          description: Entries received across every request.
+        pagesWalked:
+          type: integer
+          minimum: 1
+        pageCap:
+          type: integer
+          description: Maximum pages followed per search.
+          const: 5
+        truncated:
+          type: boolean
+          description: True when any search hit the page cap, so a list may be incomplete. Counts are exact regardless.
+        generatedAt:
+          type: string
+          format: date-time
+
+    PatientSummary:
+      type: object
+      required: [patient, counts, conditions, vitals, trace]
+      additionalProperties: false
+      properties:
+        patient:
+          $ref: '#/components/schemas/PatientDemographics'
+        counts:
+          $ref: '#/components/schemas/ResourceCounts'
+        conditions:
+          $ref: '#/components/schemas/Conditions'
+        vitals:
+          type: array
+          description: Newest first, at most 25.
+          maxItems: 25
+          items:
+            $ref: '#/components/schemas/VitalSign'
+        trace:
+          $ref: '#/components/schemas/Trace'
+
+    FhirBundle:
+      type: object
+      description: |
+        A FHIR R4 `Bundle` of type `collection`, passed through from the sandbox untouched
+        except for pretty-printing. `entry[0]` is the `Patient`; the rest are the `Condition`
+        and `Observation` resources the summary was built from. Full schema: the FHIR R4
+        specification, not this document.
+      required: [resourceType, type, entry]
+      properties:
+        resourceType:
+          type: string
+          const: Bundle
+        type:
+          type: string
+          const: collection
+        total:
+          type: integer
+          description: Number of entries.
+        entry:
+          type: array
+          items:
+            type: object
+            required: [resource]
+            additionalProperties: true
+            properties:
+              fullUrl:
+                type: string
+                format: uri
+              resource:
+                type: object
+                description: Any FHIR R4 resource; only the two fields every resource carries are declared here.
+                required: [resourceType, id]
+                additionalProperties: true
+                properties:
+                  resourceType:
+                    type: string
+                  id:
+                    type: string
+
+    ParamSupport:
+      type: object
+      required: [name, supported]
+      additionalProperties: false
+      properties:
+        name:
+          type: string
+        supported:
+          type: boolean
+
+    ResourceSupport:
+      type: object
+      required: [type, supported, searchParams]
+      additionalProperties: false
+      properties:
+        type:
+          type: string
+          description: FHIR resource type.
+          enum: [Patient, Condition, Observation, Encounter]
+        supported:
+          type: boolean
+          description: The resource appears in `CapabilityStatement.rest.resource` with `read` and `search-type`.
+        searchParams:
+          type: array
+          items:
+            $ref: '#/components/schemas/ParamSupport'
+
+    CapabilitySubset:
+      type: object
+      description: |
+        The part of the sandbox `CapabilityStatement` the explorer depends on. Required:
+        Patient (`family`, `birthdate`, `identifier`), Condition (`patient`), Observation
+        (`patient`, `category`, `date`), Encounter (`patient`).
+      required: [ok, fhirVersion, software, baseUrl, checkedAt, resources]
+      additionalProperties: false
+      properties:
+        ok:
+          type: boolean
+          description: True when every required resource and search parameter is supported.
+        fhirVersion:
+          type: string
+          examples: [4.0.1]
+        software:
+          type: object
+          additionalProperties: false
+          properties:
+            name:
+              type: string
+            version:
+              type: string
+        baseUrl:
+          type: string
+          format: uri
+        checkedAt:
+          type: string
+          format: date-time
+          description: When the statement was read; it is cached per function instance for an hour.
+        resources:
+          type: array
+          minItems: 4
+          maxItems: 4
+          items:
+            $ref: '#/components/schemas/ResourceSupport'
+
     Health:
       type: object
       required: [status, version]
@@ -552,7 +1333,7 @@ components:
           const: ok
         version:
           type: string
-          description: Deployed API version, matching `info.version` of this document.
+          description: Deployed version of the function that answered. Each function is deployed on its own, so this can trail `info.version` of this document.
 
     Problem:
       type: object
@@ -624,3 +1405,224 @@ components:
           - name: RabbitMQ
             positionCount: 1
             positionIds: [advancedmd]
+
+    PatientSearchResultExample:
+      summary: Two matches for a family name
+      value:
+        count: 2
+        total: 2
+        query:
+          family: Dickens
+        items:
+          - id: '1842'
+            name: Dickens, Charles
+            familyName: Dickens
+            givenName: Charles
+            birthDate: '1979-04-12'
+            birthYear: 1979
+            sex: male
+            mrn: '12345'
+          - id: '1911'
+            name: Dickens, Catherine
+            familyName: Dickens
+            birthDate: '1981-09-30'
+            birthYear: 1981
+            sex: female
+        trace:
+          dataSource:
+            name: HAPI FHIR R4 public test server
+            baseUrl: https://hapi.fhir.org/baseR4
+          requests:
+            - method: GET
+              url: https://hapi.fhir.org/baseR4/Patient?family=Dickens&_count=20
+              status: 200
+              durationMs: 412
+              entries: 2
+              pages: 1
+          totalDurationMs: 412
+          bundleEntries: 2
+          pagesWalked: 1
+          pageCap: 5
+          truncated: false
+          generatedAt: '2026-10-20T15:04:05Z'
+
+    PatientSummaryExample:
+      summary: One patient with two active conditions and recent vitals
+      value:
+        patient:
+          id: '1842'
+          name: Dickens, Charles
+          familyName: Dickens
+          givenName: Charles
+          initials: CD
+          sex: male
+          birthDate: '1979-04-12'
+          age: 47
+          mrn: '12345'
+          identifiers:
+            - system: urn:oid:1.2.36.146.595.217.0.1
+              value: '12345'
+              type: MR
+        counts:
+          conditions: 3
+          encounters: 14
+          observations: 212
+        conditions:
+          active:
+            - display: Essential hypertension
+              code: '59621000'
+              system: http://snomed.info/sct
+              systemLabel: SNOMED CT
+              clinicalStatus: active
+              onsetDate: '2019-02-11'
+            - display: Type 2 diabetes mellitus
+              code: E11.9
+              system: http://hl7.org/fhir/sid/icd-10-cm
+              systemLabel: ICD-10-CM
+              clinicalStatus: active
+              onsetDate: '2021-06-02'
+          resolved:
+            - display: Acute bronchitis
+              code: '10509002'
+              system: http://snomed.info/sct
+              systemLabel: SNOMED CT
+              clinicalStatus: resolved
+              onsetDate: '2024-01-15'
+        vitals:
+          - date: '2025-11-03T09:14:00Z'
+            name: Blood pressure
+            loincCode: '85354-9'
+            components:
+              - name: Systolic
+                loincCode: '8480-6'
+                value: 138
+                unit: mm[Hg]
+              - name: Diastolic
+                loincCode: '8462-4'
+                value: 86
+                unit: mm[Hg]
+          - date: '2025-11-03T09:14:00Z'
+            name: Heart rate
+            loincCode: '8867-4'
+            value: 72
+            unit: /min
+          - date: '2025-11-03T09:14:00Z'
+            name: Body weight
+            loincCode: '29463-7'
+            value: 84.3
+            unit: kg
+        trace:
+          dataSource:
+            name: HAPI FHIR R4 public test server
+            baseUrl: https://hapi.fhir.org/baseR4
+          requests:
+            - method: GET
+              url: https://hapi.fhir.org/baseR4/Patient/1842
+              status: 200
+              durationMs: 180
+              entries: 1
+              pages: 1
+            - method: GET
+              url: https://hapi.fhir.org/baseR4/Condition?patient=1842&_count=200
+              status: 200
+              durationMs: 240
+              entries: 3
+              pages: 1
+            - method: GET
+              url: https://hapi.fhir.org/baseR4/Observation?patient=1842&category=vital-signs&_sort=-date&_count=100
+              status: 200
+              durationMs: 610
+              entries: 140
+              pages: 2
+            - method: GET
+              url: https://hapi.fhir.org/baseR4/Encounter?patient=1842&_summary=count
+              status: 200
+              durationMs: 95
+              entries: 14
+              pages: 1
+            - method: GET
+              url: https://hapi.fhir.org/baseR4/Observation?patient=1842&_summary=count
+              status: 200
+              durationMs: 101
+              entries: 212
+              pages: 1
+          totalDurationMs: 1226
+          bundleEntries: 144
+          pagesWalked: 6
+          pageCap: 5
+          truncated: false
+          generatedAt: '2026-10-20T15:04:09Z'
+
+    FhirBundleExample:
+      summary: Collection Bundle, abridged
+      value:
+        resourceType: Bundle
+        type: collection
+        total: 2
+        entry:
+          - fullUrl: https://hapi.fhir.org/baseR4/Patient/1842
+            resource:
+              resourceType: Patient
+              id: '1842'
+              name:
+                - use: official
+                  family: Dickens
+                  given: [Charles]
+              gender: male
+              birthDate: '1979-04-12'
+          - fullUrl: https://hapi.fhir.org/baseR4/Condition/77201
+            resource:
+              resourceType: Condition
+              id: '77201'
+              clinicalStatus:
+                coding:
+                  - system: http://terminology.hl7.org/CodeSystem/condition-clinical
+                    code: active
+              code:
+                coding:
+                  - system: http://snomed.info/sct
+                    code: '59621000'
+                    display: Essential hypertension
+              subject:
+                reference: Patient/1842
+              onsetDateTime: '2019-02-11'
+
+    CapabilitySubsetExample:
+      summary: HAPI supports everything the explorer needs
+      value:
+        ok: true
+        fhirVersion: 4.0.1
+        software:
+          name: HAPI FHIR Server
+          version: 8.4.0
+        baseUrl: https://hapi.fhir.org/baseR4
+        checkedAt: '2026-10-20T15:00:00Z'
+        resources:
+          - type: Patient
+            supported: true
+            searchParams:
+              - name: family
+                supported: true
+              - name: birthdate
+                supported: true
+              - name: identifier
+                supported: true
+          - type: Condition
+            supported: true
+            searchParams:
+              - name: patient
+                supported: true
+          - type: Observation
+            supported: true
+            searchParams:
+              - name: patient
+                supported: true
+              - name: category
+                supported: true
+              - name: date
+                supported: true
+          - type: Encounter
+            supported: true
+            searchParams:
+              - name: patient
+                supported: true
