@@ -30,7 +30,7 @@ describe('static sections', () => {
   });
 
   describe('AboutSection', () => {
-    it('should link the Angular, React, Blazor, and JavaScript tags to the four editions with a hint', () => {
+    it('should link the edition tags to the four editions and the Healthcare tag to the FHIR explorer, each with a hint', () => {
       // Arrange, Act
       const { container } = render(<AboutSection />);
 
@@ -48,6 +48,11 @@ describe('static sections', () => {
           'JavaScript',
           'https://mvcprogrammer.com/',
           'See the plain JavaScript edition of this site',
+        ],
+        [
+          'Healthcare (HL7, FHIR, HIPAA)',
+          'https://mvcprogrammer.com/fhir',
+          'Open the FHIR R4 patient explorer, a live demo on this site',
         ],
       ]);
       const tags = Array.from(container.querySelectorAll('ul[aria-label="Skills"] .tag')).map(
@@ -136,7 +141,7 @@ describe('static sections', () => {
         'https://github.com/mvcprogrammer/mvcprogrammer.com/tree/main/react',
       );
       expect(container.querySelector('.section-intro')?.textContent).toContain('React edition');
-      expect(container.querySelectorAll('.colophon-item').length).toBe(9);
+      expect(container.querySelectorAll('.colophon-item').length).toBe(10);
     });
   });
 });
