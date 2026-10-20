@@ -115,6 +115,8 @@ function main() {
   // the first day is seen whole and stays on the day it started; only visits that started inside the
   // window are written, and the request totals count the window's rows alone.
   const margin = new Date(since.getTime() - SESSION_GAP_MINUTES * 60_000);
+  // Resolved once here, so the report does not ask STS for the account id a second time.
+  options.bucket = resolveBucket(options);
   const prefixes = [];
   const allRows = classifyRows(loadRows(options, margin, prefixes), options.excludeIps);
   const rows = allRows.filter((row) => !row.own);
@@ -130,10 +132,11 @@ function main() {
   mkdirSync(join(out, 'days'), { recursive: true });
   const files = [];
   for (const day of written) {
-    const file = buildDayFile(day, rows.filter((row) => row.day === day), visits.filter((visit) => visit.day === day), salt ?? 'local');
+    const dayRows = rows.filter((row) => row.day === day);
+    const file = buildDayFile(day, dayRows, visits.filter((visit) => visit.day === day), salt ?? 'local');
     const text = stableJson(file);
     writeFileSync(join(out, 'days', `${day}.json`), text);
-    files.push(dayTotals(file, rows.filter((row) => row.day === day), Buffer.byteLength(text)));
+    files.push(dayTotals(file, dayRows, Buffer.byteLength(text)));
   }
   const onDisk = readdirSync(join(out, 'days')).filter((name) => /^\d{4}-\d{2}-\d{2}\.json$/.test(name)).map((name) => name.slice(0, 10));
   const index = buildIndex(readIndex(join(out, 'index.json')), [...onDisk, ...written], now);
@@ -142,18 +145,19 @@ function main() {
   console.log(`Wrote ${written.length} day files (${span}) and index.json to ${out}; ${visits.length} visits in ${rows.length} requests; ${days.length - written.length} days in the window had no log lines.`);
 
   if (options.report !== undefined) {
+    const total = seconds(started);
     const report = buildReport({
       now,
       days: options.days,
       since,
       margin,
-      bucket: resolveBucket(options),
+      bucket: options.bucket,
       prefixes,
       rows: { total: allRows.length, own: allRows.length - rows.length, scanners: rows.filter((row) => row.bot).length, sessions: sessions.length, visits: visits.length },
       files,
       missingDays: days.filter((day) => !written.includes(day)),
       index,
-      timing: { load: loaded, build: seconds(started) - loaded, total: seconds(started) },
+      timing: { load: loaded, build: Math.round((total - loaded) * 1000) / 1000, total },
     });
     writeFileSync(options.report, stableJson(report));
   }

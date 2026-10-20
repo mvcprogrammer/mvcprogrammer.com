@@ -45,7 +45,19 @@ const INVALIDATION = { Location: 'https://cloudfront.amazonaws.com/...', Invalid
 const OUT_FILES = ['days/2026-10-16.json', 'days/2026-10-17.json', 'index.json'];
 
 function render(overrides = {}) {
-  return renderReport({ report: fixtureReport(), trigger: 'manual run by neal (days = 3)', syncLog: SYNC_LOG, invalidation: INVALIDATION, outFiles: OUT_FILES, commit: 'b445345c0ffee', node: 'v24.0.0', ...overrides });
+  return renderReport({
+    report: fixtureReport(),
+    trigger: 'manual run by neal (days = 3)',
+    syncLog: SYNC_LOG,
+    syncOutcome: 'success',
+    invalidation: INVALIDATION,
+    invalidationOutcome: 'success',
+    outFiles: OUT_FILES,
+    outDir: 'out',
+    commit: 'b445345c0ffee',
+    node: 'v24.0.0',
+    ...overrides,
+  });
 }
 
 test('buildReport holds counts and day keys only, never a row', () => {
@@ -107,9 +119,28 @@ test('renderReport says so when nothing changed, nothing was synced, or nothing 
   const unchanged = render({ syncLog: '', invalidation: null });
   assert.ok(unchanged.includes('Every file in the bucket was already up to date; nothing was uploaded.'));
   assert.ok(unchanged.includes('No invalidation was created.'));
-  const dryRun = render({ syncLog: null, invalidation: null, outFiles: null });
+  const dryRun = render({ syncLog: null, syncOutcome: 'skipped', invalidation: null, invalidationOutcome: 'skipped', outFiles: null });
   assert.ok(dryRun.includes('Nothing was uploaded: the sync step did not run'));
   assert.ok(!dryRun.includes('Invalidation'), 'the dry-run line stands alone');
+  const laptop = render({ syncLog: null, syncOutcome: undefined, invalidation: null, invalidationOutcome: undefined, outFiles: null });
+  assert.ok(laptop.includes('Nothing was uploaded: the sync step did not run'), 'without outcomes the files decide');
+});
+
+test('renderReport reports a failed sync or invalidation step even though aws left a file behind', () => {
+  const emptySync = render({ syncLog: '', syncOutcome: 'failure', invalidation: null, invalidationOutcome: 'skipped' });
+  assert.ok(emptySync.includes('**The sync step ended with failure**; see the log.'));
+  assert.ok(!emptySync.includes('already up to date; nothing was uploaded'), 'an empty log after a failure is not a quiet success');
+  assert.ok(emptySync.includes('The invalidation step did not run.'));
+  assert.ok(!emptySync.includes('already up to date.'), 'no up-to-date count after a failure');
+  const partial = render({ syncLog: 'upload: out/index.json to s3://x/stats/data/index.json\n', syncOutcome: 'failure', invalidation: {}, invalidationOutcome: 'failure' });
+  assert.ok(partial.includes('**The sync step ended with failure**; see the log. Uploaded before it stopped: `index.json`.'));
+  assert.ok(partial.includes('**The invalidation step ended with failure**; see the log.'));
+});
+
+test('renderReport strips the synced folder from the uploaded paths whatever it is called', () => {
+  const log = 'upload: stats/public/data/days/2026-10-17.json to s3://x/stats/data/days/2026-10-17.json\n';
+  assert.ok(render({ syncLog: log, outDir: 'stats/public/data/' }).includes('Uploaded 1 file: `days/2026-10-17.json`.'));
+  assert.ok(render({ syncLog: log, outDir: undefined }).includes('Uploaded 1 file: `stats/public/data/days/2026-10-17.json`.'));
 });
 
 test('renderReport lists every stage with its seconds', () => {
@@ -120,11 +151,14 @@ test('renderReport lists every stage with its seconds', () => {
   assert.ok(text.includes('| **Exporter total** | 3.4 |'));
 });
 
-test('renderReport explains a run whose export did not finish', () => {
-  const text = render({ report: null, syncLog: null, invalidation: null, outFiles: null });
+test('renderReport explains a run whose export did not finish, or left a report it cannot read', () => {
+  const text = render({ report: null, reportProblem: 'missing', syncLog: null, invalidation: null, outFiles: null });
   assert.ok(text.includes('| Trigger | manual run by neal (days = 3) |'));
   assert.ok(text.includes('**The export did not finish**'));
   assert.ok(!text.includes('### Log files read'), 'no tables without a report');
+  const broken = render({ report: null, reportProblem: 'unreadable', syncLog: null, invalidation: null, outFiles: null });
+  assert.ok(broken.includes('**The export left a report that is not valid JSON**'));
+  assert.ok(render({ trigger: '' }).includes('| Trigger | not recorded |'), 'an empty trigger from the workflow reads as not recorded');
 });
 
 test('renderReport ends with one newline and never a row of the log', () => {

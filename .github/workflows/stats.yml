@@ -125,6 +125,7 @@ jobs:
       # stats/ prefix, see docs/DEPLOY.md), nothing is uploaded: the run only proves the export works.
       # What s3 sync and the invalidation print is kept under run/ for the summary step.
       - name: Sync the day files (one-hour browser TTL)
+        id: sync
         if: env.STATS_DISTRIBUTION_ID != ''
         run: |
           aws s3 sync out/ "s3://${S3_BUCKET}/stats/data/" \
@@ -134,6 +135,7 @@ jobs:
           cat run/sync.log
 
       - name: Invalidate the data on the stats distribution
+        id: invalidate
         if: env.STATS_DISTRIBUTION_ID != ''
         run: |
           aws cloudfront create-invalidation \
@@ -142,12 +144,15 @@ jobs:
             --output json > run/invalidation.json
           cat run/invalidation.json
 
-      # Runs after a failure too, so the summary says how far the run got. Before the checkout
-      # there is no renderer, so that case gets one line instead.
+      # Runs after a failure too, so the summary says how far the run got. The sync and invalidation
+      # outcomes go along because a failed aws command still leaves a file behind. Before the
+      # checkout there is no renderer, so that case gets one line instead.
       - name: Write the run summary
         if: always()
         env:
           TRIGGER: ${{ needs.gate.outputs.trigger }}
+          SYNC_OUTCOME: ${{ steps.sync.outcome }}
+          INVALIDATION_OUTCOME: ${{ steps.invalidate.outcome }}
         run: |
           if [ ! -f tools/stats-report.mjs ]; then
             echo "The run failed before the checkout; see the log." >> "$GITHUB_STEP_SUMMARY"
@@ -157,5 +162,7 @@ jobs:
             --report run/report.json \
             --out out \
             --sync-log run/sync.log \
+            --sync-outcome "${SYNC_OUTCOME}" \
             --invalidation run/invalidation.json \
+            --invalidation-outcome "${INVALIDATION_OUTCOME}" \
             --trigger "${TRIGGER}" >> "$GITHUB_STEP_SUMMARY"

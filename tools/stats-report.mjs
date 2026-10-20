@@ -5,16 +5,20 @@
 // it classified the rows, what it wrote, what it uploaded, and how long each part took, without
 // anyone opening the log. Everything it prints is a count, a day key, a file name, or a duration.
 //
-//   node tools/stats-report.mjs --report out/report.json >> "$GITHUB_STEP_SUMMARY"
-//   node tools/stats-report.mjs --report out/report.json --out out --sync-log sync.log --invalidation invalidation.json --trigger "manual run"
+//   node tools/stats-report.mjs --report run/report.json >> "$GITHUB_STEP_SUMMARY"
+//   node tools/stats-report.mjs --report run/report.json --out out --sync-log run/sync.log --sync-outcome success \
+//     --invalidation run/invalidation.json --invalidation-outcome success --trigger "manual run"
 //
 // --report is the exporter's JSON; when the file is missing the summary says the export did not
 // finish, so the workflow can render after a failed step. --out is the folder that was synced, for
 // the count of files that were already up to date. --sync-log is what `aws s3 sync` printed (its
-// `upload:` lines are the files that changed), --invalidation is the JSON `aws cloudfront
-// create-invalidation` returned, and --trigger is one line about what started the run.
+// `upload:` lines are the files that changed) and --invalidation the JSON `aws cloudfront
+// create-invalidation` returned; --sync-outcome and --invalidation-outcome are those steps'
+// outcomes as Actions reports them (success, failure, cancelled, skipped), because a failed `aws`
+// command leaves an empty file behind, so the file alone cannot tell a failure from a quiet success.
+// --trigger is one line about what started the run.
 import { existsSync, readFileSync, readdirSync, statSync } from 'node:fs';
-import { join } from 'node:path';
+import { join, relative } from 'node:path';
 import { pathToFileURL } from 'node:url';
 
 import { headerComment, run } from './lib/cf-logs.mjs';
@@ -30,7 +34,21 @@ function main() {
   const invalidation = readJson(options.invalidation);
   const syncLog = options.syncLog !== undefined && existsSync(options.syncLog) ? readFileSync(options.syncLog, 'utf8') : null;
   const outFiles = options.out !== undefined && existsSync(options.out) ? listFiles(options.out) : null;
-  process.stdout.write(renderReport({ report, trigger: options.trigger, syncLog, invalidation, outFiles, commit: process.env.GITHUB_SHA, node: process.version }));
+  process.stdout.write(
+    renderReport({
+      report: report.value,
+      reportProblem: report.problem,
+      trigger: options.trigger,
+      syncLog,
+      syncOutcome: options.syncOutcome,
+      invalidation: invalidation.value,
+      invalidationOutcome: options.invalidationOutcome,
+      outFiles,
+      outDir: options.out,
+      commit: process.env.GITHUB_SHA,
+      node: process.version,
+    }),
+  );
 }
 
 function parseArgs(argv) {
@@ -56,6 +74,12 @@ function parseArgs(argv) {
       case '--invalidation':
         options.invalidation = next();
         break;
+      case '--sync-outcome':
+        options.syncOutcome = next();
+        break;
+      case '--invalidation-outcome':
+        options.invalidationOutcome = next();
+        break;
       case '--trigger':
         options.trigger = next();
         break;
@@ -74,19 +98,23 @@ function parseArgs(argv) {
   return options;
 }
 
-/** The parsed JSON at a path, or null when there is no path, no file, or no valid JSON (a failed step leaves any of those). */
+/**
+ * The parsed JSON at a path as `{ value, problem }`: `value` is null with `problem` 'missing' when
+ * there is no path or no file (a failed step leaves none), and null with `problem` 'unreadable'
+ * when the file is not valid JSON (a step that died mid-write), so the summary can say which.
+ */
 function readJson(path) {
   if (path === undefined || !existsSync(path)) {
-    return null;
+    return { value: null, problem: 'missing' };
   }
   try {
-    return JSON.parse(readFileSync(path, 'utf8'));
+    return { value: JSON.parse(readFileSync(path, 'utf8')), problem: null };
   } catch {
-    return null;
+    return { value: null, problem: 'unreadable' };
   }
 }
 
-/** Every file under a folder as a relative path, sorted. */
+/** Every file under a folder as a path relative to it, sorted. */
 function listFiles(dir, base = dir) {
   const files = [];
   for (const name of readdirSync(dir).sort()) {
@@ -94,36 +122,42 @@ function listFiles(dir, base = dir) {
     if (statSync(path).isDirectory()) {
       files.push(...listFiles(path, base));
     } else {
-      files.push(path.slice(base.length + 1));
+      files.push(relative(base, path));
     }
   }
   return files;
 }
 
 /**
- * The Markdown summary. `report` is the exporter's account or null when the export did not finish;
- * `syncLog` is the text `aws s3 sync` printed or null when nothing was synced; `invalidation` is the
- * CloudFront response or null; `outFiles` lists what was in the synced folder or null. Pure, so the
- * tests can render a fixture report and compare the text.
+ * The Markdown summary. `report` is the exporter's account, or null with `reportProblem` saying
+ * whether the file was 'missing' (the export did not finish) or 'unreadable' (it died mid-write).
+ * `syncLog` is the text `aws s3 sync` printed or null when nothing was synced, `invalidation` the
+ * CloudFront response or null, and `syncOutcome` and `invalidationOutcome` those steps' outcomes
+ * when the workflow knows them; `outFiles` lists what was in the synced folder `outDir`, or null.
+ * Pure, so the tests can render a fixture report and compare the text.
  */
-export function renderReport({ report, trigger, syncLog, invalidation, outFiles, commit, node }) {
+export function renderReport({ report, reportProblem = null, trigger, syncLog, syncOutcome, invalidation, invalidationOutcome, outFiles, outDir, commit, node }) {
   const lines = ['## Export visitor stats', ''];
   lines.push(...runTable({ report, trigger, commit, node }), '');
   if (report === null) {
-    lines.push('**The export did not finish**, so there is no account of the run; see the Export step in the log.');
+    lines.push(
+      reportProblem === 'unreadable'
+        ? '**The export left a report that is not valid JSON**, so there is no account of the run; it must have stopped mid-write. See the Export step in the log.'
+        : '**The export did not finish**, so there is no account of the run; see the Export step in the log.',
+    );
     return `${lines.join('\n')}\n`;
   }
   lines.push('### Log files read', '', ...prefixTable(report.prefixes), '');
   lines.push('### Rows', '', ...rowsTable(report.rows), '');
   lines.push('### Day files written', '', ...daysTable(report.files), '');
   lines.push(missingDaysLine(report.missingDays), '', indexLine(report.index), '');
-  lines.push('### Upload', '', ...uploadLines({ syncLog, invalidation, outFiles }).flatMap((line) => [line, '']));
+  lines.push('### Upload', '', ...uploadLines({ syncLog, syncOutcome, invalidation, invalidationOutcome, outFiles, outDir }).flatMap((line) => [line, '']));
   lines.push('### Timing', '', ...timingTable(report));
   return `${lines.join('\n')}\n`;
 }
 
 function runTable({ report, trigger, commit, node }) {
-  const rows = [['Trigger', trigger ?? 'not recorded']];
+  const rows = [['Trigger', trigger || 'not recorded']];
   if (report !== null) {
     const { window, timeZone } = report;
     rows.push(['Window', `${window.firstDay} to ${window.lastDay} (${plural(window.days, 'day')}, ${timeZone}), parsed from ${stamp(window.parsedFrom)}`]);
@@ -182,32 +216,48 @@ function indexLine(index) {
   return index.days === 0 ? 'The index lists no days.' : `The index lists ${plural(index.days, 'day')}, ${code(index.firstDay)} to ${code(index.lastDay)}.`;
 }
 
-function uploadLines({ syncLog, invalidation, outFiles }) {
-  if (syncLog === null) {
+/**
+ * The upload paragraph. A step's outcome, when known, decides the wording: a failed `aws` command
+ * leaves an empty or partial file behind, so the files alone would call a failure a quiet success.
+ * Without outcomes (a laptop run) the files are all there is.
+ */
+function uploadLines({ syncLog, syncOutcome, invalidation, invalidationOutcome, outFiles, outDir }) {
+  if (syncOutcome === 'skipped' || (syncOutcome === undefined && syncLog === null)) {
     return ['Nothing was uploaded: the sync step did not run (a dry run without `STATS_DISTRIBUTION_ID`, or an earlier step failed).'];
   }
-  const uploaded = syncLog
-    .split('\n')
-    .map((line) => /^upload: (\S+) to /.exec(line))
-    .filter((match) => match !== null)
-    .map((match) => match[1].replace(/^out\//, ''));
   const lines = [];
-  if (uploaded.length === 0) {
+  const uploaded = uploadedFiles(syncLog ?? '', outDir);
+  const listed = uploaded.length === 0 ? '' : ` Uploaded before it stopped: ${uploaded.map(code).join(', ')}.`;
+  if (syncOutcome !== undefined && syncOutcome !== 'success') {
+    lines.push(`**The sync step ended with ${syncOutcome}**; see the log.${listed}`);
+  } else if (uploaded.length === 0) {
     lines.push('Every file in the bucket was already up to date; nothing was uploaded.');
   } else {
     lines.push(`Uploaded ${plural(uploaded.length, 'file')}: ${uploaded.map(code).join(', ')}.`);
   }
-  if (outFiles !== null) {
+  if (outFiles !== null && (syncOutcome === undefined || syncOutcome === 'success')) {
     const unchanged = outFiles.length - uploaded.length;
     lines.push(`${plural(outFiles.length, 'file')} in the output folder, ${count(Math.max(0, unchanged))} already up to date.`);
   }
-  if (invalidation !== null && invalidation.Invalidation !== undefined) {
+  if (invalidationOutcome !== undefined && invalidationOutcome !== 'success') {
+    lines.push(invalidationOutcome === 'skipped' ? 'The invalidation step did not run.' : `**The invalidation step ended with ${invalidationOutcome}**; see the log.`);
+  } else if (invalidation !== null && invalidation.Invalidation !== undefined) {
     const { Id, Status, CreateTime } = invalidation.Invalidation;
     lines.push(`Invalidation ${code(Id)} created at ${stamp(CreateTime)} for ${code('/data/*')}, status ${Status}.`);
   } else {
     lines.push('No invalidation was created.');
   }
   return lines;
+}
+
+/** The files the sync output says were uploaded, relative to the synced folder. */
+function uploadedFiles(syncLog, outDir) {
+  const prefix = outDir === undefined ? null : `${outDir.replace(/\/+$/, '')}/`;
+  return syncLog
+    .split('\n')
+    .map((line) => /^upload: (\S+) to /.exec(line))
+    .filter((match) => match !== null)
+    .map((match) => (prefix !== null && match[1].startsWith(prefix) ? match[1].slice(prefix.length) : match[1]));
 }
 
 function timingTable(report) {
