@@ -109,14 +109,38 @@ export function watchDetails(details, dotnet, method = "OnToggled") {
   return { dispose: () => details.removeEventListener("toggle", onToggle) };
 }
 
-/** Calls .NET now and on every hashchange while the URL fragment equals the given hash. */
+/** Calls .NET now and whenever the URL fragment becomes the given hash. Blazor intercepts clicks on
+ *  in-page links and, for a same-page hash, pushes history and scrolls without raising hashchange or
+ *  telling .NET, so clicks on links to the hash are caught here in the capture phase, before Blazor's
+ *  own document listener runs; hashchange and popstate cover the address bar and the history buttons. */
 export function watchHash(dotnet, hash, method = "OnHashMatched") {
   const check = () => {
     if (window.location.hash === hash) dotnet.invokeMethodAsync(method);
   };
+  const onClick = (event) => {
+    const anchor = event.target?.closest?.("a[href]");
+    if (!anchor || event.defaultPrevented) return;
+    let url;
+    try {
+      url = new URL(anchor.getAttribute("href"), window.location.href);
+    } catch {
+      return;
+    }
+    if (url.origin === window.location.origin && url.pathname === window.location.pathname && url.hash === hash) {
+      dotnet.invokeMethodAsync(method);
+    }
+  };
   check();
   window.addEventListener("hashchange", check);
-  return { dispose: () => window.removeEventListener("hashchange", check) };
+  window.addEventListener("popstate", check);
+  document.addEventListener("click", onClick, true);
+  return {
+    dispose: () => {
+      window.removeEventListener("hashchange", check);
+      window.removeEventListener("popstate", check);
+      document.removeEventListener("click", onClick, true);
+    },
+  };
 }
 
 /** Keeps a scrolling element's newest content in view, as a terminal does. */
