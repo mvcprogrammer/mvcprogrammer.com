@@ -25,6 +25,7 @@ public sealed class ServiceCollectionExtensionsTests
 
         // Assert
         Assert.IsType<ExperienceClient>(provider.GetRequiredService<IExperienceClient>());
+        Assert.IsType<FhirClient>(provider.GetRequiredService<IFhirClient>());
         Assert.IsType<ContactClient>(provider.GetRequiredService<IContactClient>());
         var state = provider.GetRequiredService<IContactTopicState>();
         Assert.IsType<ContactTopicState>(state);
@@ -45,6 +46,7 @@ public sealed class ServiceCollectionExtensionsTests
         // Assert
         Assert.Equal("https://contact.example.test/", options.ContactEndpoint);
         Assert.Equal("api", options.ExperienceApiBase);
+        Assert.Equal("api/fhir", options.FhirApiBase);
         Assert.Equal("https://kiosk.example.test/", options.KioskUrl);
         Assert.Equal("https://resume.example.test/", options.ResumeUrl);
     }
@@ -93,6 +95,7 @@ public sealed class ServiceCollectionExtensionsTests
                 ["Site:ContactEndpoint"] = "https://contact.example.test/",
                 ["Site:ExperienceApiBase"] = "api",
                 ["Site:ExperienceSeedPath"] = "data/positions.json",
+                ["Site:FhirApiBase"] = "api/fhir",
                 ["Site:KioskUrl"] = "https://kiosk.example.test/",
                 ["Site:ResumeUrl"] = "https://resume.example.test/",
             })

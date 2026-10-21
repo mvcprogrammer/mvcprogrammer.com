@@ -37,8 +37,9 @@ public sealed class HomeTests : BunitContext
         // Act
         await cut.Instance.DisposeAsync();
 
-        // Assert
-        Assert.Equal(["watchEngagement", "dispose"], module.Invocations.Select(i => i.Identifier).ToArray());
+        // Assert (the portfolio section's own watchers register on the same module; only the beacon's calls are of interest here)
+        var beacon = module.Invocations.Select(i => i.Identifier).Where(id => id is "watchEngagement" or "dispose").ToArray();
+        Assert.Equal(["watchEngagement", "dispose"], beacon);
     }
 
     #endregion
