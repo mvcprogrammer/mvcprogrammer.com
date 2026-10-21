@@ -13,7 +13,7 @@ public sealed class FhirSearchFormTests
     public void Validate_ShouldAcceptExample()
     {
         // Act and Assert
-        Assert.Empty(Validate(new FhirSearchForm { Family = "Watsica" }));
+        Assert.Empty(Validate(new FhirSearchForm { Family = "Programmer" }));
     }
 
     /// <summary>A blank or whitespace family name is reported as required.</summary>

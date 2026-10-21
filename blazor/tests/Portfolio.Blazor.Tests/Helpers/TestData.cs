@@ -45,7 +45,7 @@ internal static class TestData
         bool truncated = false) =>
         new(
             new DataSource("HAPI FHIR R4 public test server", "https://hapi.fhir.org/baseR4"),
-            requests ?? [new UpstreamRequest("GET", "https://hapi.fhir.org/baseR4/Patient?family=Watsica", 200, 110, 1, 1)],
+            requests ?? [new UpstreamRequest("GET", "https://hapi.fhir.org/baseR4/Patient?family=Programmer", 200, 110, 1, 1)],
             totalDurationMs,
             bundleEntries,
             1,
@@ -67,12 +67,12 @@ internal static class TestData
     public static PatientSearchResult CreatePatientSearchResult(params PatientListItem[] items)
     {
         IReadOnlyList<PatientListItem> rows = items.Length == 0 ? [CreatePatientListItem()] : items;
-        return new PatientSearchResult(rows.Count, null, new SearchQuery("Watsica", null, null), rows, CreateTrace());
+        return new PatientSearchResult(rows.Count, null, new SearchQuery("Programmer", null, null), rows, CreateTrace());
     }
 
     /// <summary>A search result with no rows, as a wiped sandbox returns.</summary>
     public static PatientSearchResult CreateEmptyPatientSearchResult() =>
-        new(0, null, new SearchQuery("Watsica", null, null), [], CreateTrace(requests: [], bundleEntries: 0));
+        new(0, null, new SearchQuery("Programmer", null, null), [], CreateTrace(requests: [], bundleEntries: 0));
 
     /// <summary>A patient summary with one active condition, one resolved condition, and two vitals; override what the test cares about.</summary>
     public static PatientSummary CreatePatientSummary(

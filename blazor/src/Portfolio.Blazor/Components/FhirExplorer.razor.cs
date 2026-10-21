@@ -49,7 +49,7 @@ public sealed partial class FhirExplorer : IAsyncDisposable
     public const string RAW_FAILED_MESSAGE = "The raw bundle could not be loaded.";
 
     /// <summary>The prefilled example and the names tried in turn when it returns nothing (the sandbox is wiped now and then).</summary>
-    public static readonly IReadOnlyList<string> FALLBACK_FAMILIES = ["Watsica", "Grant", "Meridius", "Deshmukh", "Smith", "Johnson", "Williams"];
+    public static readonly IReadOnlyList<string> FALLBACK_FAMILIES = ["Programmer", "Grant", "Meridius", "Deshmukh", "Smith", "Johnson", "Williams"];
 
     private readonly CancellationTokenSource _cts = new();
     private readonly FhirSearchForm _form = new() { Family = FALLBACK_FAMILIES[0] };

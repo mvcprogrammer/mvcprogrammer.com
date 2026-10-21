@@ -36,7 +36,7 @@ describe('FhirExplorer', () => {
       // Assert
       expect(services.fhir.capabilityCalls).toBe(1);
       expect(services.fhir.searches).toEqual([]);
-      expect(family().value).toBe('Watsica');
+      expect(family().value).toBe('Programmer');
       expect(document.querySelector('[data-fhir-source]')?.textContent).toBe('HAPI sandbox');
       const log = logText();
       expect(log).toContain('→ GET /api/fhir/capability');
@@ -95,9 +95,9 @@ describe('FhirExplorer', () => {
       await screen.findByText('Watsica258, Kimi714', { selector: '#fhir-card-name' });
 
       // Assert
-      expect(services.fhir.searches).toEqual([{ family: 'Watsica', birthdate: '', identifier: '' }]);
+      expect(services.fhir.searches).toEqual([{ family: 'Programmer', birthdate: '', identifier: '' }]);
       expect(services.fhir.summaryCalls).toEqual(['78785']);
-      expect(status().textContent?.trim()).toBe('1 patient for “Watsica”; the first is selected.');
+      expect(status().textContent?.trim()).toBe('1 patient for “Programmer”; the first is selected.');
       expect(status().classList.contains('is-ok')).toBe(true);
       expect(document.getElementById('fhir-count')?.textContent).toBe('(1)');
       const rows = document.querySelectorAll<HTMLButtonElement>('.fhir-patient');
@@ -187,9 +187,9 @@ describe('FhirExplorer', () => {
 
       // Assert
       const log = logText();
-      expect(log).toContain('→ GET /api/fhir/patients?family=Watsica');
+      expect(log).toContain('→ GET /api/fhir/patients?family=Programmer');
       expect(log).toContain('← 200 /patients in 120 ms · X-Cache: Miss from cloudfront · ETag "abc123"');
-      expect(log).toContain('↳ GET https://hapi.fhir.org/baseR4/Patient?family=Watsica');
+      expect(log).toContain('↳ GET https://hapi.fhir.org/baseR4/Patient?family=Programmer');
       expect(log).toContain('200 · 110 ms · 1 entry · 1 page');
       expect(log).toContain('1 upstream request in 110 ms wall time · 1 bundle entry · 1 page walked (cap 5 per search)');
       expect(log).toContain('mapped to PatientSearchResult: 1 item');
@@ -251,9 +251,9 @@ describe('FhirExplorer', () => {
       await screen.findByText('Meridius, Max', { selector: '.fhir-patient-name' });
 
       // Assert
-      expect(services.fhir.searches.map((search) => search.family)).toEqual(['Watsica', 'Grant', 'Meridius']);
+      expect(services.fhir.searches.map((search) => search.family)).toEqual(['Programmer', 'Grant', 'Meridius']);
       expect(family().value).toBe('Meridius');
-      expect(logText()).toContain('nothing for "Watsica"; the sandbox may have been wiped, trying "Grant"');
+      expect(logText()).toContain('nothing for "Programmer"; the sandbox may have been wiped, trying "Grant"');
       expect(status().textContent?.trim()).toBe('1 patient for “Meridius”; the first is selected.');
       await waitFor(() => expect(services.fhir.summaryCalls).toEqual(['9']));
     });
@@ -345,7 +345,7 @@ describe('FhirExplorer', () => {
       // Arrange
       await mount();
       services.fhir.onSearchPatients = () =>
-        Promise.resolve(createFhirResponse(createPatientSearchResult(createPatientListItem(), createPatientListItem({ id: '2', name: 'Watsica, Two', givenName: 'Two' }))));
+        Promise.resolve(createFhirResponse(createPatientSearchResult(createPatientListItem(), createPatientListItem({ id: '2', name: 'Programmer, Two', givenName: 'Two' }))));
       submit();
       await screen.findByText('Watsica258, Kimi714', { selector: '#fhir-card-name' });
       services.fhir.onGetSummary = () => Promise.reject(new FhirProblemError('The request failed (404).', 404, 'Not Found', 30, null, false));
@@ -369,24 +369,24 @@ describe('FhirExplorer', () => {
       await mount();
       let resolveFirst: () => void = () => undefined;
       services.fhir.onSearchPatients = () =>
-        Promise.resolve(createFhirResponse(createPatientSearchResult(createPatientListItem(), createPatientListItem({ id: '2', name: 'Watsica, Two', givenName: 'Two' }))));
+        Promise.resolve(createFhirResponse(createPatientSearchResult(createPatientListItem(), createPatientListItem({ id: '2', name: 'Programmer, Two', givenName: 'Two' }))));
       services.fhir.onGetSummary = (id) =>
         id === '78785'
           ? new Promise((resolve) => {
               resolveFirst = () => resolve(createFhirResponse(createPatientSummary()));
             })
-          : Promise.resolve(createFhirResponse(createPatientSummary({ patient: { ...createPatientSummary().patient, id: '2', name: 'Watsica, Two' } })));
+          : Promise.resolve(createFhirResponse(createPatientSummary({ patient: { ...createPatientSummary().patient, id: '2', name: 'Programmer, Two' } })));
       submit();
-      await screen.findByText('Watsica, Two', { selector: '.fhir-patient-name' });
+      await screen.findByText('Programmer, Two', { selector: '.fhir-patient-name' });
 
       // Act
       fireEvent.click(document.querySelectorAll<HTMLButtonElement>('.fhir-patient')[1]!);
-      await screen.findByText('Watsica, Two', { selector: '#fhir-card-name' });
+      await screen.findByText('Programmer, Two', { selector: '#fhir-card-name' });
       resolveFirst();
       await new Promise((r) => setTimeout(r, 0));
 
       // Assert
-      expect(document.getElementById('fhir-card-name')?.textContent).toBe('Watsica, Two');
+      expect(document.getElementById('fhir-card-name')?.textContent).toBe('Programmer, Two');
     });
   });
 

@@ -27,7 +27,7 @@ public sealed class FhirExplorerTests : BunitContext
         await cut.WaitForAssertionAsync(() => Assert.Contains("every resource and search parameter", LogText(cut), StringComparison.Ordinal));
         Assert.Equal(1, fhir.CapabilityCalls);
         Assert.Empty(fhir.Searches);
-        Assert.Equal("Watsica", cut.Find("#fhir-family").GetAttribute("value"));
+        Assert.Equal("Programmer", cut.Find("#fhir-family").GetAttribute("value"));
         Assert.Equal("HAPI sandbox", cut.Find("[data-fhir-source]").TextContent);
         Assert.Contains("→ GET /api/fhir/capability", LogText(cut), StringComparison.Ordinal);
         Assert.Contains("← 200 /capability in 120 ms · X-Cache: Miss from cloudfront · ETag \"abc123\"", LogText(cut), StringComparison.Ordinal);
@@ -91,9 +91,9 @@ public sealed class FhirExplorerTests : BunitContext
 
         // Assert
         await cut.WaitForAssertionAsync(() => Assert.Equal("Watsica258, Kimi714", cut.Find("#fhir-card-name").TextContent));
-        Assert.Equal([new("Watsica", string.Empty, string.Empty)], fhir.Searches);
+        Assert.Equal([new("Programmer", string.Empty, string.Empty)], fhir.Searches);
         Assert.Equal(["78785"], fhir.SummaryCalls);
-        Assert.Equal("1 patient for “Watsica”; the first is selected.", cut.Find("#fhir-status").TextContent.Trim());
+        Assert.Equal("1 patient for “Programmer”; the first is selected.", cut.Find("#fhir-status").TextContent.Trim());
         Assert.Contains("is-ok", cut.Find("#fhir-status").ClassName, StringComparison.Ordinal);
         Assert.Equal("(1)", cut.Find("#fhir-count").TextContent);
         var row = Assert.Single(cut.FindAll(".fhir-patient"));
@@ -196,9 +196,9 @@ public sealed class FhirExplorerTests : BunitContext
         // Assert
         await cut.WaitForAssertionAsync(() => Assert.Contains("mapped to PatientSummary", LogText(cut), StringComparison.Ordinal));
         var log = LogText(cut);
-        Assert.Contains("→ GET /api/fhir/patients?family=Watsica", log, StringComparison.Ordinal);
+        Assert.Contains("→ GET /api/fhir/patients?family=Programmer", log, StringComparison.Ordinal);
         Assert.Contains("← 200 /patients in 120 ms · X-Cache: Miss from cloudfront · ETag \"abc123\"", log, StringComparison.Ordinal);
-        Assert.Contains("↳ GET https://hapi.fhir.org/baseR4/Patient?family=Watsica", log, StringComparison.Ordinal);
+        Assert.Contains("↳ GET https://hapi.fhir.org/baseR4/Patient?family=Programmer", log, StringComparison.Ordinal);
         Assert.Contains("200 · 110 ms · 1 entry · 1 page", log, StringComparison.Ordinal);
         Assert.Contains("1 upstream request in 110 ms wall time · 1 bundle entry · 1 page walked (cap 5 per search)", log, StringComparison.Ordinal);
         Assert.Contains("mapped to PatientSearchResult: 1 item", log, StringComparison.Ordinal);
@@ -267,9 +267,9 @@ public sealed class FhirExplorerTests : BunitContext
 
         // Assert
         await cut.WaitForAssertionAsync(() => Assert.Equal(["9"], fhir.SummaryCalls));
-        Assert.Equal(["Watsica", "Grant", "Meridius"], fhir.Searches.Select(s => s.Family));
+        Assert.Equal(["Programmer", "Grant", "Meridius"], fhir.Searches.Select(s => s.Family));
         Assert.Equal("Meridius", cut.Find("#fhir-family").GetAttribute("value"));
-        Assert.Contains("nothing for \"Watsica\"; the sandbox may have been wiped, trying \"Grant\"", LogText(cut), StringComparison.Ordinal);
+        Assert.Contains("nothing for \"Programmer\"; the sandbox may have been wiped, trying \"Grant\"", LogText(cut), StringComparison.Ordinal);
         Assert.Equal("1 patient for “Meridius”; the first is selected.", cut.Find("#fhir-status").TextContent.Trim());
     }
 
@@ -366,7 +366,7 @@ public sealed class FhirExplorerTests : BunitContext
     {
         // Arrange
         var fhir = Arrange_Explorer();
-        fhir.OnSearchPatients = _ => Task.FromResult(TestData.CreateFhirResponse(TestData.CreatePatientSearchResult(TestData.CreatePatientListItem(), TestData.CreatePatientListItem(id: "2", name: "Watsica, Two", givenName: "Two"))));
+        fhir.OnSearchPatients = _ => Task.FromResult(TestData.CreateFhirResponse(TestData.CreatePatientSearchResult(TestData.CreatePatientListItem(), TestData.CreatePatientListItem(id: "2", name: "Programmer, Two", givenName: "Two"))));
         var cut = await RenderReadyAsync();
         await SubmitAsync(cut);
         await cut.WaitForAssertionAsync(() => cut.Find("#fhir-card-name"));
@@ -393,10 +393,10 @@ public sealed class FhirExplorerTests : BunitContext
         // Arrange
         var fhir = Arrange_Explorer();
         var first = new TaskCompletionSource<FhirResponse<PatientSummary>>(TaskCreationOptions.RunContinuationsAsynchronously);
-        fhir.OnSearchPatients = _ => Task.FromResult(TestData.CreateFhirResponse(TestData.CreatePatientSearchResult(TestData.CreatePatientListItem(), TestData.CreatePatientListItem(id: "2", name: "Watsica, Two", givenName: "Two"))));
+        fhir.OnSearchPatients = _ => Task.FromResult(TestData.CreateFhirResponse(TestData.CreatePatientSearchResult(TestData.CreatePatientListItem(), TestData.CreatePatientListItem(id: "2", name: "Programmer, Two", givenName: "Two"))));
         fhir.OnGetSummary = id => id == "78785"
             ? first.Task
-            : Task.FromResult(TestData.CreateFhirResponse(TestData.CreatePatientSummary(patient: TestData.CreatePatientSummary().Patient with { Id = "2", Name = "Watsica, Two" })));
+            : Task.FromResult(TestData.CreateFhirResponse(TestData.CreatePatientSummary(patient: TestData.CreatePatientSummary().Patient with { Id = "2", Name = "Programmer, Two" })));
         var cut = await RenderReadyAsync();
         // The submit handler stays pending on the first summary, so it is awaited only after that resolves.
         var submit = SubmitAsync(cut);
@@ -404,12 +404,12 @@ public sealed class FhirExplorerTests : BunitContext
 
         // Act
         await cut.FindAll(".fhir-patient")[1].ClickAsync(new MouseEventArgs());
-        await cut.WaitForAssertionAsync(() => Assert.Equal("Watsica, Two", cut.Find("#fhir-card-name").TextContent));
+        await cut.WaitForAssertionAsync(() => Assert.Equal("Programmer, Two", cut.Find("#fhir-card-name").TextContent));
         first.SetResult(TestData.CreateFhirResponse(TestData.CreatePatientSummary()));
         await cut.WaitForStateAsync(() => submit.IsCompleted);
 
         // Assert
-        Assert.Equal("Watsica, Two", cut.Find("#fhir-card-name").TextContent);
+        Assert.Equal("Programmer, Two", cut.Find("#fhir-card-name").TextContent);
     }
 
     #endregion

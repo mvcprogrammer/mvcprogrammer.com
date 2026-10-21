@@ -27,8 +27,8 @@ describe('HttpFhirClient', () => {
       const result = createPatientSearchResult();
 
       // Act
-      const pending = client.searchPatients({ family: 'Watsica', birthdate: '', identifier: '' });
-      const request = http.expectOne('api/fhir/patients?family=Watsica');
+      const pending = client.searchPatients({ family: 'Programmer', birthdate: '', identifier: '' });
+      const request = http.expectOne('api/fhir/patients?family=Programmer');
       request.flush(result, { headers: { 'x-cache': 'Hit from cloudfront', etag: '"v1"', 'content-type': 'application/json' } });
 
       // Assert
@@ -55,8 +55,8 @@ describe('HttpFhirClient', () => {
 
     it('should reject with a FhirProblemError carrying the problem detail on an error status', async () => {
       // Act
-      const pending = client.searchPatients({ family: 'Watsica', birthdate: '', identifier: '' });
-      http.expectOne('api/fhir/patients?family=Watsica').flush(
+      const pending = client.searchPatients({ family: 'Programmer', birthdate: '', identifier: '' });
+      http.expectOne('api/fhir/patients?family=Programmer').flush(
         { title: 'Bad Gateway', status: 502, detail: 'The sandbox answered 500.' },
         { status: 502, statusText: 'Bad Gateway', headers: { 'x-cache': 'Error from cloudfront' } },
       );
@@ -74,8 +74,8 @@ describe('HttpFhirClient', () => {
 
     it('should reject with the rate-limit message on 429 without a detail', async () => {
       // Act
-      const pending = client.searchPatients({ family: 'Watsica', birthdate: '', identifier: '' });
-      http.expectOne('api/fhir/patients?family=Watsica').flush({ title: 'Too Many Requests', status: 429 }, { status: 429, statusText: 'Too Many Requests' });
+      const pending = client.searchPatients({ family: 'Programmer', birthdate: '', identifier: '' });
+      http.expectOne('api/fhir/patients?family=Programmer').flush({ title: 'Too Many Requests', status: 429 }, { status: 429, statusText: 'Too Many Requests' });
 
       // Assert
       await expect(pending).rejects.toMatchObject({ status: 429, message: FhirProblemError.RATE_LIMIT_MESSAGE });
@@ -83,8 +83,8 @@ describe('HttpFhirClient', () => {
 
     it('should reject with the not-JSON message for a null body', async () => {
       // Act
-      const pending = client.searchPatients({ family: 'Watsica', birthdate: '', identifier: '' });
-      http.expectOne('api/fhir/patients?family=Watsica').flush(null);
+      const pending = client.searchPatients({ family: 'Programmer', birthdate: '', identifier: '' });
+      http.expectOne('api/fhir/patients?family=Programmer').flush(null);
 
       // Assert
       await expect(pending).rejects.toMatchObject({ status: 204, message: FhirProblemError.NOT_JSON_MESSAGE });
@@ -92,8 +92,8 @@ describe('HttpFhirClient', () => {
 
     it('should reject with the network message when the request never completes', async () => {
       // Act
-      const pending = client.searchPatients({ family: 'Watsica', birthdate: '', identifier: '' });
-      http.expectOne('api/fhir/patients?family=Watsica').error(new ProgressEvent('error'));
+      const pending = client.searchPatients({ family: 'Programmer', birthdate: '', identifier: '' });
+      http.expectOne('api/fhir/patients?family=Programmer').error(new ProgressEvent('error'));
 
       // Assert
       await expect(pending).rejects.toMatchObject({ status: 0, timedOut: false, message: FhirProblemError.NETWORK_MESSAGE });

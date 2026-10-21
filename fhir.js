@@ -15,7 +15,7 @@
   /* The prefilled example and the names tried in turn when it returns nothing (the sandbox is wiped now
      and then). Synthea-style families such as Watsica258 carry conditions, encounters, and vital signs;
      the plain surnames at the end match something on almost any FHIR server, if only a thin record. */
-  var FALLBACK_FAMILIES = ["Watsica", "Grant", "Meridius", "Deshmukh", "Smith", "Johnson", "Williams"];
+  var FALLBACK_FAMILIES = ["Programmer", "Grant", "Meridius", "Deshmukh", "Smith", "Johnson", "Williams"];
   var AVATAR_HUES = 8;
 
   var familyInput = form.elements.family;

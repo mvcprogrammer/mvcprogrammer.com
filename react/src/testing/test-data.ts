@@ -72,7 +72,7 @@ export function createFhirResponse<T>(body: T, overrides: Partial<Omit<FhirRespo
 export function createTrace(overrides: Partial<Trace> = {}): Trace {
   return {
     dataSource: { name: 'HAPI FHIR R4 public test server', baseUrl: 'https://hapi.fhir.org/baseR4' },
-    requests: [{ method: 'GET', url: 'https://hapi.fhir.org/baseR4/Patient?family=Watsica', status: 200, durationMs: 110, entries: 1, pages: 1 }],
+    requests: [{ method: 'GET', url: 'https://hapi.fhir.org/baseR4/Patient?family=Programmer', status: 200, durationMs: 110, entries: 1, pages: 1 }],
     totalDurationMs: 110,
     bundleEntries: 1,
     pagesWalked: 1,
@@ -100,12 +100,12 @@ export function createPatientListItem(overrides: Partial<PatientListItem> = {}):
 /** A search result with the given rows, as the API returns it. */
 export function createPatientSearchResult(...items: PatientListItem[]): PatientSearchResult {
   const rows = items.length === 0 ? [createPatientListItem()] : items;
-  return { count: rows.length, query: { family: 'Watsica' }, items: rows, trace: createTrace() };
+  return { count: rows.length, query: { family: 'Programmer' }, items: rows, trace: createTrace() };
 }
 
 /** A search result with no rows, as a wiped sandbox returns. */
 export function createEmptyPatientSearchResult(): PatientSearchResult {
-  return { count: 0, query: { family: 'Watsica' }, items: [], trace: createTrace({ bundleEntries: 0, requests: [] }) };
+  return { count: 0, query: { family: 'Programmer' }, items: [], trace: createTrace({ bundleEntries: 0, requests: [] }) };
 }
 
 /** A patient summary with one active condition, one resolved condition, and two vitals; override what the test cares about. */

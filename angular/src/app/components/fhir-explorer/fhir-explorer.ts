@@ -33,7 +33,7 @@ export class FhirExplorer implements OnInit, OnDestroy {
   static readonly API = '/api/fhir';
 
   /** The prefilled example and the names tried in turn when it returns nothing (the sandbox is wiped now and then). */
-  static readonly FALLBACK_FAMILIES: readonly string[] = ['Watsica', 'Grant', 'Meridius', 'Deshmukh', 'Smith', 'Johnson', 'Williams'];
+  static readonly FALLBACK_FAMILIES: readonly string[] = ['Programmer', 'Grant', 'Meridius', 'Deshmukh', 'Smith', 'Johnson', 'Williams'];
 
   /** Lines kept in the log. */
   static readonly LOG_LIMIT = 60;

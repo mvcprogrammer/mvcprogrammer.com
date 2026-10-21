@@ -13,7 +13,7 @@ namespace Portfolio.Blazor.Tests.Services;
 public sealed class FhirClientTests
 {
     private const string SEARCH_JSON = """
-        {"count":1,"query":{"family":"Watsica"},"items":[{"id":"78785","name":"Watsica258, Kimi714","familyName":"Watsica258","givenName":"Kimi714","birthDate":"1963-03-02","birthYear":1963,"sex":"female"}],"trace":{"dataSource":{"name":"HAPI","baseUrl":"https://hapi.fhir.org/baseR4"},"requests":[{"method":"GET","url":"https://hapi.fhir.org/baseR4/Patient?family=Watsica","status":200,"durationMs":110,"entries":1,"pages":1}],"totalDurationMs":110,"bundleEntries":1,"pagesWalked":1,"pageCap":5,"truncated":false,"generatedAt":"2026-10-21T15:00:00Z"}}
+        {"count":1,"query":{"family":"Programmer"},"items":[{"id":"78785","name":"Watsica258, Kimi714","familyName":"Watsica258","givenName":"Kimi714","birthDate":"1963-03-02","birthYear":1963,"sex":"female"}],"trace":{"dataSource":{"name":"HAPI","baseUrl":"https://hapi.fhir.org/baseR4"},"requests":[{"method":"GET","url":"https://hapi.fhir.org/baseR4/Patient?family=Programmer","status":200,"durationMs":110,"entries":1,"pages":1}],"totalDurationMs":110,"bundleEntries":1,"pagesWalked":1,"pageCap":5,"truncated":false,"generatedAt":"2026-10-21T15:00:00Z"}}
         """;
 
     private const string SUMMARY_JSON = """
@@ -54,11 +54,11 @@ public sealed class FhirClientTests
         var client = CreateClient(handler);
 
         // Act
-        var result = await client.SearchPatientsAsync(new("Watsica", string.Empty, string.Empty), CancellationToken.None);
+        var result = await client.SearchPatientsAsync(new("Programmer", string.Empty, string.Empty), CancellationToken.None);
 
         // Assert
         var request = Assert.Single(handler.Requests);
-        Assert.Equal("https://site.example.test/api/fhir/patients?family=Watsica", request.RequestUri?.AbsoluteUri);
+        Assert.Equal("https://site.example.test/api/fhir/patients?family=Programmer", request.RequestUri?.AbsoluteUri);
         Assert.Equal("application/json, application/problem+json", request.Headers.Accept.ToString());
         var row = Assert.Single(result.Body.Items);
         Assert.Equal("78785", row.Id);
@@ -104,7 +104,7 @@ public sealed class FhirClientTests
         var client = CreateClient(handler);
 
         // Act
-        var exception = await Assert.ThrowsAsync<FhirProblemException>(() => client.SearchPatientsAsync(new("Watsica", string.Empty, string.Empty), CancellationToken.None));
+        var exception = await Assert.ThrowsAsync<FhirProblemException>(() => client.SearchPatientsAsync(new("Programmer", string.Empty, string.Empty), CancellationToken.None));
 
         // Assert
         Assert.Equal(502, exception.Status);
@@ -122,7 +122,7 @@ public sealed class FhirClientTests
         var client = CreateClient(StubHttpMessageHandler.Status(HttpStatusCode.TooManyRequests));
 
         // Act
-        var exception = await Assert.ThrowsAsync<FhirProblemException>(() => client.SearchPatientsAsync(new("Watsica", string.Empty, string.Empty), CancellationToken.None));
+        var exception = await Assert.ThrowsAsync<FhirProblemException>(() => client.SearchPatientsAsync(new("Programmer", string.Empty, string.Empty), CancellationToken.None));
 
         // Assert
         Assert.Equal(429, exception.Status);
@@ -138,7 +138,7 @@ public sealed class FhirClientTests
         var client = CreateClient(StubHttpMessageHandler.Json("<!DOCTYPE html><html></html>"));
 
         // Act
-        var exception = await Assert.ThrowsAsync<FhirProblemException>(() => client.SearchPatientsAsync(new("Watsica", string.Empty, string.Empty), CancellationToken.None));
+        var exception = await Assert.ThrowsAsync<FhirProblemException>(() => client.SearchPatientsAsync(new("Programmer", string.Empty, string.Empty), CancellationToken.None));
 
         // Assert
         Assert.Equal(200, exception.Status);
@@ -153,7 +153,7 @@ public sealed class FhirClientTests
         var client = CreateClient(StubHttpMessageHandler.Json("null"));
 
         // Act and Assert
-        var exception = await Assert.ThrowsAsync<FhirProblemException>(() => client.SearchPatientsAsync(new("Watsica", string.Empty, string.Empty), CancellationToken.None));
+        var exception = await Assert.ThrowsAsync<FhirProblemException>(() => client.SearchPatientsAsync(new("Programmer", string.Empty, string.Empty), CancellationToken.None));
         Assert.Equal(FhirProblemException.NOT_JSON_MESSAGE, exception.Message);
     }
 
@@ -165,7 +165,7 @@ public sealed class FhirClientTests
         var client = CreateClient(new StubHttpMessageHandler(_ => throw new HttpRequestException("Failed to fetch")));
 
         // Act
-        var exception = await Assert.ThrowsAsync<FhirProblemException>(() => client.SearchPatientsAsync(new("Watsica", string.Empty, string.Empty), CancellationToken.None));
+        var exception = await Assert.ThrowsAsync<FhirProblemException>(() => client.SearchPatientsAsync(new("Programmer", string.Empty, string.Empty), CancellationToken.None));
 
         // Assert
         Assert.Equal(0, exception.Status);
@@ -182,7 +182,7 @@ public sealed class FhirClientTests
         var client = CreateClient(new StubHttpMessageHandler(_ => throw new TaskCanceledException("The request was canceled due to the configured HttpClient.Timeout")));
 
         // Act
-        var exception = await Assert.ThrowsAsync<FhirProblemException>(() => client.SearchPatientsAsync(new("Watsica", string.Empty, string.Empty), CancellationToken.None));
+        var exception = await Assert.ThrowsAsync<FhirProblemException>(() => client.SearchPatientsAsync(new("Programmer", string.Empty, string.Empty), CancellationToken.None));
 
         // Assert
         Assert.True(exception.TimedOut, "the browser gave up waiting");
@@ -199,7 +199,7 @@ public sealed class FhirClientTests
         await cts.CancelAsync();
 
         // Act and Assert
-        await Assert.ThrowsAnyAsync<OperationCanceledException>(() => client.SearchPatientsAsync(new("Watsica", string.Empty, string.Empty), cts.Token));
+        await Assert.ThrowsAnyAsync<OperationCanceledException>(() => client.SearchPatientsAsync(new("Programmer", string.Empty, string.Empty), cts.Token));
     }
 
     /// <summary>A null request is guarded.</summary>
