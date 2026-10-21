@@ -9,12 +9,14 @@ import { ListenerContactTopicState } from '../app/services/listener-contact-topi
 import { FakeContactClient } from './fake-contact-client';
 import { FakeEngagementTracker } from './fake-engagement-tracker';
 import { FakeExperienceClient } from './fake-experience-client';
+import { FakeFhirClient } from './fake-fhir-client';
 
 /** The site options every component test runs with. */
 export const TEST_SITE_OPTIONS: SiteOptions = {
   contactEndpoint: 'https://contact.example.test/',
   experienceApiBase: 'api',
   experienceSeedPath: 'data/positions.json',
+  fhirApiBase: 'api/fhir',
   kioskUrl: 'https://kiosk.example.test/',
   resumeUrl: 'https://resume.example.test/',
 };
@@ -22,16 +24,18 @@ export const TEST_SITE_OPTIONS: SiteOptions = {
 /** The fakes and the real topic state a test renders with through renderWithSite(). */
 export interface SiteTestServices extends SiteServices {
   readonly experience: FakeExperienceClient;
+  readonly fhir: FakeFhirClient;
   readonly contact: FakeContactClient;
   readonly engagement: FakeEngagementTracker;
   readonly topics: ContactTopicState;
 }
 
-/** Builds the test options, the fakes for the two clients and the tracker, and the real topic state. */
+/** Builds the test options, the fakes for the three clients and the tracker, and the real topic state. */
 export function createSiteTestServices(): SiteTestServices {
   return {
     options: TEST_SITE_OPTIONS,
     experience: new FakeExperienceClient(),
+    fhir: new FakeFhirClient(),
     contact: new FakeContactClient(),
     engagement: new FakeEngagementTracker(),
     topics: new ListenerContactTopicState(),

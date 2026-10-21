@@ -1,6 +1,7 @@
 import { BeaconEngagementTracker } from '../services/beacon-engagement-tracker';
 import { FetchContactClient } from '../services/fetch-contact-client';
 import { FetchExperienceClient } from '../services/fetch-experience-client';
+import { FetchFhirClient } from '../services/fetch-fhir-client';
 import { ListenerContactTopicState } from '../services/listener-contact-topic-state';
 import { TEST_SITE_OPTIONS } from '../../testing/site-testing';
 import { createSiteServices, validateSiteOptions } from './site-services';
@@ -13,6 +14,7 @@ describe('createSiteServices', () => {
     // Assert
     expect(services.options).toBe(TEST_SITE_OPTIONS);
     expect(services.experience).toBeInstanceOf(FetchExperienceClient);
+    expect(services.fhir).toBeInstanceOf(FetchFhirClient);
     expect(services.contact).toBeInstanceOf(FetchContactClient);
     expect(services.topics).toBeInstanceOf(ListenerContactTopicState);
     expect(services.engagement).toBeInstanceOf(BeaconEngagementTracker);
@@ -39,6 +41,7 @@ describe('validateSiteOptions', () => {
     'contactEndpoint',
     'experienceApiBase',
     'experienceSeedPath',
+    'fhirApiBase',
     'kioskUrl',
     'resumeUrl',
   ] as const)('should require %s', (key) => {
