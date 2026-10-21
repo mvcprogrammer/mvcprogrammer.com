@@ -70,6 +70,14 @@ describe('static sections', () => {
   });
 
   describe('PortfolioSection', () => {
+    let scrollIntoView: ReturnType<typeof vi.fn<Element['scrollIntoView']>>;
+
+    beforeEach(() => {
+      // jsdom has no scrollIntoView; the stub records which element asked to be scrolled
+      scrollIntoView = vi.fn<Element['scrollIntoView']>();
+      Element.prototype.scrollIntoView = scrollIntoView;
+    });
+
     it('should link only to the source and open the kiosk from the card button', () => {
       // Arrange
       const services = createSiteTestServices();
@@ -118,6 +126,7 @@ describe('static sections', () => {
       expect(accordion().querySelector('summary')?.classList.contains('button-primary')).toBe(true);
       expect(document.getElementById('fhir-search')).toBeNull();
       expect(services.fhir.capabilityCalls).toBe(0);
+      expect(scrollIntoView).not.toHaveBeenCalled();
     });
 
     it('should load the explorer, which checks the capability, when the accordion is opened, and keep it when closed again', async () => {
@@ -141,6 +150,28 @@ describe('static sections', () => {
       expect(accordion().open).toBe(false);
       expect(document.getElementById('fhir-search')).not.toBeNull();
       expect(services.fhir.capabilityCalls).toBe(1);
+    });
+
+    it('should scroll the card to the top of the viewport when the accordion is opened, and not when it is closed', async () => {
+      // Arrange
+      window.location.hash = '';
+      renderWithSite(<PortfolioSection />);
+
+      // Act
+      toggle(true);
+      await screen.findByText(/every resource and search parameter/);
+
+      // Assert (jsdom fires its own toggle beside the helper's, so the count is checked for growth, not exactness)
+      const callsAfterOpen = scrollIntoView.mock.calls.length;
+      expect(callsAfterOpen).toBeGreaterThan(0);
+      expect(scrollIntoView.mock.instances.every((element) => element === document.getElementById('fhir-api'))).toBe(true);
+      expect(scrollIntoView).toHaveBeenCalledWith({ block: 'start' });
+
+      // Act again
+      toggle(false);
+
+      // Assert again
+      expect(scrollIntoView).toHaveBeenCalledTimes(callsAfterOpen);
     });
 
     it('should open the accordion when the URL fragment changes to #fhir-api', async () => {

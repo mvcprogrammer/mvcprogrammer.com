@@ -1,3 +1,4 @@
+using Microsoft.AspNetCore.Components;
 using Portfolio.Blazor.Sections;
 using Portfolio.Blazor.Tests.Helpers;
 
@@ -70,6 +71,31 @@ public sealed class FhirCardTests : BunitContext
         Assert.False(Accordion(cut).HasAttribute("open"), "state closed the accordion");
         Assert.NotNull(cut.Find("#fhir-search"));
         Assert.Equal(1, fhir.CapabilityCalls);
+    }
+
+    /// <summary>Opening scrolls the card to the top of the viewport through site.js; closing does not scroll.</summary>
+    [Fact]
+    public async Task OnToggled_ShouldScrollCardIntoViewOnOpenOnly()
+    {
+        // Arrange
+        this.AddSiteOptions();
+        this.AddFhirClient();
+        var module = this.SetupSiteModule();
+        var cut = Render<PortfolioSection>();
+        Assert.DoesNotContain(module.Invocations, i => i.Identifier == "scrollIntoView");
+
+        // Act
+        await cut.InvokeAsync(() => cut.Instance.OnToggled(true));
+
+        // Assert
+        var scroll = Assert.Single(module.Invocations, i => i.Identifier == "scrollIntoView");
+        Assert.IsType<ElementReference>(scroll.Arguments[0]);
+
+        // Act again
+        await cut.InvokeAsync(() => cut.Instance.OnToggled(false));
+
+        // Assert again
+        Assert.Single(module.Invocations, i => i.Identifier == "scrollIntoView");
     }
 
     #endregion

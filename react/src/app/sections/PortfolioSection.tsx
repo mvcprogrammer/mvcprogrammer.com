@@ -1,4 +1,4 @@
-import { Suspense, lazy, useEffect, useState, type SyntheticEvent } from 'react';
+import { Suspense, lazy, useEffect, useRef, useState, type SyntheticEvent } from 'react';
 import { Icon } from '../components/Icon';
 import { KioskDialog } from '../components/KioskDialog';
 
@@ -18,8 +18,10 @@ export function PortfolioSection() {
   const [kioskOpen, setKioskOpen] = useState(false);
   const [fhirOpen, setFhirOpen] = useState(false);
   const [fhirLoaded, setFhirLoaded] = useState(false);
+  const fhirCard = useRef<HTMLElement>(null);
 
-  // "#fhir-api" opens the accordion on first render and on hashchange; the browser scrolls to the card on its own.
+  // "#fhir-api" opens the accordion on first render and on hashchange; the browser scrolls to the card
+  // on its own, and the toggle below scrolls again.
   useEffect(() => {
     const openFromHash = (): void => {
       if (window.location.hash === FHIR_HASH) {
@@ -38,9 +40,17 @@ export function PortfolioSection() {
     }
   }, [fhirOpen]);
 
-  /** Keeps the state in step with a toggle the visitor made on the native element. */
+  /**
+   * Keeps the state in step with a toggle on the native element. Opening hides the card's image, so
+   * the body jumps up and the explorer unfolds below the fold; scrolling the card to the top of the
+   * viewport keeps the whole thing in view. The stylesheet's scroll-padding-top clears the header
+   * and prefers-reduced-motion drops the glide.
+   */
   const onFhirToggle = (event: SyntheticEvent<HTMLDetailsElement>): void => {
     setFhirOpen(event.currentTarget.open);
+    if (event.currentTarget.open) {
+      fhirCard.current?.scrollIntoView({ block: 'start' });
+    }
   };
 
   return (
@@ -260,7 +270,7 @@ export function PortfolioSection() {
             {/* FHIR API card. The explorer is a lazy component rendered once the accordion has opened,
                 so its chunk and its first request to /api/fhir load only when a visitor asks. Open, the
                 card spans the grid row (styles.css) so the two-panel results keep their width. */}
-            <article className="card portfolio-card" id="fhir-api">
+            <article className="card portfolio-card" id="fhir-api" ref={fhirCard}>
               <div className="card-media">
                 <img
                   src="assets/images/portfolio/fhir-api-react.jpg"

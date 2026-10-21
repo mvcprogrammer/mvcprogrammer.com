@@ -601,11 +601,16 @@
       document.body.appendChild(script);
     };
 
+    // Opening hides the card's image, so the body jumps up and the explorer unfolds below the
+    // fold; scrolling the card to the top of the viewport keeps the whole thing in view. The
+    // stylesheet's scroll-padding-top clears the header and prefers-reduced-motion drops the glide.
     fhirAccordion.addEventListener("toggle", function () {
-      if (fhirAccordion.open) loadFhir();
+      if (!fhirAccordion.open) return;
+      loadFhir();
+      fhirCard.scrollIntoView({ block: "start" });
     });
 
-    // The browser scrolls to the card on its own; this only opens it.
+    // The browser scrolls to the card on its own; this only opens it, and the toggle above scrolls again.
     var openFhirFromHash = function () {
       if (location.hash === "#fhir-api") fhirAccordion.open = true;
     };
