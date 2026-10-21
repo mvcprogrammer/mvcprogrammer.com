@@ -584,6 +584,35 @@
     });
   }
 
+  /* ---------- FHIR API card ----------
+     The explorer's markup is in the card; its script is not. fhir.js is appended the first
+     time the accordion opens, so the home page makes no FHIR request until a visitor asks.
+     "#fhir-api" in the URL opens the accordion, for the Healthcare chip and old /fhir links. */
+  var fhirCard = document.getElementById("fhir-api");
+  var fhirAccordion = fhirCard ? fhirCard.querySelector("[data-fhir-accordion]") : null;
+  if (fhirAccordion) {
+    var fhirLoaded = false;
+
+    var loadFhir = function () {
+      if (fhirLoaded) return;
+      fhirLoaded = true;
+      var script = document.createElement("script");
+      script.src = "fhir.js";
+      document.body.appendChild(script);
+    };
+
+    fhirAccordion.addEventListener("toggle", function () {
+      if (fhirAccordion.open) loadFhir();
+    });
+
+    // The browser scrolls to the card on its own; this only opens it.
+    var openFhirFromHash = function () {
+      if (location.hash === "#fhir-api") fhirAccordion.open = true;
+    };
+    openFhirFromHash();
+    window.addEventListener("hashchange", openFhirFromHash);
+  }
+
   /* ---------- Portfolio image fallback ----------
      Until the real images are added, show a labeled slot instead of a
      broken-image icon. Remove this block once all images are in place. */

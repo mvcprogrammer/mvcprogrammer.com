@@ -994,9 +994,10 @@ img, svg {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 
-  /* Two project cards sit under the full-width featured card */
+  /* Three project cards sit in one row under the full-width featured card; the FHIR API card
+     takes the whole row while its explorer is open (see the FHIR block). */
   .portfolio-grid {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
+    grid-template-columns: repeat(3, minmax(0, 1fr));
   }
 }
 
@@ -1475,13 +1476,10 @@ img, svg {
   overflow-wrap: anywhere;
 }
 
-/* ---------- FHIR explorer (fhir.html) ----------
-   The patient explorer page: search form, a two-column result area that stacks on phones, the
-   summary card with its avatar, tiles, pills, and vitals table, and the terminal-style log. */
-.fhir-page .site-header {
-  position: sticky;
-}
-
+/* ---------- FHIR explorer (the FHIR API card) ----------
+   The patient explorer inside the FHIR API card's accordion: search form, a two-column result area
+   that stacks on phones, the summary card with its avatar, tiles, pills, and vitals table, and the
+   terminal-style log. The accordion rules are at the end of this block. */
 .fhir-head {
   display: flex;
   flex-wrap: wrap;
@@ -1490,10 +1488,11 @@ img, svg {
   margin-bottom: 1rem;
 }
 
-.fhir-head h1 {
-  font-size: clamp(2rem, 1.4rem + 2.6vw, 3rem);
+.fhir-title {
+  font-size: clamp(1.375rem, 1.1rem + 1.2vw, 1.75rem);
   font-weight: 700;
-  letter-spacing: -0.025em;
+  letter-spacing: -0.02em;
+  margin: 0;
 }
 
 /* The synthetic-data badge: a pill with a pulsing dot, so nobody mistakes this for a real record. */
@@ -1526,8 +1525,10 @@ img, svg {
   50% { opacity: 0.35; }
 }
 
-.fhir .lead {
-  margin-bottom: 2rem;
+.fhir-lead {
+  margin-bottom: 1.5rem;
+  color: var(--text-muted);
+  text-wrap: pretty;
 }
 
 /* ----- Search ----- */
@@ -1998,12 +1999,54 @@ img, svg {
   max-height: 32rem;
 }
 
-.fhir-colophon {
-  background: var(--bg-alt);
+/* ----- The accordion on the FHIR API card -----
+   The summary is the card's demo button, styled like the kiosk card's. Open, the card takes the
+   full grid row so the two-panel result area keeps its width, and the hover lift is switched off
+   because a lifting full-width panel reads as a glitch. */
+.fhir-accordion {
+  margin-top: 1.25rem;
 }
 
-.fhir-colophon .card-link + .card-link {
-  margin-left: 1.25rem;
+.fhir-accordion > summary {
+  list-style: none;
+  cursor: pointer;
+}
+
+.fhir-accordion > summary::-webkit-details-marker {
+  display: none;
+}
+
+.fhir-accordion-close-label {
+  display: none;
+}
+
+.fhir-accordion[open] > summary .fhir-accordion-open-label {
+  display: none;
+}
+
+.fhir-accordion[open] > summary .fhir-accordion-close-label {
+  display: inline;
+}
+
+.fhir-explorer {
+  margin-top: 1.5rem;
+  padding-top: 1.5rem;
+  border-top: 1px solid var(--border);
+}
+
+.portfolio-card:has(.fhir-accordion[open]):hover {
+  transform: none;
+}
+
+/* The card image is a still of the explorer; the live one replaces it while the accordion is open. */
+.portfolio-card:has(.fhir-accordion[open]) .card-media {
+  display: none;
+}
+
+@media (min-width: 40em) {
+  .portfolio-card:has(.fhir-accordion[open]) {
+    grid-column: 1 / -1;
+  }
 }
 
 /* Phones: the vitals table has no room for a fixed date column, so dates and values may wrap. */
