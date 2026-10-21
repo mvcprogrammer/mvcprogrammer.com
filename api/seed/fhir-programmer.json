@@ -347,43 +347,6 @@
       }
     },
     {
-      "fullUrl": "urn:Condition/mvc-rsi",
-      "resource": {
-        "resourceType": "Condition",
-        "id": "mvc-rsi",
-        "clinicalStatus": {
-          "coding": [
-            {
-              "system": "http://terminology.hl7.org/CodeSystem/condition-clinical",
-              "code": "active"
-            }
-          ]
-        },
-        "category": [
-          {
-            "coding": [
-              {
-                "system": "http://terminology.hl7.org/CodeSystem/condition-category",
-                "code": "problem-list-item"
-              }
-            ]
-          }
-        ],
-        "code": {
-          "text": "Repetitive strain injury"
-        },
-        "subject": {
-          "reference": "Patient/mvc-programmer"
-        },
-        "onsetDateTime": "2021-07-01",
-        "recordedDate": "2026-10-21"
-      },
-      "request": {
-        "method": "PUT",
-        "url": "Condition/mvc-rsi"
-      }
-    },
-    {
       "fullUrl": "urn:Condition/mvc-hypochondria",
       "resource": {
         "resourceType": "Condition",
