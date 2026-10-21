@@ -108,7 +108,7 @@ describe('static sections', () => {
       const card = cards[cards.length - 1];
       expect(card.id).toBe('fhir-api');
       expect(card.querySelector('h3')?.textContent).toBe('FHIR API');
-      expect(card.querySelector('.card-media img')?.getAttribute('src')).toBe('assets/images/portfolio/fhir-api.jpg');
+      expect(card.querySelector('.card-media img')?.getAttribute('src')).toBe('assets/images/portfolio/fhir-api-angular.jpg');
       const links = Array.from(card.querySelectorAll(':scope > .card-body > .card-link')).map((a) => a.getAttribute('href'));
       expect(links).toEqual([
         'https://github.com/mvcprogrammer/mvcprogrammer.com/tree/main/api/src/Fhir.Api',
