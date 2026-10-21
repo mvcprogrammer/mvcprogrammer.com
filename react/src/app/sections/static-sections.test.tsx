@@ -30,7 +30,7 @@ describe('static sections', () => {
   });
 
   describe('AboutSection', () => {
-    it('should link the edition tags to the four editions and the Healthcare tag to the FHIR API card, each with a hint', () => {
+    it('should link only the four edition tags, each with a hint; the Domains chips are plain text', () => {
       // Arrange, Act
       const { container } = render(<AboutSection />);
 
@@ -48,11 +48,6 @@ describe('static sections', () => {
           'JavaScript',
           'https://mvcprogrammer.com/',
           'See the plain JavaScript edition of this site',
-        ],
-        [
-          'Healthcare (HL7, FHIR, HIPAA)',
-          '#fhir-api',
-          'Open the FHIR API card and its live patient explorer in Selected Work',
         ],
       ]);
       const tags = Array.from(container.querySelectorAll('ul[aria-label="Skills"] .tag')).map(

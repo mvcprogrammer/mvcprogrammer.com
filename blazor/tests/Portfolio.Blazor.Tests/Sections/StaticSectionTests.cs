@@ -9,7 +9,7 @@ public sealed class StaticSectionTests : BunitContext
 {
     #region AboutSection Tests
 
-    /// <summary>The Angular, React, Blazor, and JavaScript tags lead to the four editions and the Healthcare tag to the FHIR API card, each with a hint; the list is the same on every edition.</summary>
+    /// <summary>The Angular, React, Blazor, and JavaScript tags lead to the four editions, each with a hint; the Domains chips are plain text. The list is the same on every edition.</summary>
     [Fact]
     public void AboutSection_ShouldLinkEditionTagsWithHints()
     {
@@ -24,7 +24,6 @@ public sealed class StaticSectionTests : BunitContext
             ("React", "https://react.mvcprogrammer.com/", "See the React edition of this site"),
             ("Blazor", "https://blazor.mvcprogrammer.com/", "See the Blazor edition of this site"),
             ("JavaScript", "https://mvcprogrammer.com/", "See the plain JavaScript edition of this site"),
-            ("Healthcare (HL7, FHIR, HIPAA)", "#fhir-api", "Open the FHIR API card and its live patient explorer in Selected Work"),
         ], links);
         Assert.Equal(12, cut.FindAll("ul[aria-label=Skills] .tag").Count);
         Assert.Contains(cut.FindAll(".tag"), t => t.TextContent == "Claude Pair Programming");

@@ -87,11 +87,7 @@ export function AboutSection() {
             <h3 className="aside-title">Domains</h3>
             <ul className="tag-list" role="list" aria-label="Domain expertise">
               <li className="tag">Accounting</li>
-              <li className="tag">
-                <a href="#fhir-api" title="Open the FHIR API card and its live patient explorer in Selected Work">
-                  Healthcare (HL7, FHIR, HIPAA)
-                </a>
-              </li>
+              <li className="tag">Healthcare (HL7, FHIR, HIPAA)</li>
               <li className="tag">Real estate (Stellar MLS, Bridge API)</li>
               <li className="tag">Financial trading systems</li>
             </ul>

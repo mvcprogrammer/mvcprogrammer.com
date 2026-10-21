@@ -30,7 +30,7 @@ describe('static sections', () => {
   });
 
   describe('AboutSection', () => {
-    it('should link the edition tags to the four editions and the Healthcare tag to the FHIR API card, each with a hint', async () => {
+    it('should link only the four edition tags, each with a hint; the Domains chips are plain text', async () => {
       // Arrange
       const fixture = TestBed.createComponent(AboutSection);
 
@@ -45,7 +45,6 @@ describe('static sections', () => {
         ['React', 'https://react.mvcprogrammer.com/', 'See the React edition of this site'],
         ['Blazor', 'https://blazor.mvcprogrammer.com/', 'See the Blazor edition of this site'],
         ['JavaScript', 'https://mvcprogrammer.com/', 'See the plain JavaScript edition of this site'],
-        ['Healthcare (HL7, FHIR, HIPAA)', '#fhir-api', 'Open the FHIR API card and its live patient explorer in Selected Work'],
       ]);
       const tags = Array.from(host.querySelectorAll('ul[aria-label="Skills"] .tag')).map((tag) => tag.textContent?.trim());
       expect(tags.length).toBe(12);

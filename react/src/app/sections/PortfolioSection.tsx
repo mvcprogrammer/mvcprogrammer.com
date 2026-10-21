@@ -277,24 +277,10 @@ export function PortfolioSection() {
                   FHIR R4 patient explorer, C# on Lambda with the Firely SDK
                 </p>
                 <p>
-                  A read-only window onto a public FHIR R4 test server seeded with synthetic records.
-                  Five endpoints under <code>/api/fhir</code> (patient search, summary, the raw bundle
-                  behind a summary, the capability subset, and a health check) run as C# on .NET 10 on
-                  AWS Lambda (arm64) behind this distribution, specified in the same OpenAPI document
-                  as the Experience API. The browser never talks to the sandbox; the function is the
-                  boundary. The Firely SDK parses every resource into typed objects, and mappers read
-                  only the fields US Core makes mandatory or must-support, split conditions on
-                  clinical status, prefer SNOMED CT or ICD-10-CM codings, and pick vital signs by
-                  LOINC code.
+                  A read-only window onto a public FHIR R4 test server seeded with synthetic records. Five endpoints under <code>/api/fhir</code> (patient search, summary, raw bundle, capability, and health) run as C# on .NET 10 on AWS Lambda behind this distribution, specified in the same OpenAPI document as the Experience API. The browser never talks to the sandbox; the function is the boundary, parsing every resource with the Firely SDK and mapping only the US Core fields to small DTOs.
                 </p>
                 <p>
-                  The sandbox is sometimes slow, so every upstream call has a six-second attempt
-                  timeout, two retries with backoff and jitter, a circuit breaker, and a 22-second
-                  budget under CloudFront's 30-second limit; a failure comes back as an RFC 9457
-                  problem the explorer turns into a plain message. Responses carry ETags, CloudFront
-                  caches on the three search parameters, and a per-address budget answers{' '}
-                  <code>429</code> past sixty requests in ten minutes. No real patient data, nothing
-                  stored, nothing beyond request metadata logged.
+                  <strong>Built to be polite to a shared sandbox.</strong> Every upstream call has a short timeout, retries with backoff, and a circuit breaker, and a failure comes back as an RFC 9457 problem the explorer turns into a plain message. Responses carry ETags and CloudFront caches them. No real patient data, nothing stored.
                 </p>
                 <ul
                   className="tag-list card-tags"
