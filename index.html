@@ -222,7 +222,7 @@
             <h3 class="aside-title">Domains</h3>
             <ul class="tag-list" role="list" aria-label="Domain expertise">
               <li class="tag">Accounting</li>
-              <li class="tag"><a href="https://mvcprogrammer.com/fhir" title="Open the FHIR R4 patient explorer, a live demo on this site">Healthcare (HL7, FHIR, HIPAA)</a></li>
+              <li class="tag"><a href="#fhir-api" title="Open the FHIR API card and its live patient explorer in Selected Work">Healthcare (HL7, FHIR, HIPAA)</a></li>
               <li class="tag">Real estate (Stellar MLS, Bridge API)</li>
               <li class="tag">Financial trading systems</li>
             </ul>
@@ -448,6 +448,135 @@
               <a class="card-link" href="https://github.com/mvcprogrammer/lightsplitters.com" target="_blank" rel="noopener">Source on GitHub</a>
             </div>
           </article>
+
+          <!-- FHIR API card. The explorer's markup lives here inside a native accordion; fhir.js is
+               appended by main.js the first time it opens, so the page makes no FHIR request until asked.
+               Open, the card spans the grid row (styles.css) so the two-panel results keep their width. -->
+          <article class="card portfolio-card" id="fhir-api">
+            <div class="card-media">
+              <img src="assets/images/portfolio/fhir-api.jpg" alt="The FHIR R4 patient explorer showing a synthetic patient's summary: counts, active conditions with SNOMED codes, and a vitals table" width="1200" height="750" loading="lazy" decoding="async">
+            </div>
+            <div class="card-body">
+              <h3>FHIR API</h3>
+              <p class="card-subtitle">FHIR R4 patient explorer, C# on Lambda with the Firely SDK</p>
+              <p>A read-only window onto a public FHIR R4 test server seeded with synthetic records. Five endpoints under <code>/api/fhir</code> (patient search, summary, the raw bundle behind a summary, the capability subset, and a health check) run as C# on .NET 10 on AWS Lambda (arm64) behind this distribution, specified in the same OpenAPI document as the Experience API. The browser never talks to the sandbox; the function is the boundary. The Firely SDK parses every resource into typed objects, and mappers read only the fields US Core makes mandatory or must-support, split conditions on clinical status, prefer SNOMED CT or ICD-10-CM codings, and pick vital signs by LOINC code.</p>
+              <p>The sandbox is sometimes slow, so every upstream call has a six-second attempt timeout, two retries with backoff and jitter, a circuit breaker, and a 22-second budget under CloudFront's 30-second limit; a failure comes back as an RFC 9457 problem the explorer turns into a plain message. Responses carry ETags, CloudFront caches on the three search parameters, and a per-address budget answers <code>429</code> past sixty requests in ten minutes. No real patient data, nothing stored, nothing beyond request metadata logged.</p>
+              <ul class="tag-list card-tags" role="list" aria-label="Technologies used on the FHIR API">
+                <li class="tag">C# / .NET 10 on Lambda</li>
+                <li class="tag">Firely SDK</li>
+                <li class="tag">FHIR R4 / US Core</li>
+                <li class="tag">HAPI sandbox</li>
+                <li class="tag">OpenAPI 3.1</li>
+                <li class="tag">Polly</li>
+                <li class="tag">RFC 9457</li>
+                <li class="tag">CloudFront caching</li>
+                <li class="tag">Vanilla JavaScript</li>
+              </ul>
+              <a class="card-link" href="https://github.com/mvcprogrammer/mvcprogrammer.com/tree/main/api/src/Fhir.Api" target="_blank" rel="noopener">API on GitHub</a>
+              <a class="card-link" href="https://github.com/mvcprogrammer/mvcprogrammer.com/blob/main/api/openapi.yaml" target="_blank" rel="noopener">OpenAPI spec</a>
+
+              <details class="fhir-accordion" data-fhir-accordion>
+                <summary class="button button-primary fhir-accordion-summary">
+                  <svg class="icon" aria-hidden="true" focusable="false"><use href="#icon-data"></use></svg>
+                  <span class="fhir-accordion-open-label">Try the patient explorer</span>
+                  <span class="fhir-accordion-close-label">Close the patient explorer</span>
+                </summary>
+
+                <div class="fhir-explorer">
+                  <div class="fhir-head">
+                    <h4 class="fhir-title">FHIR R4 patient explorer</h4>
+                    <p class="fhir-badge"><span class="fhir-badge-dot" aria-hidden="true"></span>Synthetic data &middot; <span data-fhir-source>HAPI sandbox</span></p>
+                  </div>
+                  <p class="fhir-lead">A read-only window onto a public FHIR R4 test server seeded with synthetic records. No real patient data is involved, nothing is persisted, and nothing beyond request metadata is logged.</p>
+
+                  <!-- Search. The example is prefilled so the first click succeeds; the sandbox is wiped now and
+                       then, so the script replaces a family name that returns nothing with the next one in its list. -->
+                  <form class="fhir-search" id="fhir-search" role="search" aria-label="Patient search" novalidate>
+                    <div class="fhir-search-row">
+                      <div class="field">
+                        <label class="field-label" for="fhir-family">Family name <span class="fhir-required" aria-hidden="true">*</span></label>
+                        <input id="fhir-family" name="family" type="text" value="Watsica" required maxlength="60" autocomplete="off" spellcheck="false" aria-describedby="fhir-family-error">
+                        <p class="field-error" id="fhir-family-error" aria-live="polite"></p>
+                      </div>
+                      <div class="field">
+                        <label class="field-label" for="fhir-birthdate">Birth date</label>
+                        <input id="fhir-birthdate" name="birthdate" type="date" autocomplete="off" aria-describedby="fhir-birthdate-error">
+                        <p class="field-error" id="fhir-birthdate-error" aria-live="polite"></p>
+                      </div>
+                      <div class="field">
+                        <label class="field-label" for="fhir-identifier">Identifier <span class="fhir-optional">(MRN, optional)</span></label>
+                        <input id="fhir-identifier" name="identifier" type="text" maxlength="120" autocomplete="off" spellcheck="false" placeholder="12345 or system|value">
+                        <p class="field-error" aria-live="polite"></p>
+                      </div>
+                      <div class="field fhir-search-action">
+                        <button class="button button-primary" type="submit" id="fhir-submit">Search</button>
+                      </div>
+                    </div>
+                    <p class="form-status" id="fhir-status" role="status" aria-live="polite">Searches <code>GET /api/fhir/patients?family=&hellip;</code>, which runs <code>GET Patient?family=&hellip;</code> on the sandbox.</p>
+                  </form>
+
+                  <!-- Results: the list on the left, the summary on the right; stacked on phones. -->
+                  <div class="fhir-results" id="fhir-results">
+                    <section class="fhir-panel fhir-list" aria-labelledby="fhir-list-title">
+                      <h5 class="fhir-panel-title" id="fhir-list-title">Patients <span class="fhir-count" id="fhir-count" aria-live="polite"></span></h5>
+                      <ul class="fhir-patients" id="fhir-patients" role="list"></ul>
+                      <p class="fhir-empty" id="fhir-list-empty">Run a search to list matching patients.</p>
+                    </section>
+
+                    <section class="fhir-panel fhir-summary" id="fhir-summary" aria-labelledby="fhir-summary-title" aria-live="polite" aria-busy="false">
+                      <h5 class="sr-only" id="fhir-summary-title">Patient summary</h5>
+                      <p class="fhir-empty" id="fhir-summary-empty">Select a patient to load the summary: demographics, counts, active conditions, and recent vital signs.</p>
+                      <div class="fhir-card" id="fhir-card" hidden>
+                        <header class="fhir-card-head">
+                          <span class="fhir-avatar" id="fhir-avatar" aria-hidden="true"></span>
+                          <div class="fhir-card-ident">
+                            <h6 class="fhir-card-name" id="fhir-card-name"></h6>
+                            <p class="fhir-card-meta" id="fhir-card-meta"></p>
+                          </div>
+                        </header>
+                        <dl class="fhir-tiles" aria-label="Resource counts">
+                          <div class="fhir-tile"><dt>Conditions</dt><dd id="fhir-tile-conditions">0</dd></div>
+                          <div class="fhir-tile"><dt>Encounters</dt><dd id="fhir-tile-encounters">0</dd></div>
+                          <div class="fhir-tile"><dt>Observations</dt><dd id="fhir-tile-observations">0</dd></div>
+                        </dl>
+                        <h6 class="fhir-subtitle">Active conditions</h6>
+                        <ul class="fhir-pills" id="fhir-conditions" role="list"></ul>
+                        <ul class="fhir-pills fhir-pills-resolved" id="fhir-resolved" role="list" hidden></ul>
+                        <h6 class="fhir-subtitle">Vitals</h6>
+                        <div class="fhir-table-wrap">
+                          <table class="fhir-table" id="fhir-vitals">
+                            <thead>
+                              <tr><th scope="col">Date</th><th scope="col">Vital sign</th><th scope="col">Value</th></tr>
+                            </thead>
+                            <tbody></tbody>
+                          </table>
+                        </div>
+                        <p class="fhir-empty fhir-vitals-empty" id="fhir-vitals-empty" hidden>No vital signs recorded for this patient.</p>
+                      </div>
+                    </section>
+                  </div>
+
+                  <!-- Under the hood: what the browser asked for, what the function asked the sandbox for, and what came back. -->
+                  <section class="fhir-hood" aria-labelledby="fhir-hood-title">
+                    <div class="fhir-hood-head">
+                      <h5 class="fhir-panel-title" id="fhir-hood-title">Under the hood</h5>
+                      <div class="fhir-hood-actions">
+                        <button class="button button-secondary fhir-hood-button" type="button" id="fhir-raw-toggle" aria-expanded="false" aria-controls="fhir-raw" disabled>View raw bundle</button>
+                        <a class="card-link" href="https://github.com/mvcprogrammer/mvcprogrammer.com/blob/main/api/openapi.yaml" target="_blank" rel="noopener">OpenAPI</a>
+                        <a class="card-link" href="https://github.com/mvcprogrammer/mvcprogrammer.com/tree/main/api/src/Fhir.Api" target="_blank" rel="noopener">Source</a>
+                      </div>
+                    </div>
+                    <pre class="fhir-log" id="fhir-log" aria-live="polite" aria-label="Request log" tabindex="0">$ waiting for the first search</pre>
+                    <details class="fhir-dto" id="fhir-dto-details">
+                      <summary>The DTO the function returned</summary>
+                      <pre class="fhir-log fhir-dto-body" id="fhir-dto" tabindex="0"></pre>
+                    </details>
+                    <pre class="fhir-log fhir-raw" id="fhir-raw" hidden tabindex="0" aria-label="Raw FHIR bundle"></pre>
+                  </section>
+                </div>
+              </details>
+            </div>
+          </article>
         </div>
       </div>
     </section>
@@ -653,7 +782,7 @@
           </div>
           <div class="colophon-item">
             <dt>Healthcare demo</dt>
-            <dd>The <a href="/fhir">FHIR R4 patient explorer</a> is a second page with its own script, backed by a second C# Lambda at <code>/api/fhir</code>. It reads a public FHIR sandbox of synthetic records through the Firely SDK, maps the resources to small DTOs at the boundary, and reports every upstream call so the page can show what happened. Bounded searches, a short upstream timeout with retries, a per-address budget, and ETags with CloudFront caching keep it polite to the third-party server. Nothing is stored, and no real patient data is involved.</dd>
+            <dd>The <a href="#fhir-api">FHIR API card</a> in Selected Work holds a live FHIR R4 patient explorer, backed by a second C# Lambda at <code>/api/fhir</code>. The explorer's markup is in this page inside a native <code>&lt;details&gt;</code> accordion, and its own script, <code>fhir.js</code>, is appended the first time the card opens, so the page makes no FHIR request until a visitor asks; the open card spans the grid row so the two-panel results keep their width. The function reads a public FHIR sandbox of synthetic records through the Firely SDK, maps the resources to small DTOs at the boundary, and reports every upstream call so the card can show what happened. Bounded searches, a short upstream timeout with retries, a per-address budget, and ETags with CloudFront caching keep it polite to the third-party server. Nothing is stored, and no real patient data is involved.</dd>
           </div>
           <div class="colophon-item">
             <dt>Deploys</dt>
