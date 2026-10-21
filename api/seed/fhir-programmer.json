@@ -83,50 +83,6 @@
       }
     },
     {
-      "fullUrl": "urn:Condition/mvc-carpal-tunnel",
-      "resource": {
-        "resourceType": "Condition",
-        "id": "mvc-carpal-tunnel",
-        "clinicalStatus": {
-          "coding": [
-            {
-              "system": "http://terminology.hl7.org/CodeSystem/condition-clinical",
-              "code": "active"
-            }
-          ]
-        },
-        "category": [
-          {
-            "coding": [
-              {
-                "system": "http://terminology.hl7.org/CodeSystem/condition-category",
-                "code": "problem-list-item"
-              }
-            ]
-          }
-        ],
-        "code": {
-          "text": "Carpal tunnel syndrome",
-          "coding": [
-            {
-              "system": "http://snomed.info/sct",
-              "code": "57406009",
-              "display": "Carpal tunnel syndrome"
-            }
-          ]
-        },
-        "subject": {
-          "reference": "Patient/mvc-programmer"
-        },
-        "onsetDateTime": "2022-03-14",
-        "recordedDate": "2026-10-21"
-      },
-      "request": {
-        "method": "PUT",
-        "url": "Condition/mvc-carpal-tunnel"
-      }
-    },
-    {
       "fullUrl": "urn:Condition/mvc-insomnia",
       "resource": {
         "resourceType": "Condition",
@@ -326,7 +282,14 @@
           }
         ],
         "code": {
-          "text": "Delusions of grandeur"
+          "text": "Delusions of grandeur",
+          "coding": [
+            {
+              "system": "http://snomed.info/sct",
+              "code": "47447001",
+              "display": "Grandiose delusion disorder"
+            }
+          ]
         },
         "subject": {
           "reference": "Patient/mvc-programmer"
@@ -363,7 +326,14 @@
           }
         ],
         "code": {
-          "text": "Caffeine dependence"
+          "text": "Caffeine dependence",
+          "coding": [
+            {
+              "system": "http://snomed.info/sct",
+              "code": "703845008",
+              "display": "Caffeine dependence"
+            }
+          ]
         },
         "subject": {
           "reference": "Patient/mvc-programmer"
@@ -474,7 +444,14 @@
           }
         ],
         "code": {
-          "text": "Pseudobulbar affect"
+          "text": "Pseudobulbar affect",
+          "coding": [
+            {
+              "system": "http://snomed.info/sct",
+              "code": "432776007",
+              "display": "Pseudobulbar affect"
+            }
+          ]
         },
         "subject": {
           "reference": "Patient/mvc-programmer"
@@ -529,6 +506,50 @@
       "request": {
         "method": "PUT",
         "url": "Condition/mvc-cold"
+      }
+    },
+    {
+      "fullUrl": "urn:Condition/mvc-spacecraft",
+      "resource": {
+        "resourceType": "Condition",
+        "id": "mvc-spacecraft",
+        "clinicalStatus": {
+          "coding": [
+            {
+              "system": "http://terminology.hl7.org/CodeSystem/condition-clinical",
+              "code": "active"
+            }
+          ]
+        },
+        "category": [
+          {
+            "coding": [
+              {
+                "system": "http://terminology.hl7.org/CodeSystem/condition-category",
+                "code": "problem-list-item"
+              }
+            ]
+          }
+        ],
+        "code": {
+          "text": "Spacecraft accident",
+          "coding": [
+            {
+              "system": "http://snomed.info/sct",
+              "code": "722880004",
+              "display": "Spacecraft accident"
+            }
+          ]
+        },
+        "subject": {
+          "reference": "Patient/mvc-programmer"
+        },
+        "onsetDateTime": "2020-07-20",
+        "recordedDate": "2026-10-21"
+      },
+      "request": {
+        "method": "PUT",
+        "url": "Condition/mvc-spacecraft"
       }
     },
     {
