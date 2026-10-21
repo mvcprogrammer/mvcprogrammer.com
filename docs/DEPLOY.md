@@ -6,7 +6,8 @@ The site follows the KISS principle. Plain HTML, CSS, and vanilla JavaScript. No
 
 ```
 index.html                  the single page
-fhir.html, fhir.js          the FHIR R4 patient explorer at /fhir (its own script; see FHIR API)
+fhir.js                     the FHIR R4 patient explorer inside the FHIR API card (loaded on first open; see FHIR API)
+fhir.html                   redirect stub for the explorer's old URL, kept until the CloudFront 301 is confirmed live
 404.html                    small not-found page, served by CloudFront for any missing path
 privacy.html, terms.html    privacy policy and SMS terms (required for the toll-free SMS registration)
 styles.css                  mobile-first styles shared by all four editions, light/dark via prefers-color-scheme
@@ -180,7 +181,7 @@ Attach the returned policy ID to the default cache behavior (console: Behaviors 
 
 ### 4b. Redirect www to the apex (optional)
 
-Both hostnames point at the same distribution, so without a redirect the site is reachable at two URLs. A CloudFront Function on viewer-request fixes that. The same function answers the engagement beacon (`GET /ping`, see [Visitor stats](#visitor-stats)) with an empty 204 at the edge, so those requests are logged but never reach S3, and rewrites `/fhir` (with or without a trailing slash) to `/fhir.html` so the patient explorer has a clean URL (since 2026-10-20; see [FHIR API](#fhir-api)). The code is checked in at [infra/cloudfront/www-redirect.js](../infra/cloudfront/www-redirect.js).
+Both hostnames point at the same distribution, so without a redirect the site is reachable at two URLs. A CloudFront Function on viewer-request fixes that. The same function answers the engagement beacon (`GET /ping`, see [Visitor stats](#visitor-stats)) with an empty 204 at the edge, so those requests are logged but never reach S3, and answers the patient explorer's old URL, `/fhir` (with or without a trailing slash), with a 301 to `https://mvcprogrammer.com/#fhir-api`, the FHIR API card on the home page (the explorer was its own page from 2026-10-20 to 2026-10-21; see [FHIR API](#fhir-api)). The code is checked in at [infra/cloudfront/www-redirect.js](../infra/cloudfront/www-redirect.js).
 
 Create it under CloudFront > Functions as `mvcprogrammer-www-redirect` (runtime `cloudfront-js-2.0`), publish it, and associate it with the viewer request event of the default behavior and of the `/api/*` behavior. To change it later, update the DEVELOPMENT stage, test it, then publish; each call needs the stage's current ETag:
 
@@ -680,14 +681,20 @@ curl -si "https://<FHIR FunctionUrl host>/api/fhir/health"                      
 The site's CSP needs no change: `/api/fhir` is same-origin, covered by `connect-src 'self'`. The 404 passthrough
 from the Experience section applies here too, so a missing patient reaches the page as `application/problem+json`.
 
-### 3. The clean URL
+### 3. The old URL
 
-Publish the updated `mvcprogrammer-www-redirect` function (section 4b): it rewrites `/fhir` to `/fhir.html` on
-the default behavior. Then:
+The explorer is the FHIR API card in Selected Work since 2026-10-21, opened by `#fhir-api` in the URL. The
+`mvcprogrammer-www-redirect` function (section 4b) answers the old page URL with a permanent redirect. After
+publishing a change to it:
 
 ```bash
-curl -s -o /dev/null -w "%{http_code} %{content_type}\n" https://mvcprogrammer.com/fhir     # 200 text/html
+curl -s -o /dev/null -w "%{http_code} %{redirect_url}\n" https://mvcprogrammer.com/fhir      # 301 https://mvcprogrammer.com/#fhir-api
+curl -s -o /dev/null -w "%{http_code} %{redirect_url}\n" https://mvcprogrammer.com/fhir/     # same
+curl -s -o /dev/null -w "%{http_code}\n" https://mvcprogrammer.com/fhir.js                  # 200
 ```
+
+`fhir.html` in the bucket is a meta-refresh stub to the same place, a fallback for the moment between a deploy and
+the function publish; it goes away, with its deploy `--include`, once the 301 is confirmed live.
 
 ### Logs
 
