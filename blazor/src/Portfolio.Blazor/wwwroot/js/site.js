@@ -102,6 +102,28 @@ export function closeDialog(dialog) {
   if (dialog.open) dialog.close();
 }
 
+/** Tells .NET when a <details> element is opened or closed by the visitor, so its state stays in step. */
+export function watchDetails(details, dotnet, method = "OnToggled") {
+  const onToggle = () => dotnet.invokeMethodAsync(method, details.open);
+  details.addEventListener("toggle", onToggle);
+  return { dispose: () => details.removeEventListener("toggle", onToggle) };
+}
+
+/** Calls .NET now and on every hashchange while the URL fragment equals the given hash. */
+export function watchHash(dotnet, hash, method = "OnHashMatched") {
+  const check = () => {
+    if (window.location.hash === hash) dotnet.invokeMethodAsync(method);
+  };
+  check();
+  window.addEventListener("hashchange", check);
+  return { dispose: () => window.removeEventListener("hashchange", check) };
+}
+
+/** Keeps a scrolling element's newest content in view, as a terminal does. */
+export function scrollToEnd(element) {
+  if (element) element.scrollTop = element.scrollHeight;
+}
+
 /** The engagement beacon, mirrored from main.js: small GET /ping requests the CloudFront edge answers
  *  with 204. "load" once with the viewport class and color scheme, "view" once per section that reaches
  *  the middle of the viewport, "click" when an edition or profile link is followed, and "leave" with the

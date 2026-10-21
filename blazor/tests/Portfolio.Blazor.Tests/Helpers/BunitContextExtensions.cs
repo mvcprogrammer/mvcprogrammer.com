@@ -16,6 +16,7 @@ internal static class BunitContextExtensions
         ContactEndpoint = "https://contact.example.test/",
         ExperienceApiBase = "api",
         ExperienceSeedPath = "data/positions.json",
+        FhirApiBase = "api/fhir",
         KioskUrl = "https://kiosk.example.test/",
         ResumeUrl = "https://resume.example.test/",
     };
@@ -27,7 +28,7 @@ internal static class BunitContextExtensions
         return context;
     }
 
-    /// <summary>Registers the real topic state and the fakes for the two HTTP clients.</summary>
+    /// <summary>Registers the real topic state and the fakes for the three HTTP clients. The FHIR fake is reachable through <see cref="AddFhirClient"/>'s return value when a test needs it.</summary>
     public static (FakeExperienceClient Experience, FakeContactClient Contact, IContactTopicState Topic) AddSiteServices(this BunitContext context)
     {
         var experience = new FakeExperienceClient();
@@ -36,8 +37,17 @@ internal static class BunitContextExtensions
         context.Services.AddSingleton<IExperienceClient>(experience);
         context.Services.AddSingleton<IContactClient>(contact);
         context.Services.AddSingleton<IContactTopicState>(topic);
+        context.AddFhirClient();
         context.AddSiteOptions();
         return (experience, contact, topic);
+    }
+
+    /// <summary>Registers a fake <see cref="IFhirClient"/> and returns it for scripting and assertions.</summary>
+    public static FakeFhirClient AddFhirClient(this BunitContext context)
+    {
+        var fhir = new FakeFhirClient();
+        context.Services.AddSingleton<IFhirClient>(fhir);
+        return fhir;
     }
 
     /// <summary>

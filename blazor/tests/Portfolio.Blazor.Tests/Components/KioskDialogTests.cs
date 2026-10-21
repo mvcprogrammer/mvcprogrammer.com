@@ -132,6 +132,7 @@ public sealed class KioskDialogTests : BunitContext
     {
         // Arrange
         this.AddSiteOptions();
+        this.AddFhirClient();
         this.SetupSiteModule();
         var cut = Render<PortfolioSection>();
         Assert.Empty(cut.FindAll("iframe"));
@@ -141,7 +142,7 @@ public sealed class KioskDialogTests : BunitContext
 
         // Assert
         Assert.Equal("https://kiosk.example.test/", cut.Find("iframe").GetAttribute("src"));
-        Assert.Equal(3, cut.FindAll(".portfolio-card").Count);
+        Assert.Equal(4, cut.FindAll(".portfolio-card").Count);
     }
 
     #endregion

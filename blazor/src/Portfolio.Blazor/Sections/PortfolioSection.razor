@@ -1,4 +1,4 @@
-@* Selected work. The kiosk card opens the live demo dialog. *@
+@* Selected work. The kiosk card opens the live demo dialog; the FHIR API card unfolds the patient explorer. *@
 <section class="section section-alt" id="portfolio" aria-labelledby="portfolio-title">
   <div class="container">
     <p class="eyebrow">04 / Portfolio</p>
@@ -91,14 +91,48 @@
           <a class="card-link" href="https://github.com/mvcprogrammer/lightsplitters.com" target="_blank" rel="noopener">Source on GitHub</a>
         </div>
       </article>
+
+      @* FHIR API card. The explorer component renders once the accordion has opened, so its first request
+         to /api/fhir happens only when a visitor asks; site.js reports the native toggle and the URL hash.
+         Open, the card spans the grid row (styles.css) so the two-panel results keep their width. *@
+      <article class="card portfolio-card" id="fhir-api">
+        <div class="card-media">
+          <img src="assets/images/portfolio/fhir-api-blazor.jpg" alt="The Blazor edition's FHIR R4 patient explorer in dark mode, showing a synthetic patient's summary: counts and active conditions with SNOMED codes" width="1200" height="750" loading="lazy" decoding="async">
+        </div>
+        <div class="card-body">
+          <h3>FHIR API</h3>
+          <p class="card-subtitle">FHIR R4 patient explorer, C# on Lambda with the Firely SDK</p>
+          <p>A read-only window onto a public FHIR R4 test server seeded with synthetic records. Five endpoints under <code>/api/fhir</code> (patient search, summary, the raw bundle behind a summary, the capability subset, and a health check) run as C# on .NET 10 on AWS Lambda (arm64) behind this distribution, specified in the same OpenAPI document as the Experience API. The browser never talks to the sandbox; the function is the boundary. The Firely SDK parses every resource into typed objects, and mappers read only the fields US Core makes mandatory or must-support, split conditions on clinical status, prefer SNOMED CT or ICD-10-CM codings, and pick vital signs by LOINC code.</p>
+          <p>The sandbox is sometimes slow, so every upstream call has a six-second attempt timeout, two retries with backoff and jitter, a circuit breaker, and a 22-second budget under CloudFront's 30-second limit; a failure comes back as an RFC 9457 problem the explorer turns into a plain message. Responses carry ETags, CloudFront caches on the three search parameters, and a per-address budget answers <code>429</code> past sixty requests in ten minutes. No real patient data, nothing stored, nothing beyond request metadata logged.</p>
+          <ul class="tag-list card-tags" role="list" aria-label="Technologies used on the FHIR API">
+            <li class="tag">C# / .NET 10 on Lambda</li>
+            <li class="tag">Firely SDK</li>
+            <li class="tag">FHIR R4 / US Core</li>
+            <li class="tag">HAPI sandbox</li>
+            <li class="tag">OpenAPI 3.1</li>
+            <li class="tag">Polly</li>
+            <li class="tag">RFC 9457</li>
+            <li class="tag">CloudFront caching</li>
+            <li class="tag">Blazor WebAssembly</li>
+          </ul>
+          <a class="card-link" href="https://github.com/mvcprogrammer/mvcprogrammer.com/tree/main/api/src/Fhir.Api" target="_blank" rel="noopener">API on GitHub</a>
+          <a class="card-link" href="https://github.com/mvcprogrammer/mvcprogrammer.com/blob/main/api/openapi.yaml" target="_blank" rel="noopener">OpenAPI spec</a>
+
+          <details class="fhir-accordion" data-fhir-accordion open="@_fhirOpen" @ref="_fhirAccordion">
+            <summary class="button button-primary fhir-accordion-summary">
+              <Icon Name="data" />
+              <span class="fhir-accordion-open-label">Try the patient explorer</span>
+              <span class="fhir-accordion-close-label">Close the patient explorer</span>
+            </summary>
+            @if (_fhirLoaded)
+            {
+              <FhirExplorer />
+            }
+          </details>
+        </div>
+      </article>
     </div>
   </div>
 </section>
 
 <KioskDialog @ref="_kiosk" />
-
-@code {
-    private KioskDialog? _kiosk;
-
-    private Task OpenKioskAsync() => _kiosk?.OpenAsync() ?? Task.CompletedTask;
-}
