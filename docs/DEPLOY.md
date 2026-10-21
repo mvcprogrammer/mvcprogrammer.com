@@ -644,11 +644,26 @@ aws cloudformation describe-stacks --stack-name mvcprogrammer-fhir-api \
   --query 'Stacks[0].Outputs[].[OutputKey,OutputValue]' --output table
 ```
 
-### 2. Wire CloudFront (one time)
+### 2. Wire CloudFront (one time, on all four distributions)
 
 Same shape as the Experience API: a third origin at the function URL and an `/api/fhir/*` behavior. The
 behavior must come **before** `/api/*` in `CacheBehaviors.Items`, because CloudFront takes the first pattern
-that matches in list order; appended after it, `/api/*` would swallow every FHIR request.
+that matches in list order; appended after it, `/api/*` would swallow every FHIR request. Every edition carries
+the FHIR API card since 2026-10-21, so the Blazor, Angular, and React distributions need the same origin and
+behavior (copied from their own `/api/*` behavior, which keeps that edition's response headers policy), and
+the function must accept calls from them. The stack's `DistributionArn` grants the main distribution only; the
+other three get a Lambda permission outside the template, as the Experience API does (issue #60, 2026-10-21):
+
+```bash
+for pair in blazor:E2NFN5MW02S8Y9 angular:E33NA2ZQ9O29DK react:E2C51AKAKJUCBO; do
+  aws lambda add-permission --function-name mvcprogrammer-fhir-api \
+    --statement-id "${pair%%:*}-cloudfront-invoke" --action lambda:InvokeFunctionUrl \
+    --principal cloudfront.amazonaws.com --function-url-auth-type AWS_IAM \
+    --source-arn "arn:aws:cloudfront::334383610383:distribution/${pair##*:}"
+done
+```
+
+Then, per distribution (the main one is `E23085GR2SZJHC`):
 
 ```bash
 aws cloudfront get-distribution-config --id E23085GR2SZJHC > /tmp/dist.json
@@ -713,6 +728,7 @@ builds and syncs it on every push to `main`; nothing in the static site's job ch
 | Route 53 | A and AAAA aliases for `blazor.mvcprogrammer.com` to the distribution |
 | Bucket policy | the `AWS:SourceArn` condition lists both distributions |
 | Experience API | Lambda permission `blazor-cloudfront-invoke` lets the new distribution invoke the function URL. This is outside the SAM template; a `sam deploy` leaves it alone |
+| FHIR API | the `fhir-api` origin and the `/api/fhir/*` behavior ahead of `/api/*` (FHIR API step 2), and Lambda permission `blazor-cloudfront-invoke` on `mvcprogrammer-fhir-api`, added 2026-10-21 with the FHIR API card (#60) |
 | Contact Lambda | function URL CORS allows both origins; `ALLOWED_ORIGIN` is now a comma-separated list (code in `infra/lambda/contact/index.mjs`) |
 | GitHub variable | `BLAZOR_DISTRIBUTION_ID` = `E2NFN5MW02S8Y9` |
 | IAM | the deploy role's inline policy is kept at `infra/iam/github-actions-deploy-role-policy.json`; its `cloudfront:CreateInvalidation` lists both distributions. Apply with `aws iam put-role-policy --role-name github-actions-mvcprogrammer-deploy --policy-name deploy-static-site --policy-document file://infra/iam/github-actions-deploy-role-policy.json` |
@@ -748,6 +764,7 @@ the other two jobs changed.
 | Route 53 | A and AAAA aliases for `angular.mvcprogrammer.com` to the distribution |
 | Bucket policy | the `AWS:SourceArn` condition lists every distribution (four since the React edition) |
 | Experience API | Lambda permission `angular-cloudfront-invoke` lets the new distribution invoke the function URL. Outside the SAM template, like the Blazor one |
+| FHIR API | the `fhir-api` origin and the `/api/fhir/*` behavior ahead of `/api/*`, and Lambda permission `angular-cloudfront-invoke` on `mvcprogrammer-fhir-api`, added 2026-10-21 (#60) |
 | Contact Lambda | function URL CORS and `ALLOWED_ORIGIN` list every origin (four since the React edition) |
 | GitHub variable | `ANGULAR_DISTRIBUTION_ID` = `E33NA2ZQ9O29DK` |
 | IAM | `infra/iam/github-actions-deploy-role-policy.json` lists the distribution under `cloudfront:CreateInvalidation`; apply with the `put-role-policy` command in the Blazor section |
@@ -835,6 +852,7 @@ nothing in the other three jobs changed.
 | Route 53 | A and AAAA aliases for `react.mvcprogrammer.com` to the distribution |
 | Bucket policy | the `AWS:SourceArn` condition lists all four distributions |
 | Experience API | Lambda permission `react-cloudfront-invoke` lets the new distribution invoke the function URL. Outside the SAM template, like the other two |
+| FHIR API | the `fhir-api` origin and the `/api/fhir/*` behavior ahead of `/api/*`, and Lambda permission `react-cloudfront-invoke` on `mvcprogrammer-fhir-api`, added 2026-10-21 (#60) |
 | Contact Lambda | function URL CORS and `ALLOWED_ORIGIN` list all four origins |
 | GitHub variable | `REACT_DISTRIBUTION_ID` = `E2C51AKAKJUCBO` |
 | IAM | `infra/iam/github-actions-deploy-role-policy.json` lists the distribution under `cloudfront:CreateInvalidation`; apply with the `put-role-policy` command in the Blazor section |
