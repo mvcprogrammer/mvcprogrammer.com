@@ -14,6 +14,7 @@ const siteOptions: SiteOptions = {
   contactEndpoint: 'https://y4z5rf27yv7aoy4zpuu5twkwl40ijxab.lambda-url.us-east-1.on.aws/',
   experienceApiBase: 'api',
   experienceSeedPath: 'data/positions.json',
+  fhirApiBase: 'api/fhir',
   kioskUrl: 'https://display.lightsplitters.com/',
   resumeUrl: 'https://mbm35w76dfwyr3sg45ez5p4oma0aqtta.lambda-url.us-east-1.on.aws/?edition=react',
 };

@@ -3,9 +3,11 @@ import type { ContactClient } from '../interfaces/contact-client';
 import type { ContactTopicState } from '../interfaces/contact-topic-state';
 import type { EngagementTracker } from '../interfaces/engagement-tracker';
 import type { ExperienceClient } from '../interfaces/experience-client';
+import type { FhirClient } from '../interfaces/fhir-client';
 import { BeaconEngagementTracker } from '../services/beacon-engagement-tracker';
 import { FetchContactClient } from '../services/fetch-contact-client';
 import { FetchExperienceClient } from '../services/fetch-experience-client';
+import { FetchFhirClient } from '../services/fetch-fhir-client';
 import { ListenerContactTopicState } from '../services/listener-contact-topic-state';
 
 /** Everything the components depend on, supplied once at the root by SiteProvider. */
@@ -15,6 +17,9 @@ export interface SiteServices {
 
   /** The Experience API client. */
   readonly experience: ExperienceClient;
+
+  /** The FHIR API client behind the patient explorer. */
+  readonly fhir: FhirClient;
 
   /** The contact Lambda client. */
   readonly contact: ContactClient;
@@ -27,7 +32,7 @@ export interface SiteServices {
 }
 
 /**
- * Builds the site's services: the options, the two fetch clients, the topic state, and the beacon.
+ * Builds the site's services: the options, the three fetch clients, the topic state, and the beacon.
  * The React counterpart of AddPortfolioServices() and provideSite().
  * @param options Site endpoints. Validated up front so a misconfigured build fails at startup.
  */
@@ -37,6 +42,7 @@ export function createSiteServices(options: SiteOptions): SiteServices {
   return {
     options,
     experience: new FetchExperienceClient(options),
+    fhir: new FetchFhirClient(options),
     contact: new FetchContactClient(options),
     topics: new ListenerContactTopicState(),
     engagement: new BeaconEngagementTracker(),
@@ -53,6 +59,7 @@ export function validateSiteOptions(options: SiteOptions): void {
     'contactEndpoint',
     'experienceApiBase',
     'experienceSeedPath',
+    'fhirApiBase',
     'kioskUrl',
     'resumeUrl',
   ];

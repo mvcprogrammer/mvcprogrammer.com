@@ -88,7 +88,7 @@ export function AboutSection() {
             <ul className="tag-list" role="list" aria-label="Domain expertise">
               <li className="tag">Accounting</li>
               <li className="tag">
-                <a href="https://mvcprogrammer.com/fhir" title="Open the FHIR R4 patient explorer, a live demo on this site">
+                <a href="#fhir-api" title="Open the FHIR API card and its live patient explorer in Selected Work">
                   Healthcare (HL7, FHIR, HIPAA)
                 </a>
               </li>

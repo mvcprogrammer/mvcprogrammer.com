@@ -3,7 +3,7 @@ import { createSiteTestServices, renderWithSite } from '../../testing/site-testi
 import { AboutSection } from './AboutSection';
 import { ColophonSection } from './ColophonSection';
 import { HeroSection } from './HeroSection';
-import { PortfolioSection } from './PortfolioSection';
+import { FHIR_HASH, PortfolioSection } from './PortfolioSection';
 import { QuoteSection } from './QuoteSection';
 import { ResumeSection } from './ResumeSection';
 
@@ -30,7 +30,7 @@ describe('static sections', () => {
   });
 
   describe('AboutSection', () => {
-    it('should link the edition tags to the four editions and the Healthcare tag to the FHIR explorer, each with a hint', () => {
+    it('should link the edition tags to the four editions and the Healthcare tag to the FHIR API card, each with a hint', () => {
       // Arrange, Act
       const { container } = render(<AboutSection />);
 
@@ -51,8 +51,8 @@ describe('static sections', () => {
         ],
         [
           'Healthcare (HL7, FHIR, HIPAA)',
-          'https://mvcprogrammer.com/fhir',
-          'Open the FHIR R4 patient explorer, a live demo on this site',
+          '#fhir-api',
+          'Open the FHIR API card and its live patient explorer in Selected Work',
         ],
       ]);
       const tags = Array.from(container.querySelectorAll('ul[aria-label="Skills"] .tag')).map(
@@ -94,10 +94,87 @@ describe('static sections', () => {
         document.querySelectorAll('.portfolio-card-featured .card-link'),
       ).map((a) => a.getAttribute('href'));
       expect(links).toEqual(['https://github.com/mvcprogrammer/mvcprogrammer.com']);
-      expect(document.querySelectorAll('.portfolio-card').length).toBe(3);
+      expect(document.querySelectorAll('.portfolio-card').length).toBe(4);
       expect(document.querySelector('.portfolio-card-featured .card-subtitle')?.textContent).toBe(
         'The tech behind this site, in four editions',
       );
+    });
+
+    it('should render the FHIR API card last, closed, without the explorer or any FHIR request', () => {
+      // Arrange
+      const services = createSiteTestServices();
+      window.location.hash = '';
+
+      // Act
+      renderWithSite(<PortfolioSection />, services);
+
+      // Assert
+      const cards = document.querySelectorAll('.portfolio-card');
+      const card = cards[cards.length - 1]!;
+      expect(card.id).toBe('fhir-api');
+      expect(card.querySelector('h3')?.textContent).toBe('FHIR API');
+      expect(card.querySelector('.card-media img')?.getAttribute('src')).toBe('assets/images/portfolio/fhir-api-react.jpg');
+      const links = Array.from(card.querySelectorAll(':scope > .card-body > .card-link')).map((a) => a.getAttribute('href'));
+      expect(links).toEqual([
+        'https://github.com/mvcprogrammer/mvcprogrammer.com/tree/main/api/src/Fhir.Api',
+        'https://github.com/mvcprogrammer/mvcprogrammer.com/blob/main/api/openapi.yaml',
+      ]);
+      expect(accordion().open).toBe(false);
+      expect(accordion().querySelector('summary')?.classList.contains('button-primary')).toBe(true);
+      expect(document.getElementById('fhir-search')).toBeNull();
+      expect(services.fhir.capabilityCalls).toBe(0);
+    });
+
+    it('should load the explorer, which checks the capability, when the accordion is opened, and keep it when closed again', async () => {
+      // Arrange
+      const services = createSiteTestServices();
+      window.location.hash = '';
+      renderWithSite(<PortfolioSection />, services);
+
+      // Act
+      toggle(true);
+      await screen.findByText(/every resource and search parameter/);
+
+      // Assert
+      expect(document.getElementById('fhir-search')).not.toBeNull();
+      expect(services.fhir.capabilityCalls).toBe(1);
+
+      // Act again
+      toggle(false);
+
+      // Assert again
+      expect(accordion().open).toBe(false);
+      expect(document.getElementById('fhir-search')).not.toBeNull();
+      expect(services.fhir.capabilityCalls).toBe(1);
+    });
+
+    it('should open the accordion when the URL fragment changes to #fhir-api', async () => {
+      // Arrange
+      const services = createSiteTestServices();
+      window.location.hash = '';
+      renderWithSite(<PortfolioSection />, services);
+
+      // Act
+      window.location.hash = FHIR_HASH;
+      fireEvent(window, new Event('hashchange'));
+      await screen.findByText(/every resource and search parameter/);
+
+      // Assert
+      expect(accordion().open).toBe(true);
+      window.location.hash = '';
+    });
+
+    it('should open the accordion on first render when the page loads on #fhir-api', async () => {
+      // Arrange
+      window.location.hash = FHIR_HASH;
+
+      // Act
+      renderWithSite(<PortfolioSection />);
+      await screen.findByText(/every resource and search parameter/);
+
+      // Assert
+      expect(accordion().open).toBe(true);
+      window.location.hash = '';
     });
 
     it('should remove the iframe once the dialog closes', () => {
@@ -114,6 +191,16 @@ describe('static sections', () => {
       // Assert
       expect(document.querySelector('iframe')).toBeNull();
     });
+
+    function accordion(): HTMLDetailsElement {
+      return document.querySelector('details.fhir-accordion') as HTMLDetailsElement;
+    }
+
+    /** Flips the native element the way a click on the summary does, then fires its toggle event. */
+    function toggle(open: boolean): void {
+      accordion().open = open;
+      fireEvent(accordion(), new Event('toggle'));
+    }
   });
 
   describe('ResumeSection', () => {

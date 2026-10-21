@@ -54,20 +54,23 @@ export function ColophonSection() {
           <div className="colophon-item">
             <dt>Healthcare demo</dt>
             <dd>
-              The Healthcare chip above opens the{' '}
-              <a href="https://mvcprogrammer.com/fhir">FHIR R4 patient explorer</a>, a live demo over
-              a public sandbox of synthetic records. It is one plain page with its own script rather
-              than a React route, because it exists once for the whole site; the C# Lambda behind it
-              at <code>/api/fhir</code> reads the sandbox through the Firely SDK, maps the resources
-              to small DTOs, and reports every upstream call so the page can show what happened.
-              Nothing is stored, and no real patient data is involved.
+              The <a href="#fhir-api">FHIR API card</a> in Selected Work holds a live FHIR R4 patient
+              explorer: a React component of its own, with a typed <code>FhirClient</code> over{' '}
+              <code>fetch</code> behind the same interface-and-fake pattern as the Experience client,
+              and its search form, patient list, summary card, and request log held in one{' '}
+              <code>useFhirExplorer()</code> hook. The component is loaded with{' '}
+              <code>React.lazy</code> the first time the card's accordion opens, so its chunk and its
+              first request to <code>/api/fhir</code> arrive only when a visitor asks. The C# Lambda
+              behind it reads a public sandbox of synthetic records through the Firely SDK, maps the
+              resources to small DTOs, and reports every upstream call so the card can show what
+              happened. Nothing is stored, and no real patient data is involved.
             </dd>
           </div>
           <div className="colophon-item">
             <dt>Configuration</dt>
             <dd>
               The Lambda URLs and API paths are one typed options object, validated at startup. The
-              two fetch clients, the contact topic state, and the engagement beacon are built in one{' '}
+              three fetch clients, the contact topic state, and the engagement beacon are built in one{' '}
               <code>createSiteServices()</code> function behind interfaces and handed to the tree
               through a context provider, so components depend on the contract and tests swap in
               fakes.

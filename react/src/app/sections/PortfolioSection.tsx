@@ -1,10 +1,48 @@
-import { useState } from 'react';
+import { Suspense, lazy, useEffect, useState, type SyntheticEvent } from 'react';
 import { Icon } from '../components/Icon';
 import { KioskDialog } from '../components/KioskDialog';
 
-/** Selected work. The kiosk card opens the live demo dialog. */
+/** The URL fragment that opens the FHIR API card, the target of the Healthcare chip and the old /fhir redirect. */
+export const FHIR_HASH = '#fhir-api';
+
+// The explorer is its own chunk, fetched the first time the accordion opens.
+const FhirExplorer = lazy(() =>
+  import('../components/FhirExplorer').then((module) => ({ default: module.FhirExplorer })),
+);
+
+/**
+ * Selected work. The kiosk card opens the live demo dialog; the FHIR API card's accordion holds the
+ * patient explorer, loaded lazily the first time it opens, and opens itself for "#fhir-api".
+ */
 export function PortfolioSection() {
   const [kioskOpen, setKioskOpen] = useState(false);
+  const [fhirOpen, setFhirOpen] = useState(false);
+  const [fhirLoaded, setFhirLoaded] = useState(false);
+
+  // "#fhir-api" opens the accordion on first render and on hashchange; the browser scrolls to the card on its own.
+  useEffect(() => {
+    const openFromHash = (): void => {
+      if (window.location.hash === FHIR_HASH) {
+        setFhirOpen(true);
+      }
+    };
+    openFromHash();
+    window.addEventListener('hashchange', openFromHash);
+    return () => window.removeEventListener('hashchange', openFromHash);
+  }, []);
+
+  // Once opened, the explorer stays mounted so a closed card keeps its search.
+  useEffect(() => {
+    if (fhirOpen) {
+      setFhirLoaded(true);
+    }
+  }, [fhirOpen]);
+
+  /** Keeps the state in step with a toggle the visitor made on the native element. */
+  const onFhirToggle = (event: SyntheticEvent<HTMLDetailsElement>): void => {
+    setFhirOpen(event.currentTarget.open);
+  };
+
   return (
     <>
       <section className="section section-alt" id="portfolio" aria-labelledby="portfolio-title">
@@ -216,6 +254,97 @@ export function PortfolioSection() {
                 >
                   Source on GitHub
                 </a>
+              </div>
+            </article>
+
+            {/* FHIR API card. The explorer is a lazy component rendered once the accordion has opened,
+                so its chunk and its first request to /api/fhir load only when a visitor asks. Open, the
+                card spans the grid row (styles.css) so the two-panel results keep their width. */}
+            <article className="card portfolio-card" id="fhir-api">
+              <div className="card-media">
+                <img
+                  src="assets/images/portfolio/fhir-api-react.jpg"
+                  alt="The React edition's FHIR R4 patient explorer in dark mode, showing a synthetic patient's summary: counts and active conditions with SNOMED codes"
+                  width="1200"
+                  height="750"
+                  loading="lazy"
+                  decoding="async"
+                />
+              </div>
+              <div className="card-body">
+                <h3>FHIR API</h3>
+                <p className="card-subtitle">
+                  FHIR R4 patient explorer, C# on Lambda with the Firely SDK
+                </p>
+                <p>
+                  A read-only window onto a public FHIR R4 test server seeded with synthetic records.
+                  Five endpoints under <code>/api/fhir</code> (patient search, summary, the raw bundle
+                  behind a summary, the capability subset, and a health check) run as C# on .NET 10 on
+                  AWS Lambda (arm64) behind this distribution, specified in the same OpenAPI document
+                  as the Experience API. The browser never talks to the sandbox; the function is the
+                  boundary. The Firely SDK parses every resource into typed objects, and mappers read
+                  only the fields US Core makes mandatory or must-support, split conditions on
+                  clinical status, prefer SNOMED CT or ICD-10-CM codings, and pick vital signs by
+                  LOINC code.
+                </p>
+                <p>
+                  The sandbox is sometimes slow, so every upstream call has a six-second attempt
+                  timeout, two retries with backoff and jitter, a circuit breaker, and a 22-second
+                  budget under CloudFront's 30-second limit; a failure comes back as an RFC 9457
+                  problem the explorer turns into a plain message. Responses carry ETags, CloudFront
+                  caches on the three search parameters, and a per-address budget answers{' '}
+                  <code>429</code> past sixty requests in ten minutes. No real patient data, nothing
+                  stored, nothing beyond request metadata logged.
+                </p>
+                <ul
+                  className="tag-list card-tags"
+                  role="list"
+                  aria-label="Technologies used on the FHIR API"
+                >
+                  <li className="tag">C# / .NET 10 on Lambda</li>
+                  <li className="tag">Firely SDK</li>
+                  <li className="tag">FHIR R4 / US Core</li>
+                  <li className="tag">HAPI sandbox</li>
+                  <li className="tag">OpenAPI 3.1</li>
+                  <li className="tag">Polly</li>
+                  <li className="tag">RFC 9457</li>
+                  <li className="tag">CloudFront caching</li>
+                  <li className="tag">React 19</li>
+                </ul>
+                <a
+                  className="card-link"
+                  href="https://github.com/mvcprogrammer/mvcprogrammer.com/tree/main/api/src/Fhir.Api"
+                  target="_blank"
+                  rel="noopener"
+                >
+                  API on GitHub
+                </a>
+                <a
+                  className="card-link"
+                  href="https://github.com/mvcprogrammer/mvcprogrammer.com/blob/main/api/openapi.yaml"
+                  target="_blank"
+                  rel="noopener"
+                >
+                  OpenAPI spec
+                </a>
+
+                <details
+                  className="fhir-accordion"
+                  data-fhir-accordion
+                  open={fhirOpen}
+                  onToggle={onFhirToggle}
+                >
+                  <summary className="button button-primary fhir-accordion-summary">
+                    <Icon name="data" />
+                    <span className="fhir-accordion-open-label">Try the patient explorer</span>
+                    <span className="fhir-accordion-close-label">Close the patient explorer</span>
+                  </summary>
+                  {fhirLoaded && (
+                    <Suspense fallback={null}>
+                      <FhirExplorer />
+                    </Suspense>
+                  )}
+                </details>
               </div>
             </article>
           </div>
