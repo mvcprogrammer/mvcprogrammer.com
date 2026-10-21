@@ -76,6 +76,11 @@ The dev server has no `/api`, so the timeline falls back to the bundled seed and
 stays hidden. Serve the build output behind the real CloudFront behaviors (or any host that proxies
 `/api`) to see the filter.
 
+`package.json` carries an npm `overrides` entry for `vite`. `@angular/build` pins vite to an exact
+version, and the pinned 8.3.0 shipped three launch-editor advisories in the dev server's open-in-editor
+endpoint, fixed in 8.3.3. The override keeps the lockfile on the patched line; remove it once the
+installed `@angular/build` pins vite 8.3.3 or later.
+
 ## Hosting
 
 Published to the `angular/` prefix of the `mvcprogrammer.com` bucket and served by its own
