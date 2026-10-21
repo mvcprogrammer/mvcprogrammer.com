@@ -5,13 +5,15 @@ import { ContactClient } from '../interfaces/contact-client';
 import { ContactTopicState } from '../interfaces/contact-topic-state';
 import { EngagementTracker } from '../interfaces/engagement-tracker';
 import { ExperienceClient } from '../interfaces/experience-client';
+import { FhirClient } from '../interfaces/fhir-client';
 import { BeaconEngagementTracker } from '../services/beacon-engagement-tracker';
 import { HttpContactClient } from '../services/http-contact-client';
 import { HttpExperienceClient } from '../services/http-experience-client';
+import { HttpFhirClient } from '../services/http-fhir-client';
 import { SubjectContactTopicState } from '../services/subject-contact-topic-state';
 
 /**
- * Registers the site's services: the options, HttpClient over fetch, the two clients behind their
+ * Registers the site's services: the options, HttpClient over fetch, the three clients behind their
  * abstract tokens, the contact topic state, and the engagement tracker. The Angular counterpart of AddPortfolioServices().
  * @param options Site endpoints. Validated up front so a misconfigured build fails at startup.
  */
@@ -22,6 +24,7 @@ export function provideSite(options: SiteOptions): EnvironmentProviders {
     provideHttpClient(withFetch()),
     { provide: SITE_OPTIONS, useValue: options },
     { provide: ExperienceClient, useClass: HttpExperienceClient },
+    { provide: FhirClient, useClass: HttpFhirClient },
     { provide: ContactClient, useClass: HttpContactClient },
     { provide: ContactTopicState, useClass: SubjectContactTopicState },
     { provide: EngagementTracker, useClass: BeaconEngagementTracker },
@@ -38,6 +41,7 @@ export function validateSiteOptions(options: SiteOptions): void {
     'contactEndpoint',
     'experienceApiBase',
     'experienceSeedPath',
+    'fhirApiBase',
     'kioskUrl',
     'resumeUrl',
   ];

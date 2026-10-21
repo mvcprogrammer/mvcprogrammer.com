@@ -1,11 +1,11 @@
-import { TestBed } from '@angular/core/testing';
+import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { AboutSection } from './about-section/about-section';
 import { ColophonSection } from './colophon-section/colophon-section';
 import { HeroSection } from './hero-section/hero-section';
 import { PortfolioSection } from './portfolio-section/portfolio-section';
 import { QuoteSection } from './quote-section/quote-section';
 import { ResumeSection } from './resume-section/resume-section';
-import { createSiteTestServices } from '../../testing/site-testing';
+import { SiteTestServices, createSiteTestServices } from '../../testing/site-testing';
 
 describe('static sections', () => {
   describe('HeroSection', () => {
@@ -30,7 +30,7 @@ describe('static sections', () => {
   });
 
   describe('AboutSection', () => {
-    it('should link the edition tags to the four editions and the Healthcare tag to the FHIR explorer, each with a hint', async () => {
+    it('should link the edition tags to the four editions and the Healthcare tag to the FHIR API card, each with a hint', async () => {
       // Arrange
       const fixture = TestBed.createComponent(AboutSection);
 
@@ -45,7 +45,7 @@ describe('static sections', () => {
         ['React', 'https://react.mvcprogrammer.com/', 'See the React edition of this site'],
         ['Blazor', 'https://blazor.mvcprogrammer.com/', 'See the Blazor edition of this site'],
         ['JavaScript', 'https://mvcprogrammer.com/', 'See the plain JavaScript edition of this site'],
-        ['Healthcare (HL7, FHIR, HIPAA)', 'https://mvcprogrammer.com/fhir', 'Open the FHIR R4 patient explorer, a live demo on this site'],
+        ['Healthcare (HL7, FHIR, HIPAA)', '#fhir-api', 'Open the FHIR API card and its live patient explorer in Selected Work'],
       ]);
       const tags = Array.from(host.querySelectorAll('ul[aria-label="Skills"] .tag')).map((tag) => tag.textContent?.trim());
       expect(tags.length).toBe(12);
@@ -68,13 +68,25 @@ describe('static sections', () => {
   });
 
   describe('PortfolioSection', () => {
+    let services: SiteTestServices;
+    let fixture: ComponentFixture<PortfolioSection>;
+    let host: HTMLElement;
+
+    beforeEach(async () => {
+      services = createSiteTestServices();
+      await TestBed.configureTestingModule({ imports: [PortfolioSection], providers: services.providers }).compileComponents();
+      window.location.hash = '';
+      fixture = TestBed.createComponent(PortfolioSection);
+      await fixture.whenStable();
+      host = fixture.nativeElement as HTMLElement;
+    });
+
+    afterEach(() => {
+      window.location.hash = '';
+    });
+
     it('should link only to the source and open the kiosk from the card button', async () => {
       // Arrange
-      const services = createSiteTestServices();
-      await TestBed.configureTestingModule({ imports: [PortfolioSection], providers: services.providers }).compileComponents();
-      const fixture = TestBed.createComponent(PortfolioSection);
-      await fixture.whenStable();
-      const host = fixture.nativeElement as HTMLElement;
       const dialog = host.querySelector('dialog') as HTMLDialogElement;
       Object.defineProperty(dialog, 'showModal', { value: vi.fn(), configurable: true });
       expect(host.querySelector('iframe')).toBeNull();
@@ -87,8 +99,79 @@ describe('static sections', () => {
       expect(host.querySelector('iframe')?.getAttribute('src')).toBe('https://kiosk.example.test/');
       const links = Array.from(host.querySelectorAll('.portfolio-card-featured .card-link')).map((a) => a.getAttribute('href'));
       expect(links).toEqual(['https://github.com/mvcprogrammer/mvcprogrammer.com']);
-      expect(host.querySelectorAll('.portfolio-card').length).toBe(3);
+      expect(host.querySelectorAll('.portfolio-card').length).toBe(4);
     });
+
+    it('should render the FHIR API card last, closed, without the explorer or any FHIR request', () => {
+      // Assert
+      const cards = host.querySelectorAll('.portfolio-card');
+      const card = cards[cards.length - 1];
+      expect(card.id).toBe('fhir-api');
+      expect(card.querySelector('h3')?.textContent).toBe('FHIR API');
+      expect(card.querySelector('.card-media img')?.getAttribute('src')).toBe('assets/images/portfolio/fhir-api.jpg');
+      const links = Array.from(card.querySelectorAll(':scope > .card-body > .card-link')).map((a) => a.getAttribute('href'));
+      expect(links).toEqual([
+        'https://github.com/mvcprogrammer/mvcprogrammer.com/tree/main/api/src/Fhir.Api',
+        'https://github.com/mvcprogrammer/mvcprogrammer.com/blob/main/api/openapi.yaml',
+      ]);
+      expect(accordion().open).toBe(false);
+      expect(accordion().querySelector('summary')?.classList.contains('button-primary')).toBe(true);
+      expect(host.querySelector('app-fhir-explorer')).toBeNull();
+      expect(services.fhir.capabilityCalls).toBe(0);
+    });
+
+    it('should render the explorer, which checks the capability, when the accordion is opened, and keep it when closed again', async () => {
+      // Act
+      toggle(true);
+      await fixture.whenStable();
+
+      // Assert
+      expect(host.querySelector('app-fhir-explorer #fhir-search')).not.toBeNull();
+      expect(services.fhir.capabilityCalls).toBe(1);
+
+      // Act again
+      toggle(false);
+      await fixture.whenStable();
+
+      // Assert again
+      expect(accordion().open).toBe(false);
+      expect(host.querySelector('app-fhir-explorer')).not.toBeNull();
+      expect(services.fhir.capabilityCalls).toBe(1);
+    });
+
+    it('should open the accordion when the URL fragment changes to #fhir-api', async () => {
+      // Act
+      window.location.hash = PortfolioSection.FHIR_HASH;
+      window.dispatchEvent(new Event('hashchange'));
+      await fixture.whenStable();
+
+      // Assert
+      expect(accordion().open).toBe(true);
+      expect(host.querySelector('app-fhir-explorer')).not.toBeNull();
+    });
+
+    it('should open the accordion on first render when the page loads on #fhir-api', async () => {
+      // Arrange
+      window.location.hash = PortfolioSection.FHIR_HASH;
+      const other = TestBed.createComponent(PortfolioSection);
+
+      // Act
+      await other.whenStable();
+
+      // Assert
+      const details = (other.nativeElement as HTMLElement).querySelector('details.fhir-accordion') as HTMLDetailsElement;
+      expect(details.open).toBe(true);
+    });
+
+    function accordion(): HTMLDetailsElement {
+      return host.querySelector('details.fhir-accordion') as HTMLDetailsElement;
+    }
+
+    /** Flips the native element the way a click on the summary does, then fires its toggle event. */
+    function toggle(open: boolean): void {
+      accordion().open = open;
+      accordion().dispatchEvent(new Event('toggle'));
+    }
   });
 
   describe('ResumeSection', () => {
