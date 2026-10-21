@@ -7,7 +7,6 @@ The site follows the KISS principle. Plain HTML, CSS, and vanilla JavaScript. No
 ```
 index.html                  the single page
 fhir.js                     the FHIR R4 patient explorer inside the FHIR API card (loaded on first open; see FHIR API)
-fhir.html                   redirect stub for the explorer's old URL, kept until the CloudFront 301 is confirmed live
 404.html                    small not-found page, served by CloudFront for any missing path
 privacy.html, terms.html    privacy policy and SMS terms (required for the toll-free SMS registration)
 styles.css                  mobile-first styles shared by all four editions, light/dark via prefers-color-scheme
@@ -188,7 +187,7 @@ Create it under CloudFront > Functions as `mvcprogrammer-www-redirect` (runtime 
 ```sh
 ETAG=$(aws cloudfront describe-function --name mvcprogrammer-www-redirect --stage DEVELOPMENT --query ETag --output text)
 ETAG=$(aws cloudfront update-function --name mvcprogrammer-www-redirect --if-match "$ETAG" \
-  --function-config '{"Comment":"301 www to apex; 204 for the /ping engagement beacon; /fhir to fhir.html","Runtime":"cloudfront-js-2.0"}' \
+  --function-config '{"Comment":"www to apex 301, /ping beacon 204, /fhir 301 to the FHIR API card","Runtime":"cloudfront-js-2.0"}' \
   --function-code fileb://infra/cloudfront/www-redirect.js --query ETag --output text)
 aws cloudfront test-function --name mvcprogrammer-www-redirect --if-match "$ETAG" --stage DEVELOPMENT --event-object fileb://event.json
 aws cloudfront publish-function --name mvcprogrammer-www-redirect --if-match "$ETAG"
@@ -240,7 +239,7 @@ aws s3 sync . s3://mvcprogrammer.com/ --delete \
   --cache-control "public, max-age=300, s-maxage=31536000" \
   --exclude "*" \
   --include "index.html" --include "privacy.html" --include "terms.html" --include "404.html" \
-  --include "fhir.html" --include "fhir.js" \
+  --include "fhir.js" \
   --include "styles.css" --include "vanilla.css" --include "main.js" \
   --include "favicon.svg" --include "favicon.ico" --include "apple-touch-icon.png" --include "site.webmanifest" \
   --include "robots.txt" --include "sitemap.xml" --include "assets/*" \
@@ -620,7 +619,7 @@ aws logs tail /aws/lambda/mvcprogrammer-experience-api --since 1h --format short
 
 ## FHIR API
 
-The function behind the patient explorer at [/fhir](https://mvcprogrammer.com/fhir). Code and design notes:
+The function behind the patient explorer in the [FHIR API card](https://mvcprogrammer.com/#fhir-api) on every edition. Code and design notes:
 [api/README.md](../api/README.md), section FHIR API. Stack: `mvcprogrammer-fhir-api` (CloudFormation, SAM
 transform) from `api/template-fhir.yaml`. The function reads a public FHIR sandbox and touches no AWS
 service, so its role has no policies beyond logging.
@@ -683,18 +682,16 @@ from the Experience section applies here too, so a missing patient reaches the p
 
 ### 3. The old URL
 
-The explorer is the FHIR API card in Selected Work since 2026-10-21, opened by `#fhir-api` in the URL. The
-`mvcprogrammer-www-redirect` function (section 4b) answers the old page URL with a permanent redirect. After
-publishing a change to it:
+The explorer is the FHIR API card in Selected Work on every edition since 2026-10-21, opened by `#fhir-api` in the
+URL. The `mvcprogrammer-www-redirect` function (section 4b) answers the old page URL, which existed from 2026-10-20
+to 2026-10-21, with a permanent redirect to the card on the default edition; the stub page that bridged the gap was
+removed once the 301 was live. After publishing a change to the function:
 
 ```bash
 curl -s -o /dev/null -w "%{http_code} %{redirect_url}\n" https://mvcprogrammer.com/fhir      # 301 https://mvcprogrammer.com/#fhir-api
 curl -s -o /dev/null -w "%{http_code} %{redirect_url}\n" https://mvcprogrammer.com/fhir/     # same
 curl -s -o /dev/null -w "%{http_code}\n" https://mvcprogrammer.com/fhir.js                  # 200
 ```
-
-`fhir.html` in the bucket is a meta-refresh stub to the same place, a fallback for the moment between a deploy and
-the function publish; it goes away, with its deploy `--include`, once the 301 is confirmed live.
 
 ### Logs
 
