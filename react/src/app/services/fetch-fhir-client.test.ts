@@ -22,12 +22,12 @@ describe('FetchFhirClient', () => {
       const client = new FetchFhirClient(TEST_SITE_OPTIONS, fetch);
 
       // Act
-      const response = await client.searchPatients({ family: 'Watsica', birthdate: '', identifier: '' });
+      const response = await client.searchPatients({ family: 'Programmer', birthdate: '', identifier: '' });
 
       // Assert
       expect(fetch).toHaveBeenCalledTimes(1);
       const [url, init] = fetch.mock.calls[0]!;
-      expect(url).toBe('api/fhir/patients?family=Watsica');
+      expect(url).toBe('api/fhir/patients?family=Programmer');
       expect(init?.headers).toEqual({ Accept: 'application/json, application/problem+json' });
       expect(init?.signal).toBeInstanceOf(AbortSignal);
       expect(response.body).toEqual(result);
@@ -58,7 +58,7 @@ describe('FetchFhirClient', () => {
       const client = new FetchFhirClient(TEST_SITE_OPTIONS, fetch);
 
       // Act
-      const error = await client.searchPatients({ family: 'Watsica', birthdate: '', identifier: '' }).catch((e: unknown) => e);
+      const error = await client.searchPatients({ family: 'Programmer', birthdate: '', identifier: '' }).catch((e: unknown) => e);
 
       // Assert
       expect(error).toBeInstanceOf(FhirProblemError);
@@ -76,7 +76,7 @@ describe('FetchFhirClient', () => {
       const client = new FetchFhirClient(TEST_SITE_OPTIONS, fetch);
 
       // Act, Assert
-      await expect(client.searchPatients({ family: 'Watsica', birthdate: '', identifier: '' })).rejects.toMatchObject({
+      await expect(client.searchPatients({ family: 'Programmer', birthdate: '', identifier: '' })).rejects.toMatchObject({
         status: 429,
         message: FhirProblemError.RATE_LIMIT_MESSAGE,
       });
@@ -88,7 +88,7 @@ describe('FetchFhirClient', () => {
       const client = new FetchFhirClient(TEST_SITE_OPTIONS, fetch);
 
       // Act, Assert
-      await expect(client.searchPatients({ family: 'Watsica', birthdate: '', identifier: '' })).rejects.toMatchObject({
+      await expect(client.searchPatients({ family: 'Programmer', birthdate: '', identifier: '' })).rejects.toMatchObject({
         status: 504,
         title: null,
         message: FhirProblemError.UPSTREAM_MESSAGE,
@@ -101,7 +101,7 @@ describe('FetchFhirClient', () => {
       const client = new FetchFhirClient(TEST_SITE_OPTIONS, fetch);
 
       // Act, Assert
-      await expect(client.searchPatients({ family: 'Watsica', birthdate: '', identifier: '' })).rejects.toMatchObject({
+      await expect(client.searchPatients({ family: 'Programmer', birthdate: '', identifier: '' })).rejects.toMatchObject({
         status: 200,
         message: FhirProblemError.NOT_JSON_MESSAGE,
       });
@@ -113,7 +113,7 @@ describe('FetchFhirClient', () => {
       const client = new FetchFhirClient(TEST_SITE_OPTIONS, fetch);
 
       // Act, Assert
-      await expect(client.searchPatients({ family: 'Watsica', birthdate: '', identifier: '' })).rejects.toMatchObject({
+      await expect(client.searchPatients({ family: 'Programmer', birthdate: '', identifier: '' })).rejects.toMatchObject({
         status: 200,
         message: FhirProblemError.NOT_JSON_MESSAGE,
       });
@@ -125,7 +125,7 @@ describe('FetchFhirClient', () => {
       const client = new FetchFhirClient(TEST_SITE_OPTIONS, fetch);
 
       // Act, Assert
-      await expect(client.searchPatients({ family: 'Watsica', birthdate: '', identifier: '' })).rejects.toMatchObject({
+      await expect(client.searchPatients({ family: 'Programmer', birthdate: '', identifier: '' })).rejects.toMatchObject({
         status: 0,
         timedOut: true,
         message: FhirProblemError.TIMEOUT_MESSAGE,
@@ -138,7 +138,7 @@ describe('FetchFhirClient', () => {
       const client = new FetchFhirClient(TEST_SITE_OPTIONS, fetch);
 
       // Act, Assert
-      await expect(client.searchPatients({ family: 'Watsica', birthdate: '', identifier: '' })).rejects.toMatchObject({
+      await expect(client.searchPatients({ family: 'Programmer', birthdate: '', identifier: '' })).rejects.toMatchObject({
         status: 0,
         timedOut: false,
         message: FhirProblemError.NETWORK_MESSAGE,

@@ -13,7 +13,7 @@ import { validateFhirSearch, type FhirSearchErrors, type FhirSearchValues } from
 export const FHIR_API = '/api/fhir';
 
 /** The prefilled example and the names tried in turn when it returns nothing (the sandbox is wiped now and then). */
-export const FALLBACK_FAMILIES: readonly string[] = ['Watsica', 'Grant', 'Meridius', 'Deshmukh', 'Smith', 'Johnson', 'Williams'];
+export const FALLBACK_FAMILIES: readonly string[] = ['Programmer', 'Grant', 'Meridius', 'Deshmukh', 'Smith', 'Johnson', 'Williams'];
 
 /** Lines kept in the log. */
 export const LOG_LIMIT = 60;

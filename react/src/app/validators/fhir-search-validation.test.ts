@@ -3,7 +3,7 @@ import { BIRTHDATE_FORMAT_MESSAGE, FAMILY_LENGTH_MESSAGE, FAMILY_REQUIRED_MESSAG
 describe('validateFhirSearch', () => {
   it('should accept the prefilled example', () => {
     // Act, Assert
-    expect(validateFhirSearch({ family: 'Watsica', birthdate: '', identifier: '' })).toEqual({});
+    expect(validateFhirSearch({ family: 'Programmer', birthdate: '', identifier: '' })).toEqual({});
   });
 
   it('should require a family name and treat whitespace as missing', () => {
