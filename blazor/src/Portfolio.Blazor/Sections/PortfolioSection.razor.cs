@@ -15,6 +15,7 @@ public sealed partial class PortfolioSection : IAsyncDisposable
     public const string FHIR_HASH = "#fhir-api";
 
     private KioskDialog? _kiosk;
+    private ElementReference _fhirCard;
     private ElementReference _fhirAccordion;
     private bool _fhirOpen;
     private bool _fhirLoaded;
@@ -29,16 +30,25 @@ public sealed partial class PortfolioSection : IAsyncDisposable
     /// <summary>True while the FHIR API card's accordion is open.</summary>
     public bool FhirOpen => _fhirOpen;
 
-    /// <summary>Called from site.js when the visitor toggles the accordion.</summary>
+    /// <summary>
+    /// Called from site.js when the accordion toggles. Opening hides the card's image, so the body jumps
+    /// up and the explorer unfolds below the fold; scrolling the card to the top of the viewport keeps
+    /// the whole thing in view. The stylesheet's scroll-padding-top clears the header and
+    /// prefers-reduced-motion drops the glide.
+    /// </summary>
     /// <param name="open">The native element's open state after the toggle.</param>
     [JSInvokable]
-    public void OnToggled(bool open)
+    public async Task OnToggled(bool open)
     {
         SetFhirOpen(open);
         StateHasChanged();
+        if (open && _module is not null)
+        {
+            await _module.InvokeVoidAsync("scrollIntoView", _fhirCard);
+        }
     }
 
-    /// <summary>Called from site.js when the page is on, or moves to, "#fhir-api"; the browser scrolls to the card on its own.</summary>
+    /// <summary>Called from site.js when the page is on, or moves to, "#fhir-api"; the browser scrolls to the card on its own, and the toggle scrolls again.</summary>
     [JSInvokable]
     public void OnHashMatched()
     {

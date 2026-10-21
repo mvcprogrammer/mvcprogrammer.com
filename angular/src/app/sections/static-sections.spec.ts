@@ -70,9 +70,13 @@ describe('static sections', () => {
     let services: SiteTestServices;
     let fixture: ComponentFixture<PortfolioSection>;
     let host: HTMLElement;
+    let scrollIntoView: ReturnType<typeof vi.fn<Element['scrollIntoView']>>;
 
     beforeEach(async () => {
       services = createSiteTestServices();
+      // jsdom has no scrollIntoView; the stub records which element asked to be scrolled
+      scrollIntoView = vi.fn<Element['scrollIntoView']>();
+      Element.prototype.scrollIntoView = scrollIntoView;
       await TestBed.configureTestingModule({ imports: [PortfolioSection], providers: services.providers }).compileComponents();
       window.location.hash = '';
       fixture = TestBed.createComponent(PortfolioSection);
@@ -117,6 +121,7 @@ describe('static sections', () => {
       expect(accordion().querySelector('summary')?.classList.contains('button-primary')).toBe(true);
       expect(host.querySelector('app-fhir-explorer')).toBeNull();
       expect(services.fhir.capabilityCalls).toBe(0);
+      expect(scrollIntoView).not.toHaveBeenCalled();
     });
 
     it('should render the explorer, which checks the capability, when the accordion is opened, and keep it when closed again', async () => {
@@ -136,6 +141,25 @@ describe('static sections', () => {
       expect(accordion().open).toBe(false);
       expect(host.querySelector('app-fhir-explorer')).not.toBeNull();
       expect(services.fhir.capabilityCalls).toBe(1);
+    });
+
+    it('should scroll the card to the top of the viewport when the accordion is opened, and not when it is closed', async () => {
+      // Act
+      toggle(true);
+      await fixture.whenStable();
+
+      // Assert (jsdom fires its own toggle beside the helper's, so the count is checked for growth, not exactness)
+      const callsAfterOpen = scrollIntoView.mock.calls.length;
+      expect(callsAfterOpen).toBeGreaterThan(0);
+      expect(scrollIntoView.mock.instances.every((element) => element === host.querySelector('#fhir-api'))).toBe(true);
+      expect(scrollIntoView).toHaveBeenCalledWith({ block: 'start' });
+
+      // Act again
+      toggle(false);
+      await fixture.whenStable();
+
+      // Assert again
+      expect(scrollIntoView).toHaveBeenCalledTimes(callsAfterOpen);
     });
 
     it('should open the accordion when the URL fragment changes to #fhir-api', async () => {

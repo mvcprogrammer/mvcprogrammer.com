@@ -143,6 +143,12 @@ export function watchHash(dotnet, hash, method = "OnHashMatched") {
   };
 }
 
+/** Scrolls the page so the element sits at the top of the viewport, under the header: the stylesheet's
+ *  scroll-padding-top and scroll-behavior apply as they do to an anchor link. */
+export function scrollIntoView(element) {
+  element?.scrollIntoView({ block: "start" });
+}
+
 /** Keeps a scrolling element's newest content in view, as a terminal does. */
 export function scrollToEnd(element) {
   if (element) element.scrollTop = element.scrollHeight;

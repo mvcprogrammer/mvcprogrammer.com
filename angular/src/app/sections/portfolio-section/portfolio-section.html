@@ -95,7 +95,7 @@
       <!-- FHIR API card. The explorer component is in a deferred block keyed to the accordion, so its
            code and its first request to /api/fhir load only when a visitor opens it. Open, the card
            spans the grid row (styles.css) so the two-panel results keep their width. -->
-      <article class="card portfolio-card" id="fhir-api">
+      <article class="card portfolio-card" id="fhir-api" #fhirCard>
         <div class="card-media">
           <img src="assets/images/portfolio/fhir-api-angular.jpg" alt="The Angular edition's FHIR R4 patient explorer in dark mode, showing a synthetic patient's summary: counts and active conditions with SNOMED codes" width="1200" height="750" loading="lazy" decoding="async">
         </div>
