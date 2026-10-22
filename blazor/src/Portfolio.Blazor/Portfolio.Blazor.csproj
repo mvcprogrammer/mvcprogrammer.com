@@ -25,6 +25,7 @@
        editions cannot drift: the stylesheet, fonts, images, icons, and the Experience seed data. -->
   <ItemGroup>
     <Content Include="..\..\..\styles.css" Link="wwwroot\styles.css" />
+    <Content Include="..\..\..\theme.js" Link="wwwroot\theme.js" />
     <Content Include="..\..\..\favicon.svg" Link="wwwroot\favicon.svg" />
     <Content Include="..\..\..\favicon.ico" Link="wwwroot\favicon.ico" />
     <Content Include="..\..\..\apple-touch-icon.png" Link="wwwroot\apple-touch-icon.png" />

@@ -34,7 +34,8 @@ react/
   src/testing/                  Fakes, fixtures, and helpers shared by the tests.
 ```
 
-The stylesheet, fonts, images, icons, and `api/seed/positions.json` are copied into `public/` from
+The stylesheet, the theme script (`theme.js`, which applies a saved light or dark choice before the
+first paint), fonts, images, icons, and `api/seed/positions.json` are copied into `public/` from
 the repository root by `scripts/sync-shared.mjs`, which the `prebuild` and `prestart` npm scripts
 run, so the editions cannot drift. `public/` is generated and is not committed.
 

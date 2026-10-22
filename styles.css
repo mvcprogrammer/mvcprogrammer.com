@@ -1,6 +1,7 @@
 /* ==========================================================================
    mvcprogrammer.com — styles.css
-   Mobile-first. Light/dark follows the OS via prefers-color-scheme.
+   Mobile-first. Light/dark follows the OS via prefers-color-scheme until the visitor picks one with
+   the theme toggle; data-theme on the root then sets color-scheme, and light-dark() follows it.
    ========================================================================== */
 
 /* ---------- Fonts (self-hosted, latin subset, variable weight) ---------- */
@@ -29,21 +30,22 @@
   --font-sans: "Inter", ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
   --font-mono: "JetBrains Mono", ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
 
-  /* Light palette: JetBrains Rider light UI grays with the JetBrains blue accent */
-  --bg: #f7f8fa;
-  --bg-alt: #eff1f4;
-  --surface: #ffffff;
-  --text: #1e1f22;
-  --text-muted: #5a5d63;
-  --border: #dfe1e5;
-  --accent: #2f62d9;
-  --accent-hover: #244fb8;
+  /* JetBrains Rider palette, light UI grays and New UI chrome, with the JetBrains blue accent.
+     light-dark() picks the value for the active color scheme. */
+  --bg: light-dark(#f7f8fa, #1e1f22);
+  --bg-alt: light-dark(#eff1f4, #26282d);
+  --surface: light-dark(#ffffff, #2b2d30);
+  --text: light-dark(#1e1f22, #dfe1e5);
+  --text-muted: light-dark(#5a5d63, #a8adbd);
+  --border: light-dark(#dfe1e5, #393b40);
+  --accent: light-dark(#2f62d9, #548af7);
+  --accent-hover: light-dark(#244fb8, #6f9cff);
   --hover: #ff6f91;
   --hover-soft: rgba(255, 111, 145, 0.14);
   --hover-contrast: #16171a;
-  --accent-contrast: #ffffff;
-  --accent-soft: rgba(53, 116, 240, 0.10);
-  --shadow: 0 1px 2px rgba(30, 31, 34, 0.06), 0 8px 24px rgba(30, 31, 34, 0.06);
+  --accent-contrast: light-dark(#ffffff, #16171a);
+  --accent-soft: light-dark(rgba(53, 116, 240, 0.10), rgba(84, 138, 247, 0.14));
+  --shadow: 0 1px 2px light-dark(rgba(30, 31, 34, 0.06), rgba(0, 0, 0, 0.45)), 0 8px 24px light-dark(rgba(30, 31, 34, 0.06), rgba(0, 0, 0, 0.35));
 
   --radius: 12px;
   --radius-sm: 8px;
@@ -53,25 +55,14 @@
   --ease: cubic-bezier(0.2, 0.7, 0.2, 1);
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    /* Dark palette: JetBrains Rider New UI chrome with the JetBrains blue accent */
-    --bg: #1e1f22;
-    --bg-alt: #26282d;
-    --surface: #2b2d30;
-    --text: #dfe1e5;
-    --text-muted: #a8adbd;
-    --border: #393b40;
-    --accent: #548af7;
-    --accent-hover: #6f9cff;
-    --accent-contrast: #16171a;
-    --accent-soft: rgba(84, 138, 247, 0.14);
-    --shadow: 0 1px 2px rgba(0, 0, 0, 0.45), 0 8px 24px rgba(0, 0, 0, 0.35);
-  }
+/* The theme toggle's choice, saved and applied by theme.js. Without it the root keeps
+   color-scheme: light dark and the OS decides. */
+:root[data-theme="light"] {
+  color-scheme: light;
+}
 
-  .form-status.is-error {
-    color: #fca5a5;
-  }
+:root[data-theme="dark"] {
+  color-scheme: dark;
 }
 
 /* ---------- Reset & base ---------- */
@@ -316,8 +307,9 @@ img, svg {
   text-decoration: none;
 }
 
-/* The brand group is the site name plus the edition menu: a pill button naming the edition that is
-   open, which drops a list of the four editions. On phones the pill wraps under the name. */
+/* The brand group is the site name plus the edition menu (a pill button naming the edition that is
+   open, which drops a list of the four editions) and the theme toggle. On phones those two wrap
+   under the name. */
 .brand-group {
   display: flex;
   flex-wrap: wrap;
@@ -329,6 +321,13 @@ img, svg {
 
 .brand-name {
   white-space: nowrap;
+}
+
+/* The edition pill and the theme toggle travel together, so on phones they wrap under the name as a pair. */
+.brand-controls {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
 }
 
 .edition {
@@ -430,6 +429,57 @@ img, svg {
   color: var(--hover);
   background: var(--hover-soft);
   text-decoration: none;
+}
+
+/* Theme toggle: a round button beside the edition pill. It holds both icons and shows the one for
+   the theme a click switches to (the moon while light, the sun while dark), read from the same
+   data-theme and prefers-color-scheme the palette follows, so the button keeps no state. */
+.theme-toggle {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.75rem;
+  height: 1.75rem;
+  padding: 0;
+  border: 1px solid var(--border);
+  border-radius: 50%;
+  background: var(--surface);
+  color: var(--text-muted);
+  cursor: pointer;
+}
+
+.theme-toggle:hover {
+  color: var(--hover);
+  border-color: var(--hover);
+  background: var(--hover-soft);
+}
+
+.theme-toggle .icon {
+  width: 0.95rem;
+  height: 0.95rem;
+}
+
+.theme-icon {
+  display: inline-flex;
+}
+
+.theme-icon-sun,
+:root[data-theme="dark"] .theme-icon-moon {
+  display: none;
+}
+
+:root[data-theme="dark"] .theme-icon-sun {
+  display: inline-flex;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) .theme-icon-moon {
+    display: none;
+  }
+
+  :root:not([data-theme="light"]) .theme-icon-sun {
+    display: inline-flex;
+  }
 }
 
 .brand-mark {
@@ -1295,7 +1345,7 @@ img, svg {
 }
 
 .form-status.is-error {
-  color: #b91c1c;
+  color: light-dark(#b91c1c, #fca5a5);
 }
 
 .contact-form .button {

@@ -10,6 +10,29 @@
   var nav = document.getElementById("primary-nav");
   var navLinks = Array.prototype.slice.call(document.querySelectorAll(".nav-link"));
 
+  /* ---------- Theme toggle ----------
+     Flips between light and dark from whatever is showing now (a saved choice, else the OS) and
+     saves the choice for theme.js to apply on the next visit. The button keeps no state: the
+     stylesheet picks its icon from the same data-theme and prefers-color-scheme. */
+  var themeToggle = document.querySelector(".theme-toggle");
+  if (themeToggle) {
+    themeToggle.addEventListener("click", function () {
+      var root = document.documentElement;
+      var current = root.getAttribute("data-theme");
+      if (current !== "light" && current !== "dark") {
+        current =
+          typeof window.matchMedia === "function" && window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light";
+      }
+      var next = current === "dark" ? "light" : "dark";
+      root.setAttribute("data-theme", next);
+      try {
+        window.localStorage.setItem("theme", next);
+      } catch (error) {
+        /* Storage blocked: the choice lasts for this page only. */
+      }
+    });
+  }
+
   /* ---------- Edition menu ---------- */
   var edition = document.querySelector(".edition");
   var editionToggle = edition ? edition.querySelector(".edition-toggle") : null;

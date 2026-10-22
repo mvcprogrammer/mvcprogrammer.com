@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { useLocation } from 'react-router';
+import { Icon } from './Icon';
 import { SocialLinks } from './SocialLinks';
 
 /** A nav entry: the section id it scrolls to and its label. */
@@ -46,13 +47,33 @@ const TOP_ZONE = 200;
 /** The breakpoint at which the mobile menu becomes the desktop nav. */
 const DESKTOP_QUERY = '(min-width: 52em)';
 
+/**
+ * Flips between light and dark from whatever is showing now (a saved choice, else the OS) and saves
+ * the choice for theme.js to apply on the next visit. No state: the stylesheet picks the button's
+ * icon from the same data-theme and prefers-color-scheme.
+ */
+export function toggleTheme(): void {
+  const root = document.documentElement;
+  const saved = root.getAttribute('data-theme');
+  const osDark =
+    typeof window.matchMedia === 'function' && window.matchMedia('(prefers-color-scheme: dark)').matches;
+  const current = saved === 'light' || saved === 'dark' ? saved : osDark ? 'dark' : 'light';
+  const next = current === 'dark' ? 'light' : 'dark';
+  root.setAttribute('data-theme', next);
+  try {
+    window.localStorage.setItem('theme', next);
+  } catch {
+    // Storage blocked: the choice lasts for this page only.
+  }
+}
+
 const SECTION_OBSERVER_OPTIONS: IntersectionObserverInit = {
   rootMargin: '-40% 0px -50% 0px',
   threshold: [0, 0.1, 0.25, 0.5, 0.75, 1],
 };
 
 /**
- * Sticky header with the brand, the edition menu, the section nav, and the mobile menu toggle. The
+ * Sticky header with the brand, the edition menu, the theme toggle, the section nav, and the mobile menu toggle. The
  * scroll state, the section in view, and the open menus are state; the browser events feed them
  * through effects.
  */
@@ -209,31 +230,47 @@ export function SiteHeader() {
             <span className="brand-mark" aria-hidden="true"></span>
             <span className="brand-name">mvcprogrammer.com</span>
           </a>
-          <div className={editionsOpen ? 'edition is-open' : 'edition'} ref={edition}>
+          <div className="brand-controls">
+            <div className={editionsOpen ? 'edition is-open' : 'edition'} ref={edition}>
+              <button
+                className="edition-toggle"
+                type="button"
+                aria-haspopup="true"
+                aria-expanded={editionsOpen}
+                aria-controls="edition-menu"
+                onClick={() => setEditionsOpen((open) => !open)}
+                ref={editionToggle}
+              >
+                {CURRENT.label}
+              </button>
+              <ul className="edition-menu" id="edition-menu" role="list" aria-label="Editions of this site">
+                {EDITIONS.map((item) => (
+                  <li key={item.key}>
+                    <a
+                      className="edition-link"
+                      href={item.href}
+                      aria-current={item.key === CURRENT_EDITION ? 'true' : undefined}
+                    >
+                      {item.label}
+                    </a>
+                  </li>
+                ))}
+              </ul>
+            </div>
             <button
-              className="edition-toggle"
+              className="theme-toggle"
               type="button"
-              aria-haspopup="true"
-              aria-expanded={editionsOpen}
-              aria-controls="edition-menu"
-              onClick={() => setEditionsOpen((open) => !open)}
-              ref={editionToggle}
+              aria-label="Switch between light and dark theme"
+              title="Switch between light and dark theme"
+              onClick={toggleTheme}
             >
-              {CURRENT.label}
+              <span className="theme-icon theme-icon-moon" aria-hidden="true">
+                <Icon name="moon" />
+              </span>
+              <span className="theme-icon theme-icon-sun" aria-hidden="true">
+                <Icon name="sun" />
+              </span>
             </button>
-            <ul className="edition-menu" id="edition-menu" role="list" aria-label="Editions of this site">
-              {EDITIONS.map((item) => (
-                <li key={item.key}>
-                  <a
-                    className="edition-link"
-                    href={item.href}
-                    aria-current={item.key === CURRENT_EDITION ? 'true' : undefined}
-                  >
-                    {item.label}
-                  </a>
-                </li>
-              ))}
-            </ul>
           </div>
         </div>
 

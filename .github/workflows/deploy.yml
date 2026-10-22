@@ -54,7 +54,7 @@ jobs:
             --exclude "*" \
             --include "index.html" --include "privacy.html" --include "terms.html" --include "404.html" \
             --include "fhir.js" \
-            --include "styles.css" --include "vanilla.css" --include "main.js" \
+            --include "styles.css" --include "vanilla.css" --include "main.js" --include "theme.js" \
             --include "favicon.svg" --include "favicon.ico" --include "apple-touch-icon.png" --include "site.webmanifest" \
             --include "robots.txt" --include "sitemap.xml" --include "assets/*" \
             --exclude "assets/README.md" --exclude "assets/*/README.md" --exclude "*.gitkeep"

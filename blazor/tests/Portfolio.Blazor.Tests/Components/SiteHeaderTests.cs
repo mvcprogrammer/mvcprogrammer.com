@@ -3,7 +3,7 @@ using Portfolio.Blazor.Tests.Helpers;
 
 namespace Portfolio.Blazor.Tests.Components;
 
-/// <summary>Tests for <see cref="SiteHeader"/>: the mobile menu, the edition list, scroll state, and current-section highlight.</summary>
+/// <summary>Tests for <see cref="SiteHeader"/>: the mobile menu, the edition list, the theme toggle, scroll state, and current-section highlight.</summary>
 public sealed class SiteHeaderTests : BunitContext
 {
     #region Render Tests
@@ -197,6 +197,44 @@ public sealed class SiteHeaderTests : BunitContext
 
         // Assert
         Assert.DoesNotContain(module.Invocations, i => i.Identifier == "focus");
+    }
+
+    #endregion
+
+    #region ToggleThemeAsync Tests
+
+    /// <summary>The theme button carries both icons and an accessible name, and does not touch the theme on render.</summary>
+    [Fact]
+    public void ToggleThemeAsync_ShouldRenderButtonWithBothIcons()
+    {
+        // Arrange
+        var module = this.SetupSiteModule();
+
+        // Act
+        var cut = Render<SiteHeader>();
+
+        // Assert
+        var button = cut.Find(".theme-toggle");
+        Assert.Equal("Switch between light and dark theme", button.GetAttribute("aria-label"));
+        Assert.Equal("#icon-moon", button.QuerySelector(".theme-icon-moon use")?.GetAttribute("href"));
+        Assert.Equal("#icon-sun", button.QuerySelector(".theme-icon-sun use")?.GetAttribute("href"));
+        Assert.DoesNotContain(module.Invocations, i => i.Identifier == "toggleTheme");
+    }
+
+    /// <summary>Each press asks site.js to flip the theme once.</summary>
+    [Fact]
+    public void ToggleThemeAsync_ShouldCallSiteModuleOncePerPress()
+    {
+        // Arrange
+        var module = this.SetupSiteModule();
+        var cut = Render<SiteHeader>();
+
+        // Act
+        cut.Find(".theme-toggle").Click();
+        cut.Find(".theme-toggle").Click();
+
+        // Assert
+        Assert.Equal(2, module.Invocations.Count(i => i.Identifier == "toggleTheme"));
     }
 
     #endregion

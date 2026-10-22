@@ -11,7 +11,7 @@
       </div>
       <div class="colophon-item">
         <dt>Shared with the static site</dt>
-        <dd>The stylesheet, fonts, images, icons, and the Experience seed data are linked into this project from the repository root at build time rather than copied, so the editions cannot drift. The markup is the static page's markup, section by section. One extra stylesheet carries the boot screen and this edition's palette, the .NET brand violet, by overriding the shared design tokens with <code>light-dark()</code>; no rule from the shared stylesheet is repeated.</dd>
+        <dd>The stylesheet, fonts, images, icons, and the Experience seed data are linked into this project from the repository root at build time rather than copied, so the editions cannot drift. The markup is the static page's markup, section by section. One extra stylesheet carries the boot screen and this edition's palette, the .NET brand violet, by overriding the shared design tokens with <code>light-dark()</code>; no rule from the shared stylesheet is repeated. The theme toggle beside the edition menu calls a JavaScript module function through <code>IJSRuntime</code> that sets <code>data-theme</code> on the root and saves the choice; a small shared script in the head applies a saved choice before the WebAssembly runtime starts, so the page never flashes the wrong theme.</dd>
       </div>
       <div class="colophon-item">
         <dt>API integration</dt>

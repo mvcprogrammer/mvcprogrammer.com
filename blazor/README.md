@@ -33,7 +33,8 @@ blazor/src/Portfolio.Blazor/
                               light-dark()), the boot screen, and the error bar; everything else is the shared styles.css.
 ```
 
-The stylesheet, fonts, images, icons, and `api/seed/positions.json` are linked into `wwwroot`
+The stylesheet, the theme script (`theme.js`, which applies a saved light or dark choice before the
+first paint), fonts, images, icons, and `api/seed/positions.json` are linked into `wwwroot`
 from the repository root by the project file, not copied, so the editions cannot drift. The Angular
 edition in `../angular` is the third build of the same page; see [angular/README.md](../angular/README.md).
 

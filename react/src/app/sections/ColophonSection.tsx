@@ -37,7 +37,11 @@ export function ColophonSection() {
               Policy forbids inline styles, so the few additions sit in one extra stylesheet that
               Vite bundles next to the scripts. That file also carries this edition's palette, the
               slate and cyan of the React documentation, by overriding the shared design tokens with{' '}
-              <code>light-dark()</code>; no rule from the shared stylesheet is repeated.
+              <code>light-dark()</code>; no rule from the shared stylesheet is repeated. The theme
+              toggle beside the edition menu is a plain function in the header component that sets{' '}
+              <code>data-theme</code> on the root and saves the choice; a small shared script in the
+              head applies a saved choice before React renders, so the page never flashes the wrong
+              theme.
             </dd>
           </div>
           <div className="colophon-item">

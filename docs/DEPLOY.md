@@ -9,9 +9,10 @@ index.html                  the single page
 fhir.js                     the FHIR R4 patient explorer inside the FHIR API card (loaded on first open; see FHIR API)
 404.html                    small not-found page, served by CloudFront for any missing path
 privacy.html, terms.html    privacy policy and SMS terms (required for the toll-free SMS registration)
-styles.css                  mobile-first styles shared by all four editions, light/dark via prefers-color-scheme
+styles.css                  mobile-first styles shared by all four editions, light/dark via color-scheme and light-dark()
+theme.js                    applies the theme toggle's saved choice before the first paint, in the head of every page of every edition
 vanilla.css                 eggshell palette override for this edition (design tokens only, loaded after styles.css)
-main.js                     nav toggle, active-section highlighting, footer year, image fallback
+main.js                     nav toggle, theme toggle, active-section highlighting, footer year, image fallback
 tools/serve.mjs             local preview that forwards /api/* to the functions (see Preview locally)
 favicon.svg                 tab icon (follows dark mode)
 favicon.ico, apple-touch-icon.png  raster fallbacks rendered from favicon.svg (16/32/48 px ICO, 180 px PNG)
@@ -240,7 +241,7 @@ aws s3 sync . s3://mvcprogrammer.com/ --delete \
   --exclude "*" \
   --include "index.html" --include "privacy.html" --include "terms.html" --include "404.html" \
   --include "fhir.js" \
-  --include "styles.css" --include "vanilla.css" --include "main.js" \
+  --include "styles.css" --include "vanilla.css" --include "main.js" --include "theme.js" \
   --include "favicon.svg" --include "favicon.ico" --include "apple-touch-icon.png" --include "site.webmanifest" \
   --include "robots.txt" --include "sitemap.xml" --include "assets/*" \
   --exclude "assets/README.md" --exclude "assets/*/README.md" --exclude "*.gitkeep"

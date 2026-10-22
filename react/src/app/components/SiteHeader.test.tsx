@@ -25,6 +25,90 @@ describe('SiteHeader', () => {
     vi.restoreAllMocks();
     document.body.innerHTML = '';
     window.scrollY = 0;
+    document.documentElement.removeAttribute('data-theme');
+    localStorage.removeItem('theme');
+  });
+
+  describe('theme toggle', () => {
+    it('should switch an OS light theme to dark and save the choice', () => {
+      // Arrange
+      stubOsScheme('light');
+      renderHeader();
+
+      // Act
+      fireEvent.click(themeToggle());
+
+      // Assert
+      expect(document.documentElement.getAttribute('data-theme')).toBe('dark');
+      expect(localStorage.getItem('theme')).toBe('dark');
+    });
+
+    it('should switch an OS dark theme to light when nothing is saved', () => {
+      // Arrange
+      stubOsScheme('dark');
+      renderHeader();
+
+      // Act
+      fireEvent.click(themeToggle());
+
+      // Assert
+      expect(document.documentElement.getAttribute('data-theme')).toBe('light');
+      expect(localStorage.getItem('theme')).toBe('light');
+    });
+
+    it('should flip a saved choice regardless of the OS, both ways', () => {
+      // Arrange
+      stubOsScheme('light');
+      document.documentElement.setAttribute('data-theme', 'dark');
+      renderHeader();
+
+      // Act
+      fireEvent.click(themeToggle());
+      const first = document.documentElement.getAttribute('data-theme');
+      fireEvent.click(themeToggle());
+
+      // Assert
+      expect(first).toBe('light');
+      expect(document.documentElement.getAttribute('data-theme')).toBe('dark');
+      expect(localStorage.getItem('theme')).toBe('dark');
+    });
+
+    it('should fall back to light when the browser has no matchMedia', () => {
+      // Arrange
+      vi.stubGlobal('matchMedia', undefined);
+      renderHeader();
+
+      // Act
+      fireEvent.click(themeToggle());
+
+      // Assert
+      expect(document.documentElement.getAttribute('data-theme')).toBe('dark');
+    });
+
+    it('should keep the page usable when storage is blocked', () => {
+      // Arrange
+      stubOsScheme('light');
+      vi.spyOn(Storage.prototype, 'setItem').mockImplementation(() => {
+        throw new Error('blocked');
+      });
+      renderHeader();
+
+      // Act
+      fireEvent.click(themeToggle());
+
+      // Assert
+      expect(document.documentElement.getAttribute('data-theme')).toBe('dark');
+    });
+
+    it('should carry both icons and an accessible name', () => {
+      // Arrange, Act
+      renderHeader();
+
+      // Assert
+      expect(themeToggle().getAttribute('aria-label')).toBe('Switch between light and dark theme');
+      expect(themeToggle().querySelector('.theme-icon-moon use')?.getAttribute('href')).toBe('#icon-moon');
+      expect(themeToggle().querySelector('.theme-icon-sun use')?.getAttribute('href')).toBe('#icon-sun');
+    });
   });
 
   describe('rendering', () => {
@@ -331,6 +415,20 @@ describe('SiteHeader', () => {
       expect(capture.callbacks.length).toBe(2);
     });
   });
+
+  /** The theme toggle button. */
+  function themeToggle(): HTMLButtonElement {
+    return screen.getByRole('button', { name: 'Switch between light and dark theme' }) as HTMLButtonElement;
+  }
+
+  /** Makes matchMedia report the given OS color scheme. */
+  function stubOsScheme(scheme: 'light' | 'dark'): void {
+    vi.stubGlobal('matchMedia', (query: string) => ({
+      matches: query === '(prefers-color-scheme: dark)' && scheme === 'dark',
+      addEventListener: () => undefined,
+      removeEventListener: () => undefined,
+    }));
+  }
 
   /** Renders the header under a memory router, with any extra element beside it. */
   function renderHeader(extra: React.ReactNode = null) {

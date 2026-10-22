@@ -3,7 +3,7 @@ using Microsoft.JSInterop;
 
 namespace Portfolio.Blazor.Components;
 
-/// <summary>Code-behind for the site header: menu and edition-list state, scroll shadow, and the current-section highlight.</summary>
+/// <summary>Code-behind for the site header: menu and edition-list state, the theme toggle, scroll shadow, and the current-section highlight.</summary>
 public sealed partial class SiteHeader : IAsyncDisposable
 {
     /// <summary>The key of the edition this app is; its entry in <see cref="EDITIONS"/> is marked current.</summary>
@@ -176,6 +176,18 @@ public sealed partial class SiteHeader : IAsyncDisposable
     private void ToggleMenu() => _menuOpen = !_menuOpen;
 
     private void ToggleEditions() => _editionsOpen = !_editionsOpen;
+
+    /// <summary>
+    /// Flips between light and dark through site.js, which reads what is showing now and saves the
+    /// choice for theme.js. The component keeps no theme state: the stylesheet picks the button's icon.
+    /// </summary>
+    private async Task ToggleThemeAsync()
+    {
+        if (_module is not null)
+        {
+            await _module.InvokeVoidAsync("toggleTheme");
+        }
+    }
 
     /// <summary>A nav entry: the section id it scrolls to and its label.</summary>
     private sealed record SectionLink(string Id, string Label);
