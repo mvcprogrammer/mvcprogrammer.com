@@ -13,6 +13,7 @@ describe('IconSprite', () => {
     'test',
     'sun',
     'moon',
+    'globe',
     'data',
     'mail',
     'download',
@@ -34,6 +35,6 @@ describe('IconSprite', () => {
     const svg = container.querySelector('svg');
     expect(svg?.getAttribute('class')).toBe('sr-only');
     expect(svg?.getAttribute('aria-hidden')).toBe('true');
-    expect(container.querySelectorAll('symbol').length).toBe(13);
+    expect(container.querySelectorAll('symbol').length).toBe(14);
   });
 });

@@ -27,12 +27,13 @@ public sealed class FhirCardTests : BunitContext
         Assert.Equal("fhir-api", card.Id);
         Assert.Equal("FHIR API", card.QuerySelector("h3")?.TextContent);
         Assert.Equal("assets/images/portfolio/fhir-api-blazor.jpg", card.QuerySelector(".card-media img")?.GetAttribute("src"));
-        var links = card.QuerySelectorAll(":scope > .card-body > .card-link").Select(a => a.GetAttribute("href")).ToList();
+        var links = card.QuerySelectorAll(":scope > .card-body > .card-links > .card-link").Select(a => a.GetAttribute("href")).ToList();
         Assert.Equal(
         [
             "https://github.com/mvcprogrammer/mvcprogrammer.com/tree/main/api/src/Fhir.Api",
             "https://github.com/mvcprogrammer/mvcprogrammer.com/blob/main/api/openapi.yaml",
         ], links);
+        Assert.True(Accordion(cut).NextElementSibling?.ClassList.Contains("card-links"), "the link row follows the explorer button");
         Assert.False(Accordion(cut).HasAttribute("open"), "the accordion starts closed");
         Assert.Contains("button-primary", Accordion(cut).QuerySelector("summary")?.ClassName, StringComparison.Ordinal);
         Assert.Empty(cut.FindAll("#fhir-search"));
@@ -40,6 +41,40 @@ public sealed class FhirCardTests : BunitContext
         Assert.False(cut.Instance.FhirOpen, "state mirrors the closed accordion");
         Assert.Single(module.Invocations, i => i.Identifier == "watchDetails");
         Assert.Single(module.Invocations, i => i.Identifier == "watchHash" && Equals(i.Arguments[1], PortfolioSection.FHIR_HASH));
+    }
+
+    /// <summary>Each project card has one primary button and a single row of links after it.</summary>
+    [Fact]
+    public void Render_ShouldGiveEachProjectCardOneButtonAndOneLinkRowAfterIt()
+    {
+        // Arrange
+        this.AddSiteOptions();
+        this.AddFhirClient();
+        this.SetupSiteModule();
+
+        // Act
+        var cut = Render<PortfolioSection>();
+
+        // Assert
+        var cards = cut.FindAll(".portfolio-card:not(.portfolio-card-featured)");
+        var actions = cards.Select(card =>
+        {
+            var buttons = card.QuerySelectorAll(".card-actions .button-primary, .fhir-accordion > summary.button-primary");
+            var rows = card.QuerySelectorAll(":scope > .card-body > .card-links");
+            var rowAfterButton = buttons.Length > 0 && rows.Length > 0 && buttons[0].CompareDocumentPosition(rows[0]).HasFlag(AngleSharp.Dom.DocumentPositions.Following);
+            var links = string.Join("|", rows.SelectMany(r => r.QuerySelectorAll(".card-link")).Select(a => a.TextContent.Trim()));
+            return $"{buttons.Length} button, {rows.Length} row, after={rowAfterButton}: {links}";
+        }).ToList();
+        Assert.Equal(
+        [
+            "1 button, 1 row, after=True: Screen repo|API repo",
+            "1 button, 1 row, after=True: Site repo",
+            "1 button, 1 row, after=True: API repo|OpenAPI spec",
+        ], actions);
+        var visit = cards[1].QuerySelector(".card-actions a.button-primary");
+        Assert.Equal("https://lightsplitters.com", visit?.GetAttribute("href"));
+        Assert.Equal("Visit lightsplitters.com", visit?.TextContent.Trim());
+        Assert.Equal("#icon-globe", visit?.QuerySelector("use")?.GetAttribute("href"));
     }
 
     #endregion

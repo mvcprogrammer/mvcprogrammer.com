@@ -93,6 +93,16 @@ export function IconSprite() {
           d="M20.5 14.2A8.5 8.5 0 1 1 9.8 3.5a6.8 6.8 0 0 0 10.7 10.7z"
         />
       </symbol>
+      <symbol id="icon-globe" viewBox="0 0 24 24">
+        <path
+          fill="none"
+          stroke="currentColor"
+          strokeWidth="1.75"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+          d="M12 21.5a9.5 9.5 0 1 0 0-19 9.5 9.5 0 0 0 0 19zM2.5 12h19M12 2.5c2.5 2.6 3.8 5.8 3.8 9.5s-1.3 6.9-3.8 9.5c-2.5-2.6-3.8-5.8-3.8-9.5S9.5 5.1 12 2.5z"
+        />
+      </symbol>
       <symbol id="icon-data" viewBox="0 0 24 24">
         <path
           fill="none"
