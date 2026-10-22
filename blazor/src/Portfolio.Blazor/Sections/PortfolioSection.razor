@@ -62,8 +62,10 @@
               Try the live kiosk
             </button>
           </div>
-          <a class="card-link" href="https://github.com/mvcprogrammer/sandkey-display-web" target="_blank" rel="noopener">Kiosk screen on GitHub</a>
-          <a class="card-link" href="https://github.com/mvcprogrammer/sandkey-display-api" target="_blank" rel="noopener">API on GitHub</a>
+          <div class="card-links">
+            <a class="card-link" href="https://github.com/mvcprogrammer/sandkey-display-web" target="_blank" rel="noopener">Screen repo</a>
+            <a class="card-link" href="https://github.com/mvcprogrammer/sandkey-display-api" target="_blank" rel="noopener">API repo</a>
+          </div>
         </div>
       </article>
 
@@ -87,8 +89,15 @@
             <li class="tag">Route 53</li>
             <li class="tag">Stripe</li>
           </ul>
-          <a class="card-link" href="https://lightsplitters.com" target="_blank" rel="noopener">Visit lightsplitters.com</a>
-          <a class="card-link" href="https://github.com/mvcprogrammer/lightsplitters.com" target="_blank" rel="noopener">Source on GitHub</a>
+          <div class="button-row card-actions">
+            <a class="button button-primary" href="https://lightsplitters.com" target="_blank" rel="noopener">
+              <Icon Name="globe" />
+              Visit lightsplitters.com
+            </a>
+          </div>
+          <div class="card-links">
+            <a class="card-link" href="https://github.com/mvcprogrammer/lightsplitters.com" target="_blank" rel="noopener">Site repo</a>
+          </div>
         </div>
       </article>
 
@@ -115,9 +124,6 @@
             <li class="tag">CloudFront caching</li>
             <li class="tag">Blazor WebAssembly</li>
           </ul>
-          <a class="card-link" href="https://github.com/mvcprogrammer/mvcprogrammer.com/tree/main/api/src/Fhir.Api" target="_blank" rel="noopener">API on GitHub</a>
-          <a class="card-link" href="https://github.com/mvcprogrammer/mvcprogrammer.com/blob/main/api/openapi.yaml" target="_blank" rel="noopener">OpenAPI spec</a>
-
           <details class="fhir-accordion" data-fhir-accordion open="@_fhirOpen" @ref="_fhirAccordion">
             <summary class="button button-primary fhir-accordion-summary">
               <Icon Name="data" />
@@ -129,6 +135,10 @@
               <FhirExplorer />
             }
           </details>
+          <div class="card-links">
+            <a class="card-link" href="https://github.com/mvcprogrammer/mvcprogrammer.com/tree/main/api/src/Fhir.Api" target="_blank" rel="noopener">API repo</a>
+            <a class="card-link" href="https://github.com/mvcprogrammer/mvcprogrammer.com/blob/main/api/openapi.yaml" target="_blank" rel="noopener">OpenAPI spec</a>
+          </div>
         </div>
       </article>
     </div>

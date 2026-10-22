@@ -192,7 +192,7 @@ story += [
     b("Dependencies of the class under test are faked, never the class itself. " + c("Assert.Equal") + " for exact values, " + c("Assert.Single") + " when one element is expected, " + c("Assert.ThrowsAsync") + " for async failures, " + c("CancellationToken.None") + " unless cancellation is the subject."),
     b("Async component assertions use " + c("cut.WaitForAssertionAsync(...)") + " because the first render happens before " + c("OnInitializedAsync") + " completes."),
     p("Test project layout", "h2"),
-    p("Folders mirror the app. The counts are test methods; theories expand to more cases at run time (116 in all)."),
+    p("Folders mirror the app. The counts are test methods; theories expand to more cases at run time (117 in all)."),
     table(
         ["File", "Tests", "What it proves"],
         [

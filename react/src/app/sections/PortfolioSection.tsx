@@ -187,22 +187,24 @@ export function PortfolioSection() {
                     Try the live kiosk
                   </button>
                 </div>
-                <a
-                  className="card-link"
-                  href="https://github.com/mvcprogrammer/sandkey-display-web"
-                  target="_blank"
-                  rel="noopener"
-                >
-                  Kiosk screen on GitHub
-                </a>
-                <a
-                  className="card-link"
-                  href="https://github.com/mvcprogrammer/sandkey-display-api"
-                  target="_blank"
-                  rel="noopener"
-                >
-                  API on GitHub
-                </a>
+                <div className="card-links">
+                  <a
+                    className="card-link"
+                    href="https://github.com/mvcprogrammer/sandkey-display-web"
+                    target="_blank"
+                    rel="noopener"
+                  >
+                    Screen repo
+                  </a>
+                  <a
+                    className="card-link"
+                    href="https://github.com/mvcprogrammer/sandkey-display-api"
+                    target="_blank"
+                    rel="noopener"
+                  >
+                    API repo
+                  </a>
+                </div>
               </div>
             </article>
 
@@ -248,22 +250,27 @@ export function PortfolioSection() {
                   <li className="tag">Route 53</li>
                   <li className="tag">Stripe</li>
                 </ul>
-                <a
-                  className="card-link"
-                  href="https://lightsplitters.com"
-                  target="_blank"
-                  rel="noopener"
-                >
-                  Visit lightsplitters.com
-                </a>
-                <a
-                  className="card-link"
-                  href="https://github.com/mvcprogrammer/lightsplitters.com"
-                  target="_blank"
-                  rel="noopener"
-                >
-                  Source on GitHub
-                </a>
+                <div className="button-row card-actions">
+                  <a
+                    className="button button-primary"
+                    href="https://lightsplitters.com"
+                    target="_blank"
+                    rel="noopener"
+                  >
+                    <Icon name="globe" />
+                    Visit lightsplitters.com
+                  </a>
+                </div>
+                <div className="card-links">
+                  <a
+                    className="card-link"
+                    href="https://github.com/mvcprogrammer/lightsplitters.com"
+                    target="_blank"
+                    rel="noopener"
+                  >
+                    Site repo
+                  </a>
+                </div>
               </div>
             </article>
 
@@ -307,23 +314,6 @@ export function PortfolioSection() {
                   <li className="tag">CloudFront caching</li>
                   <li className="tag">React 19</li>
                 </ul>
-                <a
-                  className="card-link"
-                  href="https://github.com/mvcprogrammer/mvcprogrammer.com/tree/main/api/src/Fhir.Api"
-                  target="_blank"
-                  rel="noopener"
-                >
-                  API on GitHub
-                </a>
-                <a
-                  className="card-link"
-                  href="https://github.com/mvcprogrammer/mvcprogrammer.com/blob/main/api/openapi.yaml"
-                  target="_blank"
-                  rel="noopener"
-                >
-                  OpenAPI spec
-                </a>
-
                 <details
                   className="fhir-accordion"
                   data-fhir-accordion
@@ -341,6 +331,24 @@ export function PortfolioSection() {
                     </Suspense>
                   )}
                 </details>
+                <div className="card-links">
+                  <a
+                    className="card-link"
+                    href="https://github.com/mvcprogrammer/mvcprogrammer.com/tree/main/api/src/Fhir.Api"
+                    target="_blank"
+                    rel="noopener"
+                  >
+                    API repo
+                  </a>
+                  <a
+                    className="card-link"
+                    href="https://github.com/mvcprogrammer/mvcprogrammer.com/blob/main/api/openapi.yaml"
+                    target="_blank"
+                    rel="noopener"
+                  >
+                    OpenAPI spec
+                  </a>
+                </div>
               </div>
             </article>
           </div>

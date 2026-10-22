@@ -1003,6 +1003,24 @@ img, svg {
   content: " \2197";
 }
 
+/* The secondary links under a card's button: one row, never wrapping, with the gap doing the
+   spacing the adjacent-link margin does elsewhere. */
+.card-links {
+  display: flex;
+  flex-wrap: nowrap;
+  gap: 1.25rem;
+  margin-top: 0.75rem;
+  white-space: nowrap;
+}
+
+.card-links .card-link {
+  margin-top: 0;
+}
+
+.card-links .card-link + .card-link {
+  margin-left: 0;
+}
+
 @media (min-width: 40em) {
   .card-grid {
     grid-template-columns: repeat(2, minmax(0, 1fr));

@@ -30,6 +30,7 @@ public sealed class ChromeComponentTests : BunitContext
     [InlineData("test")]
     [InlineData("sun")]
     [InlineData("moon")]
+    [InlineData("globe")]
     [InlineData("deploy")]
     [InlineData("monitor")]
     [InlineData("mail")]

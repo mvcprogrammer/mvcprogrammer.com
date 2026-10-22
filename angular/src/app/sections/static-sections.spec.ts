@@ -88,6 +88,33 @@ describe('static sections', () => {
       window.location.hash = '';
     });
 
+    it('should give each project card one primary button with a single row of links after it', () => {
+      // Assert
+      const cards = Array.from(host.querySelectorAll('.portfolio-card:not(.portfolio-card-featured)'));
+      const actions = cards.map((card) => {
+        const buttons = card.querySelectorAll('.card-actions .button-primary, .fhir-accordion > summary.button-primary');
+        const rows = card.querySelectorAll(':scope > .card-body > .card-links');
+        const button = buttons[0];
+        const row = rows[0];
+        return {
+          buttons: buttons.length,
+          rows: rows.length,
+          // DOCUMENT_POSITION_FOLLOWING: the link row comes after the button
+          rowAfterButton: button !== undefined && row !== undefined && (button.compareDocumentPosition(row) & Node.DOCUMENT_POSITION_FOLLOWING) !== 0,
+          links: Array.from(row?.querySelectorAll('.card-link') ?? []).map((a) => a.textContent?.trim()),
+        };
+      });
+      expect(actions).toEqual([
+        { buttons: 1, rows: 1, rowAfterButton: true, links: ['Screen repo', 'API repo'] },
+        { buttons: 1, rows: 1, rowAfterButton: true, links: ['Site repo'] },
+        { buttons: 1, rows: 1, rowAfterButton: true, links: ['API repo', 'OpenAPI spec'] },
+      ]);
+      const visit = cards[1].querySelector<HTMLAnchorElement>('.card-actions a.button-primary');
+      expect(visit?.getAttribute('href')).toBe('https://lightsplitters.com');
+      expect(visit?.textContent?.trim()).toBe('Visit lightsplitters.com');
+      expect(visit?.querySelector('use')?.getAttribute('href')).toBe('#icon-globe');
+    });
+
     it('should link only to the source and open the kiosk from the card button', async () => {
       // Arrange
       const dialog = host.querySelector('dialog') as HTMLDialogElement;
@@ -112,11 +139,12 @@ describe('static sections', () => {
       expect(card.id).toBe('fhir-api');
       expect(card.querySelector('h3')?.textContent).toBe('FHIR API');
       expect(card.querySelector('.card-media img')?.getAttribute('src')).toBe('assets/images/portfolio/fhir-api-angular.jpg');
-      const links = Array.from(card.querySelectorAll(':scope > .card-body > .card-link')).map((a) => a.getAttribute('href'));
+      const links = Array.from(card.querySelectorAll(':scope > .card-body > .card-links > .card-link')).map((a) => a.getAttribute('href'));
       expect(links).toEqual([
         'https://github.com/mvcprogrammer/mvcprogrammer.com/tree/main/api/src/Fhir.Api',
         'https://github.com/mvcprogrammer/mvcprogrammer.com/blob/main/api/openapi.yaml',
       ]);
+      expect(accordion().nextElementSibling?.classList.contains('card-links')).toBe(true);
       expect(accordion().open).toBe(false);
       expect(accordion().querySelector('summary')?.classList.contains('button-primary')).toBe(true);
       expect(host.querySelector('app-fhir-explorer')).toBeNull();
