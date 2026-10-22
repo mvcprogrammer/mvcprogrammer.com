@@ -14,6 +14,7 @@ const target = join(workspace, 'public');
 /** [source relative to the repository root, destination relative to public/] */
 const SHARED = [
   ['styles.css', 'styles.css'],
+  ['theme.js', 'theme.js'],
   ['favicon.svg', 'favicon.svg'],
   ['favicon.ico', 'favicon.ico'],
   ['apple-touch-icon.png', 'apple-touch-icon.png'],

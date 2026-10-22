@@ -2,7 +2,7 @@ import { TestBed } from '@angular/core/testing';
 import { IconSprite } from './icon-sprite';
 
 describe('IconSprite', () => {
-  it.each(['github', 'linkedin', 'flickr', 'design', 'code', 'deploy', 'monitor', 'test', 'data', 'mail', 'download'])(
+  it.each(['github', 'linkedin', 'flickr', 'design', 'code', 'deploy', 'monitor', 'test', 'sun', 'moon', 'data', 'mail', 'download'])(
     'should define the %s symbol',
     async (name) => {
       // Arrange

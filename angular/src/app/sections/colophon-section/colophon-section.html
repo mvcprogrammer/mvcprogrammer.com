@@ -11,7 +11,7 @@
       </div>
       <div class="colophon-item">
         <dt>Shared with the static site</dt>
-        <dd>The stylesheet, fonts, images, icons, and the Experience seed data are copied into this build from the repository root by a script that runs before every build, so the editions cannot drift. The markup is the static page's markup, section by section. Component styles are not used: Angular would inject them inline, which the Content Security Policy forbids, so the few additions sit in one extra stylesheet. That file also carries this edition's palette, navy and brass, by overriding the shared design tokens with <code>light-dark()</code>; no rule from the shared stylesheet is repeated.</dd>
+        <dd>The stylesheet, fonts, images, icons, and the Experience seed data are copied into this build from the repository root by a script that runs before every build, so the editions cannot drift. The markup is the static page's markup, section by section. Component styles are not used: Angular would inject them inline, which the Content Security Policy forbids, so the few additions sit in one extra stylesheet. That file also carries this edition's palette, navy and brass, by overriding the shared design tokens with <code>light-dark()</code>; no rule from the shared stylesheet is repeated. The theme toggle beside the edition menu is a method on the header component that sets <code>data-theme</code> on the root and saves the choice; a small shared script in the head applies a saved choice before Angular boots, so the page never flashes the wrong theme.</dd>
       </div>
       <div class="colophon-item">
         <dt>API integration</dt>

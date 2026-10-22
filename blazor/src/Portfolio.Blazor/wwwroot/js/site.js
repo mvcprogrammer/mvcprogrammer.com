@@ -81,6 +81,22 @@ export function focus(element) {
   element?.focus();
 }
 
+/** Flips between light and dark from whatever is showing now (a saved choice, else the OS) and saves
+    the choice for theme.js to apply on the next visit. The stylesheet picks the toggle's icon. */
+export function toggleTheme() {
+  const root = document.documentElement;
+  const saved = root.getAttribute("data-theme");
+  const osDark = typeof window.matchMedia === "function" && window.matchMedia("(prefers-color-scheme: dark)").matches;
+  const current = saved === "light" || saved === "dark" ? saved : osDark ? "dark" : "light";
+  const next = current === "dark" ? "light" : "dark";
+  root.setAttribute("data-theme", next);
+  try {
+    window.localStorage.setItem("theme", next);
+  } catch {
+    /* Storage blocked: the choice lasts for this page only. */
+  }
+}
+
 /** Opens a <dialog> modally. A click on the backdrop closes it; .NET hears about any close. */
 export function showModal(dialog, dotnet) {
   const onClick = (event) => {

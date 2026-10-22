@@ -14,6 +14,7 @@ import {
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { NavigationEnd, Router } from '@angular/router';
 import { filter } from 'rxjs';
+import { Icon } from '../icon/icon';
 import { SocialLinks } from '../social-links/social-links';
 
 /** A nav entry: the section id it scrolls to and its label. */
@@ -29,10 +30,10 @@ export interface Edition {
   readonly href: string;
 }
 
-/** Site header: menu and edition-list state, scroll shadow, and the current-section highlight. */
+/** Site header: menu and edition-list state, the theme toggle, scroll shadow, and the current-section highlight. */
 @Component({
   selector: 'app-site-header',
-  imports: [SocialLinks],
+  imports: [Icon, SocialLinks],
   changeDetection: ChangeDetectionStrategy.OnPush,
   templateUrl: './site-header.html',
 })
@@ -157,6 +158,26 @@ export class SiteHeader {
 
   protected toggleEditions(): void {
     this.editionsOpen.update((open) => !open);
+  }
+
+  /**
+   * Flips between light and dark from whatever is showing now (a saved choice, else the OS) and saves
+   * the choice for theme.js to apply on the next visit. No state: the stylesheet picks the button's
+   * icon from the same data-theme and prefers-color-scheme.
+   */
+  protected toggleTheme(): void {
+    const root = this.document.documentElement;
+    const window = this.window;
+    const saved = root.getAttribute('data-theme');
+    const osDark = window !== null && typeof window.matchMedia === 'function' && window.matchMedia('(prefers-color-scheme: dark)').matches;
+    const current = saved === 'light' || saved === 'dark' ? saved : osDark ? 'dark' : 'light';
+    const next = current === 'dark' ? 'light' : 'dark';
+    root.setAttribute('data-theme', next);
+    try {
+      window?.localStorage.setItem('theme', next);
+    } catch {
+      // Storage blocked: the choice lasts for this page only.
+    }
   }
 
   protected isCurrent(sectionId: string): boolean {

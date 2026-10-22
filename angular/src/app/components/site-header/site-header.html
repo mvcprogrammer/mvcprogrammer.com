@@ -7,16 +7,23 @@
         <span class="brand-mark" aria-hidden="true"></span>
         <span class="brand-name">mvcprogrammer.com</span>
       </a>
-      <div class="edition" [class.is-open]="editionsOpen()" #edition>
-        <button class="edition-toggle" type="button" aria-haspopup="true" [attr.aria-expanded]="editionsOpen()"
-                aria-controls="edition-menu" (click)="toggleEditions()" #editionToggle>{{ currentEdition.label }}</button>
-        <ul class="edition-menu" id="edition-menu" role="list" aria-label="Editions of this site">
-          @for (edition of editions; track edition.key) {
-            <li>
-              <a class="edition-link" [href]="edition.href" [attr.aria-current]="edition.key === currentEdition.key ? 'true' : null">{{ edition.label }}</a>
-            </li>
-          }
-        </ul>
+      <div class="brand-controls">
+        <div class="edition" [class.is-open]="editionsOpen()" #edition>
+          <button class="edition-toggle" type="button" aria-haspopup="true" [attr.aria-expanded]="editionsOpen()"
+                  aria-controls="edition-menu" (click)="toggleEditions()" #editionToggle>{{ currentEdition.label }}</button>
+          <ul class="edition-menu" id="edition-menu" role="list" aria-label="Editions of this site">
+            @for (edition of editions; track edition.key) {
+              <li>
+                <a class="edition-link" [href]="edition.href" [attr.aria-current]="edition.key === currentEdition.key ? 'true' : null">{{ edition.label }}</a>
+              </li>
+            }
+          </ul>
+        </div>
+        <button class="theme-toggle" type="button" aria-label="Switch between light and dark theme"
+                title="Switch between light and dark theme" (click)="toggleTheme()">
+          <span class="theme-icon theme-icon-moon" aria-hidden="true"><app-icon name="moon" /></span>
+          <span class="theme-icon theme-icon-sun" aria-hidden="true"><app-icon name="sun" /></span>
+        </button>
       </div>
     </div>
 
