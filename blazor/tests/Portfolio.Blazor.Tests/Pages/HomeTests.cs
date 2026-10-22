@@ -21,7 +21,7 @@ public sealed class HomeTests : BunitContext
 
         // Assert
         var ids = cut.FindAll("section[id]").Select(section => section.Id).ToArray();
-        Assert.Equal(["about", "services", "freelance", "portfolio", "resume", "contact", "colophon"], ids);
+        Assert.Equal(["about", "services", "portfolio", "resume", "contact", "colophon"], ids);
         Assert.Single(module.Invocations, i => i.Identifier == "watchEngagement");
     }
 

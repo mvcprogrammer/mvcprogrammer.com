@@ -107,7 +107,7 @@ public sealed class ContactFormTests
     {
         Name = "Neal Thomas",
         Email = "neal@example.test",
-        Topic = "Freelance",
+        Topic = "Contract or consulting",
         Reply = "Email",
         Message = "A message long enough to pass.",
     };

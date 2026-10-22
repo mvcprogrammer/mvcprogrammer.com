@@ -61,11 +61,11 @@ describe('ContactSection', () => {
       renderWithSite(<ContactSection />, services);
 
       // Act
-      act(() => services.topics.select('Freelance'));
+      act(() => services.topics.select('Contract or consulting'));
 
       // Assert
       expect((screen.getByLabelText('What is this about?') as HTMLSelectElement).value).toBe(
-        'Freelance',
+        'Contract or consulting',
       );
     });
 

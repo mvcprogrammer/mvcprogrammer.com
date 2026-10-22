@@ -39,11 +39,11 @@ describe('ContactSection', () => {
   describe('topic hand-off', () => {
     it('should preselect the topic selected through the shared state', async () => {
       // Act
-      topics.select('Freelance');
+      topics.select('Contract or consulting');
       await fixture.whenStable();
 
       // Assert
-      expect(topic().value).toBe('Freelance');
+      expect(topic().value).toBe('Contract or consulting');
     });
 
     it('should stop listening once destroyed', () => {
@@ -51,7 +51,7 @@ describe('ContactSection', () => {
       fixture.destroy();
 
       // Act and Assert
-      expect(() => topics.select('Freelance')).not.toThrow();
+      expect(() => topics.select('Contract or consulting')).not.toThrow();
     });
   });
 

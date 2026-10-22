@@ -66,12 +66,12 @@ describe('SiteHeader', () => {
   });
 
   describe('render', () => {
-    it('should render the brand, the six nav links in order, and the social links', () => {
+    it('should render the brand, the five nav links in order, and the social links', () => {
       // Assert
       const labels = Array.from(host.querySelectorAll('.nav-link')).map((link) => link.textContent?.trim());
-      expect(labels).toEqual(['About', 'Employers', 'Freelance', 'Portfolio', 'Resume', 'Contact']);
+      expect(labels).toEqual(['About', 'Employers', 'Portfolio', 'Resume', 'Contact']);
       const hrefs = Array.from(host.querySelectorAll<HTMLAnchorElement>('.nav-link')).map((link) => link.getAttribute('href'));
-      expect(hrefs).toEqual(['#about', '#services', '#freelance', '#portfolio', '#resume', '#contact']);
+      expect(hrefs).toEqual(['#about', '#services', '#portfolio', '#resume', '#contact']);
       expect(host.querySelector('.brand')?.getAttribute('href')).toBe('#top');
       expect(host.querySelectorAll('.social-link').length).toBe(3);
       expect(host.querySelector('.site-header')?.classList.contains('is-scrolled')).toBe(false);

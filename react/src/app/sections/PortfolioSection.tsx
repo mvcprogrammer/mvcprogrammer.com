@@ -57,7 +57,7 @@ export function PortfolioSection() {
     <>
       <section className="section section-alt" id="portfolio" aria-labelledby="portfolio-title">
         <div className="container">
-          <p className="eyebrow">04 / Portfolio</p>
+          <p className="eyebrow">03 / Portfolio</p>
           <h2 id="portfolio-title">Selected Work</h2>
           <p className="section-intro">
             My entire career has gone into enterprise systems that belong to the companies I built

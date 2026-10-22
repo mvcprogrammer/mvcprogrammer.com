@@ -18,10 +18,10 @@ public sealed class ContactTopicStateTests
         state.Subscribe(t => heard.Add("b:" + t));
 
         // Act
-        state.Select("Freelance");
+        state.Select("Contract or consulting");
 
         // Assert
-        Assert.Equal(["a:Freelance", "b:Freelance"], heard);
+        Assert.Equal(["a:Contract or consulting", "b:Contract or consulting"], heard);
     }
 
     /// <summary>Selecting with no subscribers is a no-op.</summary>
@@ -32,7 +32,7 @@ public sealed class ContactTopicStateTests
         var state = new ContactTopicState();
 
         // Act
-        var exception = Record.Exception(() => state.Select("Freelance"));
+        var exception = Record.Exception(() => state.Select("Contract or consulting"));
 
         // Assert
         Assert.Null(exception);
@@ -51,8 +51,8 @@ public sealed class ContactTopicStateTests
         state.Subscribe(_ => count++);
 
         // Act
-        state.Select("Freelance");
-        state.Select("Freelance");
+        state.Select("Contract or consulting");
+        state.Select("Contract or consulting");
 
         // Assert
         Assert.Equal(3, count);
@@ -82,11 +82,11 @@ public sealed class ContactTopicStateTests
         var count = 0;
         Action<string> handler = _ => count++;
         state.Subscribe(handler);
-        state.Select("Freelance");
+        state.Select("Contract or consulting");
 
         // Act
         state.Unsubscribe(handler);
-        state.Select("Freelance");
+        state.Select("Contract or consulting");
 
         // Assert
         Assert.Equal(1, count);

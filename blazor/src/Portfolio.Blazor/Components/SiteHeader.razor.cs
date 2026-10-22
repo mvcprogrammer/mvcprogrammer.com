@@ -22,7 +22,6 @@ public sealed partial class SiteHeader : IAsyncDisposable
     [
         new("about", "About"),
         new("services", "Employers"),
-        new("freelance", "Freelance"),
         new("portfolio", "Portfolio"),
         new("resume", "Resume"),
         new("contact", "Contact"),

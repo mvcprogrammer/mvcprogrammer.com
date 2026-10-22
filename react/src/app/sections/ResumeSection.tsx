@@ -10,7 +10,7 @@ export function ResumeSection() {
       <div className="container">
         <div className="section-head">
           <div>
-            <p className="eyebrow">05 / Resume</p>
+            <p className="eyebrow">04 / Resume</p>
             <h2 id="resume-title">Experience</h2>
           </div>
           <a className="button button-secondary" href={options.resumeUrl} rel="noopener">

@@ -37,7 +37,7 @@ public sealed class ContactClientTests
         // Arrange
         var handler = StubHttpMessageHandler.Status(HttpStatusCode.OK);
         var client = CreateClient(handler);
-        var request = new ContactRequest("Neal", "neal@example.test", "Freelance", "Email", string.Empty, "Hello there.", string.Empty, 4200);
+        var request = new ContactRequest("Neal", "neal@example.test", "Contract or consulting", "Email", string.Empty, "Hello there.", string.Empty, 4200);
 
         // Act
         await client.SendAsync(request, CancellationToken.None);
@@ -101,7 +101,7 @@ public sealed class ContactClientTests
         new(new HttpClient(handler), Options.Create(BunitContextExtensions.CreateSiteOptions()));
 
     private static ContactRequest CreateRequest() =>
-        new("Neal", "neal@example.test", "Freelance", "Email", string.Empty, "Hello there.", string.Empty, 4200);
+        new("Neal", "neal@example.test", "Contract or consulting", "Email", string.Empty, "Hello there.", string.Empty, 4200);
 
     #endregion
 }

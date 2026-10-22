@@ -90,18 +90,6 @@
     <symbol id="icon-test" viewBox="0 0 24 24">
       <path fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" d="M9 3h6M10 3v6l-5.2 9A2 2 0 0 0 6.5 21h11a2 2 0 0 0 1.7-3L14 9V3M7.5 15h9"/>
     </symbol>
-    <symbol id="icon-preview" viewBox="0 0 24 24">
-      <path fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" d="M2.5 12s3.5-6.5 9.5-6.5 9.5 6.5 9.5 6.5-3.5 6.5-9.5 6.5S2.5 12 2.5 12zM12 15a3 3 0 1 0 0-6 3 3 0 0 0 0 6z"/>
-    </symbol>
-    <symbol id="icon-wrench" viewBox="0 0 24 24">
-      <path fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" d="M14.5 6.5a4 4 0 0 0 4.8 4.8l-8.6 8.6a2.1 2.1 0 0 1-3-3l8.6-8.6a4 4 0 0 1 4.8-4.8l-2.6 2.6.6 2.6 2.6.6 2.6-2.6"/>
-    </symbol>
-    <symbol id="icon-audit" viewBox="0 0 24 24">
-      <path fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" d="M10.5 17a6.5 6.5 0 1 0 0-13 6.5 6.5 0 0 0 0 13zM15.5 15.5 21 21M7.75 10.5l1.9 1.9 3.6-3.9"/>
-    </symbol>
-    <symbol id="icon-savings" viewBox="0 0 24 24">
-      <path fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" d="M12 21.5a9.5 9.5 0 1 0 0-19 9.5 9.5 0 0 0 0 19zM15.5 8.5h-5a2 2 0 1 0 0 4h3a2 2 0 1 1 0 4h-5M12 6.5v2M12 15.5v2"/>
-    </symbol>
     <symbol id="icon-data" viewBox="0 0 24 24">
       <path fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" d="M12 3c4.4 0 8 1.3 8 3s-3.6 3-8 3-8-1.3-8-3 3.6-3 8-3zM4 6v12c0 1.7 3.6 3 8 3s8-1.3 8-3V6M4 12c0 1.7 3.6 3 8 3s8-1.3 8-3"/>
     </symbol>
@@ -141,7 +129,6 @@
         <ul class="nav-list" role="list">
           <li><a class="nav-link" href="#about">About</a></li>
           <li><a class="nav-link" href="#services">Employers</a></li>
-          <li><a class="nav-link" href="#freelance">Freelance</a></li>
           <li><a class="nav-link" href="#portfolio">Portfolio</a></li>
           <li><a class="nav-link" href="#resume">Resume</a></li>
           <li><a class="nav-link" href="#contact">Contact</a></li>
@@ -248,7 +235,7 @@
       <div class="container">
         <p class="eyebrow">02 / For Employers</p>
         <h2 id="services-title">What I Offer to Employers</h2>
-        <p class="section-intro">For companies hiring a senior full-stack engineer. These are the six areas I own on a product team, from the first design review through production support, and the standard I hold each one to. If you need a shorter, scoped engagement instead, see <a href="#freelance">Freelance</a> below.</p>
+        <p class="section-intro">For companies hiring a senior full-stack engineer. These are the six areas I own on a product team, from the first design review through production support, and the standard I hold each one to.</p>
         <div class="card-grid">
           <article class="card service-card">
             <div class="service-icon" aria-hidden="true">
@@ -309,56 +296,10 @@
       </div>
     </section>
 
-    <!-- ===== Freelance ===== -->
-    <section class="section" id="freelance" aria-labelledby="freelance-title">
-      <div class="container">
-        <p class="eyebrow">03 / Freelance Work</p>
-        <h2 id="freelance-title">Collaborate with Me</h2>
-        <p class="section-intro">Not every problem needs a full-time hire. I take on short, well-defined engagements for teams that want senior .NET, Angular, React, or SQL Server help without the ramp-up, and I keep the first step small so there is nothing to lose by trying it.</p>
-        <div class="card-grid">
-          <article class="card service-card">
-            <div class="service-icon" aria-hidden="true">
-              <svg class="icon" focusable="false"><use href="#icon-preview"></use></svg>
-            </div>
-            <h3>Low-risk preview</h3>
-            <p>Start with one small, fixed-scope piece of work, a day or two at most, so you can see how I communicate, estimate, and deliver before committing to anything bigger.</p>
-            <p>If it is not a fit, you still walk away with finished, tested work and a clear write-up of what I found.</p>
-          </article>
-          <article class="card service-card">
-            <div class="service-icon" aria-hidden="true">
-              <svg class="icon" focusable="false"><use href="#icon-wrench"></use></svg>
-            </div>
-            <h3>Small changes</h3>
-            <p>Bug fixes, small features, framework and dependency upgrades, and the tickets that never reach the top of the backlog.</p>
-            <p>Scoped up front and delivered as clean pull requests against your repository, with tests, so your team can review and merge on its own schedule.</p>
-          </article>
-          <article class="card service-card">
-            <div class="service-icon" aria-hidden="true">
-              <svg class="icon" focusable="false"><use href="#icon-savings"></use></svg>
-            </div>
-            <h3>Cloud cost savings</h3>
-            <p>A review of your AWS or Azure bill and the architecture behind it: idle and oversized resources, servers doing work that serverless does for pennies, and the slow queries and missing caches that inflate compute.</p>
-            <p>You get the savings quantified and ranked by payoff against effort, in a plan your team can act on itself or hand to me. This site, including its fully functional API, runs on S3, CloudFront, Lambda, and DynamoDB for a few dollars a month.</p>
-          </article>
-          <article class="card service-card">
-            <div class="service-icon" aria-hidden="true">
-              <svg class="icon" focusable="false"><use href="#icon-audit"></use></svg>
-            </div>
-            <h3>Audits for developers</h3>
-            <p>A second set of senior eyes on your codebase: architecture and code review, a SQL Server performance pass over execution plans, indexes, and slow stored procedures, or a pre-release security check.</p>
-            <p>You get a written report with findings ranked by impact and concrete next steps, not a list of lint warnings.</p>
-          </article>
-        </div>
-        <div class="button-row section-cta">
-          <a class="button button-primary" href="#contact" data-topic="Freelance">Start a conversation</a>
-        </div>
-      </div>
-    </section>
-
     <!-- ===== Portfolio ===== -->
     <section class="section section-alt" id="portfolio" aria-labelledby="portfolio-title">
       <div class="container">
-        <p class="eyebrow">04 / Portfolio</p>
+        <p class="eyebrow">03 / Portfolio</p>
         <h2 id="portfolio-title">Selected Work</h2>
         <p class="section-intro">My entire career has gone into enterprise systems that belong to the companies I built them for, so that code stays in their private repositories. The projects below are my own. They are here to show how I design, write, test, and ship software when every decision is mine.</p>
         <div class="card-grid portfolio-grid">
@@ -586,7 +527,7 @@
       <div class="container">
         <div class="section-head">
           <div>
-            <p class="eyebrow">05 / Resume</p>
+            <p class="eyebrow">04 / Resume</p>
             <h2 id="resume-title">Experience</h2>
           </div>
           <!-- The PDF lives at s3://mvcprogrammer.com/resume/ (outside the deploy sync, not in this repo).
@@ -686,7 +627,7 @@
     <!-- ===== Contact ===== -->
     <section class="section section-alt" id="contact" aria-labelledby="contact-title">
       <div class="container">
-        <p class="eyebrow">06 / Contact</p>
+        <p class="eyebrow">05 / Contact</p>
         <h2 id="contact-title">Let's Talk</h2>
         <p class="section-intro">Hiring, contract work, or a question about one of the projects above. Send a note, pick how you would like to hear back, and I will reply, usually within a day.</p>
         <form class="contact-form" id="contact-form" method="post" novalidate data-endpoint="https://y4z5rf27yv7aoy4zpuu5twkwl40ijxab.lambda-url.us-east-1.on.aws/">
@@ -706,7 +647,6 @@
               <select name="topic">
                 <option>Job opportunity</option>
                 <option>Contract or consulting</option>
-                <option>Freelance</option>
                 <option>Something else</option>
               </select>
             </label>
@@ -744,7 +684,7 @@
     <!-- ===== Colophon ===== -->
     <section class="section colophon" id="colophon" aria-labelledby="colophon-title">
       <div class="container">
-        <p class="eyebrow">07 / Colophon</p>
+        <p class="eyebrow">06 / Colophon</p>
         <h2 id="colophon-title">How This Site Is Built</h2>
         <p class="section-intro">A footnote for the curious. The whole site follows the KISS principle, keep it simple: there is no server behind this page, only static files on a CDN, four Lambdas, and a CloudFront Function.</p>
         <dl class="colophon-list">

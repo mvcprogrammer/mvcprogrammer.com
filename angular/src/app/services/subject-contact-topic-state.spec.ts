@@ -11,12 +11,12 @@ describe('SubjectContactTopicState', () => {
       state.topics.subscribe((topic) => second.push(topic));
 
       // Act
-      state.select('Freelance');
+      state.select('Contract or consulting');
       state.select('Job opportunity');
 
       // Assert
-      expect(first).toEqual(['Freelance', 'Job opportunity']);
-      expect(second).toEqual(['Freelance', 'Job opportunity']);
+      expect(first).toEqual(['Contract or consulting', 'Job opportunity']);
+      expect(second).toEqual(['Contract or consulting', 'Job opportunity']);
     });
 
     it('should complete without subscribers', () => {
@@ -24,7 +24,7 @@ describe('SubjectContactTopicState', () => {
       const state = new SubjectContactTopicState();
 
       // Act and Assert
-      expect(() => state.select('Freelance')).not.toThrow();
+      expect(() => state.select('Contract or consulting')).not.toThrow();
     });
 
     it('should stop notifying an unsubscribed listener', () => {
@@ -32,20 +32,20 @@ describe('SubjectContactTopicState', () => {
       const state = new SubjectContactTopicState();
       const received: string[] = [];
       const subscription = state.topics.subscribe((topic) => received.push(topic));
-      state.select('Freelance');
+      state.select('Contract or consulting');
 
       // Act
       subscription.unsubscribe();
       state.select('Job opportunity');
 
       // Assert
-      expect(received).toEqual(['Freelance']);
+      expect(received).toEqual(['Contract or consulting']);
     });
 
     it('should not replay earlier selections to a late subscriber', () => {
       // Arrange
       const state = new SubjectContactTopicState();
-      state.select('Freelance');
+      state.select('Contract or consulting');
       const received: string[] = [];
 
       // Act

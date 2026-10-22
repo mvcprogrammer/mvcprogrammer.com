@@ -12,8 +12,7 @@ export function ServicesSection() {
         <p className="section-intro">
           For companies hiring a senior full-stack engineer. These are the six areas I own on a
           product team, from the first design review through production support, and the standard I
-          hold each one to. If you need a shorter, scoped engagement instead, see{' '}
-          <a href="#freelance">Freelance</a> below.
+          hold each one to.
         </p>
         <div className="card-grid">
           <article className="card service-card">

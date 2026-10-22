@@ -21,8 +21,8 @@ public sealed class SiteHeaderTests : BunitContext
         // Assert
         Assert.Single(module.Invocations, i => i.Identifier == "watchHeader");
         var observe = Assert.Single(module.Invocations, i => i.Identifier == "observeSections");
-        Assert.Equal(["about", "services", "freelance", "portfolio", "resume", "contact"], Assert.IsType<string[]>(observe.Arguments[1]));
-        Assert.Equal(6, cut.FindAll(".nav-link").Count);
+        Assert.Equal(["about", "services", "portfolio", "resume", "contact"], Assert.IsType<string[]>(observe.Arguments[1]));
+        Assert.Equal(5, cut.FindAll(".nav-link").Count);
         Assert.Equal("false", cut.Find(".nav-toggle").GetAttribute("aria-expanded"));
         Assert.Equal("Blazor Edition", cut.Find(".edition-toggle").TextContent.Trim());
         Assert.Equal("false", cut.Find(".edition-toggle").GetAttribute("aria-expanded"));

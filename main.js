@@ -168,7 +168,7 @@
   }
 
   /* ---------- Preselect a contact topic ----------
-     Links with data-topic (the Employers and Freelance calls to action) set the form's
+     Links with data-topic (the Employers call to action) set the form's
      topic before the page scrolls to it. */
   var topicLinks = document.querySelectorAll("a[data-topic]");
   var topicSelect = document.querySelector('#contact-form select[name="topic"]');

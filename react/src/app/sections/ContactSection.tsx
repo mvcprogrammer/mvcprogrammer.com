@@ -157,7 +157,7 @@ export function ContactSection() {
   return (
     <section className="section section-alt" id="contact" aria-labelledby="contact-title">
       <div className="container">
-        <p className="eyebrow">06 / Contact</p>
+        <p className="eyebrow">05 / Contact</p>
         <h2 id="contact-title">Let's Talk</h2>
         <p className="section-intro">
           Hiring, contract work, or a question about one of the projects above. Send a note, pick
@@ -211,7 +211,6 @@ export function ContactSection() {
               >
                 <option value="Job opportunity">Job opportunity</option>
                 <option value="Contract or consulting">Contract or consulting</option>
-                <option value="Freelance">Freelance</option>
                 <option value="Something else">Something else</option>
               </select>
             </label>

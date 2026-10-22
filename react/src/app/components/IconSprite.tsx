@@ -73,46 +73,6 @@ export function IconSprite() {
           d="M9 3h6M10 3v6l-5.2 9A2 2 0 0 0 6.5 21h11a2 2 0 0 0 1.7-3L14 9V3M7.5 15h9"
         />
       </symbol>
-      <symbol id="icon-preview" viewBox="0 0 24 24">
-        <path
-          fill="none"
-          stroke="currentColor"
-          strokeWidth="1.75"
-          strokeLinecap="round"
-          strokeLinejoin="round"
-          d="M2.5 12s3.5-6.5 9.5-6.5 9.5 6.5 9.5 6.5-3.5 6.5-9.5 6.5S2.5 12 2.5 12zM12 15a3 3 0 1 0 0-6 3 3 0 0 0 0 6z"
-        />
-      </symbol>
-      <symbol id="icon-wrench" viewBox="0 0 24 24">
-        <path
-          fill="none"
-          stroke="currentColor"
-          strokeWidth="1.75"
-          strokeLinecap="round"
-          strokeLinejoin="round"
-          d="M14.5 6.5a4 4 0 0 0 4.8 4.8l-8.6 8.6a2.1 2.1 0 0 1-3-3l8.6-8.6a4 4 0 0 1 4.8-4.8l-2.6 2.6.6 2.6 2.6.6 2.6-2.6"
-        />
-      </symbol>
-      <symbol id="icon-audit" viewBox="0 0 24 24">
-        <path
-          fill="none"
-          stroke="currentColor"
-          strokeWidth="1.75"
-          strokeLinecap="round"
-          strokeLinejoin="round"
-          d="M10.5 17a6.5 6.5 0 1 0 0-13 6.5 6.5 0 0 0 0 13zM15.5 15.5 21 21M7.75 10.5l1.9 1.9 3.6-3.9"
-        />
-      </symbol>
-      <symbol id="icon-savings" viewBox="0 0 24 24">
-        <path
-          fill="none"
-          stroke="currentColor"
-          strokeWidth="1.75"
-          strokeLinecap="round"
-          strokeLinejoin="round"
-          d="M12 21.5a9.5 9.5 0 1 0 0-19 9.5 9.5 0 0 0 0 19zM15.5 8.5h-5a2 2 0 1 0 0 4h3a2 2 0 1 1 0 4h-5M12 6.5v2M12 15.5v2"
-        />
-      </symbol>
       <symbol id="icon-data" viewBox="0 0 24 24">
         <path
           fill="none"

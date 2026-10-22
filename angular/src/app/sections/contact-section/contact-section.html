@@ -2,7 +2,7 @@
      the static edition's HTML attributes, plus the phone rule), then the JSON goes to the contact Lambda. -->
 <section class="section section-alt" id="contact" aria-labelledby="contact-title">
   <div class="container">
-    <p class="eyebrow">06 / Contact</p>
+    <p class="eyebrow">05 / Contact</p>
     <h2 id="contact-title">Let's Talk</h2>
     <p class="section-intro">Hiring, contract work, or a question about one of the projects above. Send a note, pick how you would like to hear back, and I will reply, usually within a day.</p>
     <form class="contact-form" [class.is-sent]="sent()" id="contact-form" [formGroup]="form" (ngSubmit)="send()">
@@ -22,7 +22,6 @@
           <select formControlName="topic">
             <option value="Job opportunity">Job opportunity</option>
             <option value="Contract or consulting">Contract or consulting</option>
-            <option value="Freelance">Freelance</option>
             <option value="Something else">Something else</option>
           </select>
         </label>

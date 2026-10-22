@@ -15,7 +15,6 @@ describe('Home', () => {
       'about',
       'quote-band',
       'services',
-      'freelance',
       'portfolio',
       'resume',
       'contact',

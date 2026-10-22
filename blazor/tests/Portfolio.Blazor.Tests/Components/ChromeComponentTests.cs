@@ -30,10 +30,6 @@ public sealed class ChromeComponentTests : BunitContext
     [InlineData("test")]
     [InlineData("deploy")]
     [InlineData("monitor")]
-    [InlineData("preview")]
-    [InlineData("wrench")]
-    [InlineData("audit")]
-    [InlineData("savings")]
     [InlineData("mail")]
     [InlineData("download")]
     public void IconSprite_ShouldDefineSymbol(string name)
