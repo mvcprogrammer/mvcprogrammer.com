@@ -8,12 +8,11 @@ export function ServicesSection() {
     <section className="section" id="services" aria-labelledby="services-title">
       <div className="container">
         <p className="eyebrow">02 / For Employers</p>
-        <h2 id="services-title">What I Offer to Employers</h2>
+        <h2 id="services-title">What I Offer Employers</h2>
         <p className="section-intro">
           For companies hiring a senior full-stack engineer. These are the six areas I own on a
           product team, from the first design review through production support, and the standard I
-          hold each one to. If you need a shorter, scoped engagement instead, see{' '}
-          <a href="#freelance">Freelance</a> below.
+          hold each one to.
         </p>
         <div className="card-grid">
           <article className="card service-card">

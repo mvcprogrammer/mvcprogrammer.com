@@ -3,7 +3,7 @@ export function ColophonSection() {
   return (
     <section className="section colophon" id="colophon" aria-labelledby="colophon-title">
       <div className="container">
-        <p className="eyebrow">07 / Colophon</p>
+        <p className="eyebrow">06 / Colophon</p>
         <h2 id="colophon-title">How This Site Is Built</h2>
         <p className="section-intro">
           A footnote for the curious. This is the React edition of{' '}

@@ -2,7 +2,7 @@
    then the data annotations on ContactForm, then the JSON goes to the contact Lambda. *@
 <section class="section section-alt" id="contact" aria-labelledby="contact-title">
     <div class="container">
-        <p class="eyebrow">06 / Contact</p>
+        <p class="eyebrow">05 / Contact</p>
         <h2 id="contact-title">Let's Talk</h2>
         <p class="section-intro">Hiring, contract work, or a question about one of the projects above. Send a note, pick how you would like to hear back, and I will reply, usually within a day.</p>
         <EditForm Model="_form" OnValidSubmit="SendAsync" OnInvalidSubmit="ShowInvalid" class="@FormClass" id="contact-form">
@@ -23,7 +23,6 @@
                     <InputSelect @bind-Value="_form.Topic">
                         <option>Job opportunity</option>
                         <option>Contract or consulting</option>
-                        <option>Freelance</option>
                         <option>Something else</option>
                     </InputSelect>
                 </label>

@@ -989,11 +989,6 @@ img, svg {
     gap: 1.5rem;
   }
 
-  /* The four freelance cards sit two by two rather than three and an orphan */
-  #freelance .card-grid {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-  }
-
   /* Three project cards sit in one row under the full-width featured card; the FHIR API card
      takes the whole row while its explorer is open (see the FHIR block). */
   .portfolio-grid {

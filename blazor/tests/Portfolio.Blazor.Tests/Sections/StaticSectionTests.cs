@@ -101,7 +101,7 @@ public sealed class StaticSectionTests : BunitContext
 
         // Assert
         var ids = cut.FindAll("section[id]").Select(s => s.Id).ToList();
-        Assert.Equal(["about", "services", "freelance", "portfolio", "resume", "contact", "colophon"], ids);
+        Assert.Equal(["about", "services", "portfolio", "resume", "contact", "colophon"], ids);
         Assert.NotNull(cut.Find(".hero"));
         Assert.NotNull(cut.Find("#kiosk-dialog"));
     }

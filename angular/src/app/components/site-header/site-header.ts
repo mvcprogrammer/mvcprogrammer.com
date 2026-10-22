@@ -41,7 +41,6 @@ export class SiteHeader {
   static readonly SECTION_LINKS: readonly SectionLink[] = [
     { id: 'about', label: 'About' },
     { id: 'services', label: 'Employers' },
-    { id: 'freelance', label: 'Freelance' },
     { id: 'portfolio', label: 'Portfolio' },
     { id: 'resume', label: 'Resume' },
     { id: 'contact', label: 'Contact' },

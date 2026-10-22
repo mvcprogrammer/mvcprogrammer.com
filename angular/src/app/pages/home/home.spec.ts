@@ -21,7 +21,6 @@ describe('Home', () => {
     expect(ids).toEqual([
       'about',
       'services',
-      'freelance',
       'portfolio',
       'resume',
       'contact',

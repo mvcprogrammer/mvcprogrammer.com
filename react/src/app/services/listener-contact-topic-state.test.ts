@@ -11,11 +11,11 @@ describe('ListenerContactTopicState', () => {
       state.subscribe(second);
 
       // Act
-      state.select('Freelance');
+      state.select('Contract or consulting');
 
       // Assert
-      expect(first).toHaveBeenCalledWith('Freelance');
-      expect(second).toHaveBeenCalledWith('Freelance');
+      expect(first).toHaveBeenCalledWith('Contract or consulting');
+      expect(second).toHaveBeenCalledWith('Contract or consulting');
     });
 
     it('should do nothing without subscribers', () => {
@@ -23,13 +23,13 @@ describe('ListenerContactTopicState', () => {
       const state = new ListenerContactTopicState();
 
       // Act, Assert
-      expect(() => state.select('Freelance')).not.toThrow();
+      expect(() => state.select('Contract or consulting')).not.toThrow();
     });
 
     it('should not replay earlier topics to a late subscriber', () => {
       // Arrange
       const state = new ListenerContactTopicState();
-      state.select('Freelance');
+      state.select('Contract or consulting');
       const listener = vi.fn();
 
       // Act
@@ -49,7 +49,7 @@ describe('ListenerContactTopicState', () => {
 
       // Act
       unsubscribe();
-      state.select('Freelance');
+      state.select('Contract or consulting');
 
       // Assert
       expect(listener).not.toHaveBeenCalled();
@@ -63,10 +63,10 @@ describe('ListenerContactTopicState', () => {
       state.subscribe(second);
 
       // Act
-      state.select('Freelance');
+      state.select('Contract or consulting');
 
       // Assert
-      expect(second).toHaveBeenCalledWith('Freelance');
+      expect(second).toHaveBeenCalledWith('Contract or consulting');
     });
   });
 });

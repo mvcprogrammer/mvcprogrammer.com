@@ -45,10 +45,10 @@ public sealed class ContactSectionTests : BunitContext
         var cut = Render<ContactSection>();
 
         // Act (the call-to-action buttons select on the renderer's dispatcher, so the test does too)
-        await cut.InvokeAsync(() => topic.Select("Freelance"));
+        await cut.InvokeAsync(() => topic.Select("Contract or consulting"));
 
         // Assert
-        Assert.Equal("Freelance", cut.FindAll("select")[0].GetAttribute("value"));
+        Assert.Equal("Contract or consulting", cut.FindAll("select")[0].GetAttribute("value"));
     }
 
     /// <summary>After disposal the form no longer listens, so a later selection does not throw.</summary>
@@ -61,7 +61,7 @@ public sealed class ContactSectionTests : BunitContext
         await DisposeComponentsAsync();
 
         // Act
-        var exception = Record.Exception(() => topic.Select("Freelance"));
+        var exception = Record.Exception(() => topic.Select("Contract or consulting"));
 
         // Assert
         Assert.Null(exception);

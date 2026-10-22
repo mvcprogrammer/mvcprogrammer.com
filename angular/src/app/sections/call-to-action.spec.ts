@@ -1,5 +1,4 @@
 import { TestBed } from '@angular/core/testing';
-import { FreelanceSection } from './freelance-section/freelance-section';
 import { ServicesSection } from './services-section/services-section';
 import { createSiteTestServices } from '../../testing/site-testing';
 
@@ -22,26 +21,6 @@ describe('call to action', () => {
       expect(selected).toEqual(['Job opportunity']);
       expect(host.querySelectorAll('.service-card').length).toBe(6);
       expect(host.querySelectorAll('.service-icon svg use').length).toBe(6);
-    });
-  });
-
-  describe('FreelanceSection', () => {
-    it('should select the freelance topic when "Start a conversation" is clicked', async () => {
-      // Arrange
-      const services = createSiteTestServices();
-      const selected: string[] = [];
-      services.topics.topics.subscribe((topic) => selected.push(topic));
-      await TestBed.configureTestingModule({ imports: [FreelanceSection], providers: services.providers }).compileComponents();
-      const fixture = TestBed.createComponent(FreelanceSection);
-      await fixture.whenStable();
-      const host = fixture.nativeElement as HTMLElement;
-
-      // Act
-      host.querySelector<HTMLAnchorElement>('a.button-primary[href="#contact"]')?.click();
-
-      // Assert
-      expect(selected).toEqual(['Freelance']);
-      expect(host.querySelectorAll('.service-card').length).toBe(4);
     });
   });
 });

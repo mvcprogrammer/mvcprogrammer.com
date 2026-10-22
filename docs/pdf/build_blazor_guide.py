@@ -76,7 +76,7 @@ story += [
             [c("App.razor"), "Router. No " + c("FocusOnNavigate") + ", because in-page links are hash navigations."],
             [c("Layout/MainLayout.razor"), "Skip link, icon sprite, header, " + c("&lt;main&gt;") + ", footer."],
             [c("Pages/Home.razor"), "The one page: a list of section components in page order."],
-            [c("Sections/"), "One component per section of the page: Hero, About, Services, Freelance, Portfolio, Quote, Resume, Contact, Colophon. Markup lifted from " + c("index.html") + "."],
+            [c("Sections/"), "One component per section of the page: Hero, About, Services, Portfolio, Quote, Resume, Contact, Colophon. Markup lifted from " + c("index.html") + "."],
             [c("Components/"), "Header (menu, scroll state, current section), footer, icon and icon sprite, social links, the experience timeline with its skill filter, and the kiosk demo dialog."],
             [c("Configurations/SiteOptions"), "Lambda URLs and API paths, bound from " + c("wwwroot/appsettings.json") + " and validated with data annotations."],
             [c("Interfaces/, Services/"), c("IExperienceClient") + " and " + c("IContactClient") + " (typed HttpClients) and " + c("IContactTopicState") + " (the call-to-action buttons preselect the form topic)."],
@@ -191,7 +191,7 @@ story += [
     b("Dependencies of the class under test are faked, never the class itself. " + c("Assert.Equal") + " for exact values, " + c("Assert.Single") + " when one element is expected, " + c("Assert.ThrowsAsync") + " for async failures, " + c("CancellationToken.None") + " unless cancellation is the subject."),
     b("Async component assertions use " + c("cut.WaitForAssertionAsync(...)") + " because the first render happens before " + c("OnInitializedAsync") + " completes."),
     p("Test project layout", "h2"),
-    p("Folders mirror the app. The counts are test methods; theories expand to more cases at run time (115 in all)."),
+    p("Folders mirror the app. The counts are test methods; theories expand to more cases at run time (114 in all)."),
     table(
         ["File", "Tests", "What it proves"],
         [
@@ -201,7 +201,7 @@ story += [
             [link("Components/ChromeComponentTests.cs", BLOB + "blazor/tests/Portfolio.Blazor.Tests/Components/ChromeComponentTests.cs"), "4", "Icon references a sprite symbol, every symbol exists, three social profiles, footer year and legal links."],
             [link("Sections/ContactSectionTests.cs", BLOB + "blazor/tests/Portfolio.Blazor.Tests/Sections/ContactSectionTests.cs"), "12", "Phone field hidden by default, topic preselection and unsubscribe, phone reveal, post and confirmations, honeypot forwarded, 429, generic failure, timeout, no post when invalid."],
             [link("Sections/StaticSectionTests.cs", BLOB + "blazor/tests/Portfolio.Blazor.Tests/Sections/StaticSectionTests.cs"), "4", "The JavaScript tag links to the static edition, the resume button uses the configured URL, the colophon links to the Blazor source, Home renders every section in order."],
-            [link("Sections/CallToActionTests.cs", BLOB + "blazor/tests/Portfolio.Blazor.Tests/Sections/CallToActionTests.cs"), "2", "The Services and Freelance buttons select their contact topic."],
+            [link("Sections/CallToActionTests.cs", BLOB + "blazor/tests/Portfolio.Blazor.Tests/Sections/CallToActionTests.cs"), "1", "The Services button selects its contact topic."],
             [link("Services/ExperienceClientTests.cs", BLOB + "blazor/tests/Portfolio.Blazor.Tests/Services/ExperienceClientTests.cs"), "10", "Paths and deserialization, query-string escaping, blank skill ignored, error status, HTML body, null body, cancellation, skills, seed."],
             [link("Services/ContactClientTests.cs", BLOB + "blazor/tests/Portfolio.Blazor.Tests/Services/ContactClientTests.cs"), "5", "Null guards, camelCase JSON to the endpoint, status code on rejection, cancellation."],
             [link("Services/ContactTopicStateTests.cs", BLOB + "blazor/tests/Portfolio.Blazor.Tests/Services/ContactTopicStateTests.cs"), "6", "Notify every subscriber, no subscribers, unsubscribe during notification, unsubscribe stops notifications, null guards."],

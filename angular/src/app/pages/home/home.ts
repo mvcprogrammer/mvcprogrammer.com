@@ -9,7 +9,6 @@ import { EngagementTracker } from '../../interfaces/engagement-tracker';
 import { AboutSection } from '../../sections/about-section/about-section';
 import { ColophonSection } from '../../sections/colophon-section/colophon-section';
 import { ContactSection } from '../../sections/contact-section/contact-section';
-import { FreelanceSection } from '../../sections/freelance-section/freelance-section';
 import { HeroSection } from '../../sections/hero-section/hero-section';
 import { PortfolioSection } from '../../sections/portfolio-section/portfolio-section';
 import { QuoteSection } from '../../sections/quote-section/quote-section';
@@ -24,7 +23,6 @@ import { ServicesSection } from '../../sections/services-section/services-sectio
     AboutSection,
     QuoteSection,
     ServicesSection,
-    FreelanceSection,
     PortfolioSection,
     ResumeSection,
     ContactSection,
@@ -36,7 +34,6 @@ import { ServicesSection } from '../../sections/services-section/services-sectio
     <app-about-section />
     <app-quote-section />
     <app-services-section />
-    <app-freelance-section />
     <app-portfolio-section />
     <app-resume-section />
     <app-contact-section />
