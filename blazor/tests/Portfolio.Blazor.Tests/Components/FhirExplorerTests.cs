@@ -406,7 +406,10 @@ public sealed class FhirExplorerTests : BunitContext
         await cut.FindAll(".fhir-patient")[1].ClickAsync(new MouseEventArgs());
         await cut.WaitForAssertionAsync(() => Assert.Equal("Programmer, Two", cut.Find("#fhir-card-name").TextContent));
         first.SetResult(TestData.CreateFhirResponse(TestData.CreatePatientSummary()));
-        await cut.WaitForStateAsync(() => submit.IsCompleted);
+        // Await the submit handler itself rather than a render-gated wait: the stale summary is dropped
+        // without necessarily rendering again, so WaitForStateAsync could miss the moment the task completed.
+        // The bound only turns a regression into a failure instead of a hang.
+        await submit.WaitAsync(TimeSpan.FromSeconds(5), Xunit.TestContext.Current.CancellationToken);
 
         // Assert
         Assert.Equal("Programmer, Two", cut.Find("#fhir-card-name").TextContent);
