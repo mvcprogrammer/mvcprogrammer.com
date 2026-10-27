@@ -1,0 +1,8 @@
+<Project>
+  <!-- Shared package metadata for every .NET project in this repository. -->
+  <PropertyGroup>
+    <Authors>Neal Thomas</Authors>
+    <Copyright>Copyright (c) 2026 Neal Thomas</Copyright>
+    <PackageLicenseExpression>AGPL-3.0-only</PackageLicenseExpression>
+  </PropertyGroup>
+</Project>
