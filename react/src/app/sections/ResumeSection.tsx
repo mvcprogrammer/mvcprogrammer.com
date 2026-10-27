@@ -2,7 +2,7 @@ import { ExperienceTimeline } from '../components/ExperienceTimeline';
 import { Icon } from '../components/Icon';
 import { useSite } from '../providers/SiteProvider';
 
-/** Resume: the download link, then the API-backed timeline, then education. */
+/** Resume: the download link, then the API-backed timeline, then education and continuing education. */
 export function ResumeSection() {
   const { options } = useSite();
   return (
@@ -24,12 +24,16 @@ export function ResumeSection() {
         <h3 className="subsection-title">Education</h3>
         <ol className="timeline timeline-compact" role="list">
           <li className="timeline-item">
-            <h4>Massachusetts Institute of Technology (MIT)</h4>
-            <p className="timeline-org">Physics - OpenCourseWare</p>
-          </li>
-          <li className="timeline-item">
             <h4>High School Diploma</h4>
             <p className="timeline-org">Graduated at age 16</p>
+          </li>
+        </ol>
+
+        <h3 className="subsection-title">Continuing Education</h3>
+        <ol className="timeline timeline-compact" role="list">
+          <li className="timeline-item">
+            <h4>MIT OpenCourseWare</h4>
+            <p className="timeline-org">Physics · Massachusetts Institute of Technology</p>
           </li>
         </ol>
       </div>

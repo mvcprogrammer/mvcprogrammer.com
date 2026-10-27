@@ -261,7 +261,7 @@ describe('static sections', () => {
   });
 
   describe('ResumeSection', () => {
-    it('should use the configured resume URL and render the timeline and education', async () => {
+    it('should use the configured resume URL and render the timeline, education, and continuing education', async () => {
       // Arrange, Act
       renderWithSite(<ResumeSection />);
 
@@ -270,7 +270,10 @@ describe('static sections', () => {
         'https://resume.example.test/',
       );
       expect(document.querySelector('#experience-timeline')).not.toBeNull();
+      const subsections = Array.from(document.querySelectorAll('.subsection-title')).map((h) => h.textContent?.trim());
+      expect(subsections).toEqual(['Education', 'Continuing Education']);
       expect(document.querySelectorAll('.timeline-compact .timeline-item').length).toBe(2);
+      expect(document.querySelectorAll('.timeline-compact')[1]?.textContent).toContain('MIT OpenCourseWare');
       await screen.findByRole('status');
     });
   });

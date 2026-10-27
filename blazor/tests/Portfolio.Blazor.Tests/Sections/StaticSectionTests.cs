@@ -52,7 +52,7 @@ public sealed class StaticSectionTests : BunitContext
 
     #region ResumeSection Tests
 
-    /// <summary>The resume button points at the configured download URL.</summary>
+    /// <summary>The resume button points at the configured download URL, and the section lists education and continuing education.</summary>
     [Fact]
     public void ResumeSection_ShouldUseConfiguredResumeUrl()
     {
@@ -65,7 +65,9 @@ public sealed class StaticSectionTests : BunitContext
         // Assert
         Assert.Equal("https://resume.example.test/", cut.Find("a.button-secondary").GetAttribute("href"));
         Assert.NotNull(cut.Find("#experience-timeline"));
+        Assert.Equal(new[] { "Education", "Continuing Education" }, cut.FindAll(".subsection-title").Select(h => h.TextContent.Trim()));
         Assert.Equal(2, cut.FindAll(".timeline-compact .timeline-item").Count);
+        Assert.Contains("MIT OpenCourseWare", cut.FindAll(".timeline-compact")[1].TextContent);
     }
 
     #endregion

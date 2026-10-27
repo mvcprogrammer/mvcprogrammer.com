@@ -25,6 +25,7 @@ def rgb(hex6):
 BLUE, INK, BODY, MUTED, RULE = rgb("2f5fc4"), rgb("1e1f22"), rgb("33363b"), rgb("6f737a"), rgb("d9dce1")
 LEFT, RIGHT, RULE_RIGHT, HEAD_X = 54, 558, 564, 60
 PITCH = 13.6          # body line pitch used by the Experience bullets
+GAP = 32.0            # gap from the previous entry's baseline to the next section heading (Education, Continuing Education, Portfolio)
 BOTTOM = 738          # page bottom margin (54 pt)
 
 API = ("Backed by a C# / .NET 10 API on AWS Lambda and DynamoDB with an OpenAPI contract and ETag caching, "
@@ -77,10 +78,10 @@ for key, e in EDITIONS.items():
     doc = pymupdf.open(base_pdf)
     page = doc[-1]
     assert "P O R T F O L I O" not in page.get_text(), "base PDF already has a Portfolio section"
-    # Anchor on the last Education entry and mirror the Experience -> Education spacing (37 pt).
+    # Anchor on the Continuing Education entry and use the 32 pt section gap of the page's lower sections.
     anchor = [s for b in page.get_text("dict")["blocks"] for l in b.get("lines", []) for s in l["spans"]
-              if s["text"] == "High School Diploma"][0]
-    y_head = anchor["origin"][1] + 37.0
+              if s["text"] == "MIT OpenCourseWare"][0]
+    y_head = anchor["origin"][1] + GAP
     y_rule = y_head + 7.0
     y_entry = y_head + 24.9
     y_body = y_entry + 14.6
