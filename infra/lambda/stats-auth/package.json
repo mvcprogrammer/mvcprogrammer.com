@@ -1,6 +1,7 @@
 {
   "name": "mvcprogrammer-stats-auth",
   "version": "1.0.0",
+  "license": "AGPL-3.0-only",
   "private": true,
   "description": "Lambda@Edge viewer-request function that puts stats.mvcprogrammer.com behind a Cognito sign-in",
   "main": "index.js",

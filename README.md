@@ -94,3 +94,9 @@ The full build-and-deploy walkthrough, including the IAM trust policy, the respo
 <div align="center">
 <sub>Neal Thomas &nbsp;·&nbsp; <a href="https://github.com/mvcprogrammer">GitHub profile</a> &nbsp;·&nbsp; <a href="https://www.linkedin.com/in/mvcprogrammer/">LinkedIn</a> &nbsp;·&nbsp; <a href="https://mvcprogrammer.com/#resume">Résumé and contact</a></sub>
 </div>
+
+## License
+
+Copyright (c) 2026 Neal Thomas.
+
+The source code in this repository is licensed under the GNU Affero General Public License, version 3 (AGPL-3.0-only). See [LICENSE](LICENSE) for the full text.
