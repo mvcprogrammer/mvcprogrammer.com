@@ -226,7 +226,7 @@ describe('static sections', () => {
   });
 
   describe('ResumeSection', () => {
-    it('should use the configured resume URL and render the timeline and education', async () => {
+    it('should use the configured resume URL and render the timeline, education, and continuing education', async () => {
       // Arrange
       const services = createSiteTestServices();
       await TestBed.configureTestingModule({ imports: [ResumeSection], providers: services.providers }).compileComponents();
@@ -239,7 +239,10 @@ describe('static sections', () => {
       const host = fixture.nativeElement as HTMLElement;
       expect(host.querySelector('a.button-secondary')?.getAttribute('href')).toBe('https://resume.example.test/');
       expect(host.querySelector('#experience-timeline')).not.toBeNull();
+      const subsections = Array.from(host.querySelectorAll('.subsection-title')).map((h) => h.textContent?.trim());
+      expect(subsections).toEqual(['Education', 'Continuing Education']);
       expect(host.querySelectorAll('.timeline-compact .timeline-item').length).toBe(2);
+      expect(host.querySelectorAll('.timeline-compact')[1]?.textContent).toContain('MIT OpenCourseWare');
     });
   });
 
