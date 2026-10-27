@@ -22,7 +22,7 @@ type IndexPhase = { readonly kind: 'loading' } | { readonly kind: 'error'; reado
 
 /** The dashboard: a header with the controls, the active filters, and the page. The URL holds the state. */
 export function App({ client, today = todayKey() }: AppProps) {
-  const [query, setQuery] = useQuery();
+  const [query, setQuery] = useQuery(today);
   const [indexPhase, setIndexPhase] = useState<IndexPhase>({ kind: 'loading' });
   const [attempt, setAttempt] = useState(0);
   const [filtersOpen, setFiltersOpen] = useState(false);
