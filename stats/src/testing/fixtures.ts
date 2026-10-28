@@ -28,7 +28,7 @@ function seeded(seed: number): () => number {
 const EDITION_WEIGHTS: ReadonlyArray<[string, number]> = [['js', 0.4], ['react', 0.3], ['angular', 0.17], ['blazor', 0.13]];
 const REFERRERS: ReadonlyArray<[string | undefined, number]> = [[undefined, 0.75], ['www.linkedin.com', 0.12], ['www.google.com', 0.08], ['github.com', 0.05]];
 const COUNTRIES: ReadonlyArray<[[string, string], number]> = [[['US', 'IAD'], 0.5], [['DE', 'FRA'], 0.2], [['NL', 'AMS'], 0.1], [['GB', 'LHR'], 0.1], [['CA', 'YUL'], 0.1]];
-const SECTIONS = ['about', 'services', 'freelance', 'portfolio', 'resume', 'contact', 'colophon'];
+const SECTIONS = ['about', 'services', 'portfolio', 'resume', 'contact', 'colophon'];
 
 function pick<T>(random: () => number, weighted: ReadonlyArray<[T, number]>): T {
   let roll = random();

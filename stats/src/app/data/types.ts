@@ -13,13 +13,12 @@ export type Edition = (typeof EDITIONS)[number];
 export const EDITION_LABELS: Readonly<Record<Edition, string>> = { js: 'JS', angular: 'Angular', react: 'React', blazor: 'Blazor' };
 
 /** The page's sections in reading order, for the funnel. */
-export const SECTION_ORDER = ['about', 'services', 'freelance', 'portfolio', 'resume', 'contact', 'colophon'] as const;
+export const SECTION_ORDER = ['about', 'services', 'portfolio', 'resume', 'contact', 'colophon'] as const;
 
 /** How each section is named on screen. */
 export const SECTION_LABELS: Readonly<Record<string, string>> = {
   about: 'About',
   services: 'Services',
-  freelance: 'Freelance',
   portfolio: 'Portfolio',
   resume: 'Resume',
   contact: 'Contact',

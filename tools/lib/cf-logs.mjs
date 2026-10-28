@@ -25,7 +25,7 @@ export const BOT_PATTERN =
   /bot|crawl|spider|preview|facebookexternalhit|slack|linkedinbot|whatsapp|telegram|discord|skype|twitterbot|headless|curl|wget|python|go-http|java\/|scrapy|okhttp|libwww|httpclient|zgrab|censys|nmap|masscan|gort|dataprovider|semrush|ahrefs|mj12|petalbot|bytespider|yandex|baidu|duckduck|applebot|bingbot|googlebot|gptbot|claudebot|anthropic|openai|perplexity|ccbot|amazonbot|axios|node-fetch|https?:\/\//i;
 
 /** The page's sections in reading order, for the reach table. */
-export const SECTION_ORDER = ['about', 'services', 'freelance', 'portfolio', 'resume', 'contact', 'colophon'];
+export const SECTION_ORDER = ['about', 'services', 'portfolio', 'resume', 'contact', 'colophon'];
 
 /** Edition ids in display order, and the host each one is served from. */
 export const EDITION_ORDER = ['js', 'angular', 'react', 'blazor'];

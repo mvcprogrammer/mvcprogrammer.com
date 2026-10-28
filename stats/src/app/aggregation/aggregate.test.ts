@@ -38,6 +38,18 @@ describe('aggregate', () => {
     expect(summary.byHour[10]).toBe(2);
   });
 
+  it('should leave a retired section out of the funnel', () => {
+    // Arrange: a day file written before the Freelance section was removed still lists it
+    const visits = [makeVisit({ token: 'c', loads: 1, sections: ['about', 'freelance', 'portfolio'] })];
+
+    // Act
+    const summary = summarize(visits);
+
+    // Assert
+    expect(summary.sectionReach).toEqual({ about: 1, portfolio: 1 });
+    expect(Object.keys(summary.sectionReach)).not.toContain('freelance');
+  });
+
   it('should collect the funnel, the seconds, and the clicks', () => {
     // Act
     const summary = summarize(VISITS);
