@@ -2,7 +2,7 @@ AWSTemplateFormatVersion: '2010-09-09'
 Transform: AWS::Serverless-2016-10-31
 
 Description: >
-  Experience API for mvcprogrammer.com. A read-only C# (.NET 10, arm64) Lambda
+  Experience API for mvcprogrammer.com. A C# (.NET 10, arm64) Lambda
   behind a CloudFront behavior at /api/*, reading from a single DynamoDB table.
   Spec: api/openapi.yaml.
 
@@ -66,7 +66,7 @@ Resources:
     DependsOn: ApiLogGroup
     Properties:
       FunctionName: mvcprogrammer-experience-api
-      Description: Read-only Experience API, ASP.NET Core minimal API hosted on Lambda.
+      Description: Experience API, ASP.NET Core minimal API hosted on Lambda.
       Runtime: dotnet10
       Architectures: [arm64]
       # With Amazon.Lambda.AspNetCoreServer.Hosting the handler is the assembly name.

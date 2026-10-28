@@ -41,7 +41,7 @@ export function FhirExplorer() {
         </p>
       </div>
       <p className="fhir-lead">
-        A read-only window onto a public FHIR R4 test server seeded with synthetic records. No real
+        A window onto a public FHIR R4 test server seeded with synthetic records. No real
         patient data is involved, nothing is persisted, and nothing beyond request metadata is logged.
       </p>
 

@@ -1,6 +1,6 @@
 # The APIs behind mvcprogrammer.com
 
-Two small, public, read-only functions, both C# on .NET 10 on AWS Lambda (arm64) behind CloudFront
+Two small, public functions, both C# on .NET 10 on AWS Lambda (arm64) behind CloudFront
 behaviors under `/api`, both specified in the one `openapi.yaml` before any code:
 
 - **Experience API** (`/api/experience`, `/api/skills`): the source of truth for the Experience
@@ -68,8 +68,8 @@ Set `TABLE_NAME` and the app reads DynamoDB instead; that is how it runs on Lamb
 - **Locked front door.** The function URL requires IAM auth and only CloudFront, signing
   with an origin access control, is permitted to invoke it. The raw URL answers 403.
 - **Writes are specified, not built.** `POST`, `PUT`, and `DELETE` exist in the spec, the
-  routes, and the facade, and answer `501` with a problem body. The function's IAM policy is
-  read-only until they ship. The seed tool is the write path for now.
+  routes, and the facade, and answer `501` with a problem body. The function's IAM policy
+  allows only reads until they ship. The seed tool is the write path for now.
 - **Cold start.** .NET on arm64 with ReadyToRun and `CreateSlimBuilder`. The site keeps a
   server-rendered copy of the timeline as its fallback, so a cold start is never on the
   critical path for a reader.
@@ -78,7 +78,7 @@ Deployment, seeding, and the CloudFront wiring are in [docs/DEPLOY.md](../docs/D
 
 # FHIR API
 
-The function behind the [FHIR API card](https://mvcprogrammer.com/#fhir-api) on every edition of mvcprogrammer.com, a read-only patient
+The function behind the [FHIR API card](https://mvcprogrammer.com/#fhir-api) on every edition of mvcprogrammer.com, a patient
 explorer over a public FHIR R4 sandbox that holds synthetic data only. It owns no data: every
 request is answered from the sandbox, mapped at the boundary into the small DTOs in `openapi.yaml`
 (tag `FHIR`), with a `trace` of the upstream calls for the page's "under the hood" panel.
