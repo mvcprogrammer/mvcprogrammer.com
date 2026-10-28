@@ -31,11 +31,14 @@ jobs:
     name: Backfill the board and redraw the burndown
     runs-on: ubuntu-24.04
     steps:
-      # Full history: the backfill reads commit dates back to the first release.
+      # Full history: the backfill reads commit dates back to the first release. Credentials are not
+      # persisted: checkout would otherwise leave the read-only GITHUB_TOKEN as an authorization header in
+      # the git config, and git sends that header on the push, over the BOARD_TOKEN in the URL (a 403).
       - name: Check out the site
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           fetch-depth: 0
+          persist-credentials: false
 
       # Older board items cite commits in the profile repository, which the backfill looks up in a
       # sibling clone and refuses to guess about when it is missing.
@@ -45,6 +48,7 @@ jobs:
           repository: mvcprogrammer/mvcprogrammer
           path: profile
           fetch-depth: 0
+          persist-credentials: false
 
       - name: Set up Node
         uses: actions/setup-node@a0853c24544627f65ddf259abe73b1d18a591444 # v5.0.0
