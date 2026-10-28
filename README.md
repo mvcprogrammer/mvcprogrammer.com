@@ -78,7 +78,7 @@ Swatches are page, accent, and hover, in that order. The Angular build emits its
 
 ## Work tracking
 
-Work is planned on the public [project board](https://github.com/users/mvcprogrammer/projects/1): every change is an issue, estimated in story points before it starts, and moved through Backlog, Ready, In progress, In review, and Done. The board's Started, Completed, and Actual hours come from git rather than memory, and the sprint burndown below is drawn from the board by `tools/burndown.mjs` every night. How the numbers are derived, and what they do and do not say, is in [docs/BURNDOWN.md](docs/BURNDOWN.md).
+Work is planned on the public [project board](https://github.com/users/mvcprogrammer/projects/1): every change is an issue, estimated in story points before it starts, and moved through Backlog, Ready, In progress, In review, and Done; the Definition of Ready and Definition of Done in [docs/BURNDOWN.md](docs/BURNDOWN.md) say what each of those moves requires. The board's Started, Completed, and Actual hours come from git rather than memory, and the sprint burndown below is drawn from the board by `tools/burndown.mjs` every night. How the numbers are derived, and what they do and do not say, is in [docs/BURNDOWN.md](docs/BURNDOWN.md).
 
 <img alt="Sprint 1 burndown: story points remaining per day against the ideal line" src="docs/images/burndown-sprint-1.svg" width="880">
 
