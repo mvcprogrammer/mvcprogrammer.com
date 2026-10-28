@@ -23,6 +23,7 @@ assets/fonts/               self-hosted Inter and JetBrains Mono (latin subset) 
 assets/images/              og-image.jpg social preview and portfolio/ card images
 infra/lambda/resume-download/  Lambda that texts you and redirects to the resume PDF (see Resume download)
 infra/lambda/contact/       Lambda behind the contact form, emails you through SES (see Contact form)
+.github/workflows/ci.yml      every test suite on each pull request; the check main requires
 .github/workflows/deploy.yml  optional: sync to S3 and invalidate CloudFront on push to main
 ```
 
@@ -425,6 +426,18 @@ The beacon itself is the last block of `main.js` (mirrored by `watchEngagement()
 ## GitHub Actions (optional)
 
 `.github/workflows/deploy.yml` runs the same steps on every push to `main`. It authenticates with OpenID Connect (OIDC), so no long-lived access keys are stored in GitHub. Third-party actions are pinned to commit SHAs with the version in a trailing comment; bump the SHA and the comment together when upgrading.
+
+`.github/workflows/ci.yml` runs every test suite on each pull request to `main`: the Angular, React, and Blazor editions, the visitor dashboard, the CloudFront log tools with the stats sign-in Lambda, and the two API projects, each in its own job, with a final `CI` job that fails if any of them did. The `protect-main` ruleset requires that `CI` check, so a pull request cannot be merged while a suite is red. The workflow needs no AWS credentials and uses the same pinned actions as the deploy. To add the requirement to the ruleset, edit it under Settings > Rules > Rulesets > protect-main, enable "Require status checks to pass", and add `CI`; or send the same with the API:
+
+```bash
+gh api -X PUT repos/mvcprogrammer/mvcprogrammer.com/rulesets/25472065 --input - <<'JSON'
+{ "name": "protect-main", "target": "branch", "enforcement": "active",
+  "conditions": { "ref_name": { "include": ["~DEFAULT_BRANCH"], "exclude": [] } },
+  "rules": [ { "type": "deletion" }, { "type": "non_fast_forward" },
+    { "type": "pull_request", "parameters": { "required_approving_review_count": 0, "dismiss_stale_reviews_on_push": true, "require_code_owner_review": false, "require_last_push_approval": false, "required_review_thread_resolution": true, "allowed_merge_methods": ["merge", "squash"] } },
+    { "type": "required_status_checks", "parameters": { "strict_required_status_checks_policy": false, "required_status_checks": [ { "context": "CI" } ] } } ] }
+JSON
+```
 
 1. Create an IAM identity provider for GitHub in the AWS account (IAM > Identity providers > OpenID Connect, provider URL `https://token.actions.githubusercontent.com`, audience `sts.amazonaws.com`).
 2. Create an IAM role with this trust policy (replace the owner/repo):

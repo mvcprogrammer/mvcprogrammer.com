@@ -1,0 +1,162 @@
+name: CI
+
+# Every test suite in the repository, on every pull request to main, so a failure is caught
+# before the merge instead of by deploy.yml afterwards. The "CI" summary job at the bottom is
+# the one the protect-main ruleset requires; the suite jobs run in parallel and report into it.
+# No AWS credentials: this workflow only reads the repository.
+
+on:
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+# A new push to the same pull request cancels the run for the previous one.
+concurrency:
+  group: ci-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  angular:
+    name: Angular edition
+    runs-on: ubuntu-24.04
+    defaults:
+      run:
+        working-directory: angular
+    steps:
+      - name: Check out
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - name: Set up Node
+        uses: actions/setup-node@a0853c24544627f65ddf259abe73b1d18a591444 # v5.0.0
+        with:
+          node-version: 24
+          cache: npm
+          cache-dependency-path: angular/package-lock.json
+
+      - name: Install
+        run: npm ci
+
+      - name: Test
+        run: npm test
+
+  react:
+    name: React edition
+    runs-on: ubuntu-24.04
+    defaults:
+      run:
+        working-directory: react
+    steps:
+      - name: Check out
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - name: Set up Node
+        uses: actions/setup-node@a0853c24544627f65ddf259abe73b1d18a591444 # v5.0.0
+        with:
+          node-version: 24
+          cache: npm
+          cache-dependency-path: react/package-lock.json
+
+      - name: Install
+        run: npm ci
+
+      - name: Test
+        run: npm test
+
+  stats:
+    name: Visitor dashboard
+    runs-on: ubuntu-24.04
+    defaults:
+      run:
+        working-directory: stats
+    steps:
+      - name: Check out
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - name: Set up Node
+        uses: actions/setup-node@a0853c24544627f65ddf259abe73b1d18a591444 # v5.0.0
+        with:
+          node-version: 24
+          cache: npm
+          cache-dependency-path: stats/package-lock.json
+
+      - name: Install
+        run: npm ci
+
+      - name: Test
+        run: npm test
+
+  tools:
+    name: Tools and Lambdas
+    runs-on: ubuntu-24.04
+    steps:
+      - name: Check out
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - name: Set up Node
+        uses: actions/setup-node@a0853c24544627f65ddf259abe73b1d18a591444 # v5.0.0
+        with:
+          node-version: 24
+          cache: npm
+          cache-dependency-path: infra/lambda/stats-auth/package-lock.json
+
+      # The CloudFront log parser, the stats exporter, and the run report, as stats.yml runs them.
+      - name: Test the parser and exporter
+        run: node --test 'tools/test/*.test.mjs'
+
+      - name: Install the stats sign-in Lambda
+        run: npm ci
+        working-directory: infra/lambda/stats-auth
+
+      - name: Test the stats sign-in Lambda
+        run: npm test
+        working-directory: infra/lambda/stats-auth
+
+  blazor:
+    name: Blazor edition
+    runs-on: ubuntu-24.04
+    steps:
+      - name: Check out
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - name: Set up .NET
+        uses: actions/setup-dotnet@d4c94342e560b34958eacfc5d055d21461ed1c5d # v5.0.0
+        with:
+          dotnet-version: 10.0.x
+
+      - name: Test
+        run: dotnet test --project blazor/tests/Portfolio.Blazor.Tests -c Release
+
+  api:
+    name: Experience and FHIR APIs
+    runs-on: ubuntu-24.04
+    steps:
+      - name: Check out
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - name: Set up .NET
+        uses: actions/setup-dotnet@d4c94342e560b34958eacfc5d055d21461ed1c5d # v5.0.0
+        with:
+          dotnet-version: 10.0.x
+
+      - name: Test the Experience API
+        run: dotnet test --project api/tests/Experience.Api.Tests -c Release
+
+      - name: Test the FHIR API
+        run: dotnet test --project api/tests/Fhir.Api.Tests -c Release
+
+  # One check for the ruleset to require. It runs whatever happened above and fails when any suite did.
+  ci:
+    name: CI
+    needs: [angular, react, stats, tools, blazor, api]
+    if: always()
+    runs-on: ubuntu-24.04
+    steps:
+      - name: Every suite passed
+        if: contains(needs.*.result, 'failure') || contains(needs.*.result, 'cancelled') || contains(needs.*.result, 'skipped')
+        run: |
+          echo "A suite did not pass:"
+          echo '${{ toJSON(needs) }}'
+          exit 1
