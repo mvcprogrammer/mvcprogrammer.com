@@ -102,3 +102,35 @@ A run that changes nothing pushes nothing.
   out changes the sprint's total, and the chart shows that as a step.
 - When a pull request closes an issue, say so in its body (`Closes #N`), so the backfill can find
   its commits. Work that never touches git says so in the issue body (`not in git`).
+- The pre-sprint history (#5 to #23, the backfilled items from the October 6 launch to the stats
+  dashboard) was estimated after the fact on 2026-10-28, from each item's Size (XS 1, S 2, M 3,
+  L 5, XL 8), so that the Done column's totals count every item. That was a one-time exception to
+  the first rule; the epic #24 stays unestimated because its slices carry the points.
+
+## Definition of Ready
+
+An item moves from Backlog to Ready only when all of this is true. A one-line issue stays in
+Backlog until someone grooms it.
+
+- The body states the problem, a **Scope** list of what changes and where, and **Acceptance
+  criteria** as checkboxes a reviewer can tick.
+- **Priority**, **Size**, and a Fibonacci **Estimate** are set, and the item is in a **Sprint**, or
+  is deliberately left out of one with the reason in the body.
+- Anything the work depends on (a secret, a setting, another issue, something only the owner can
+  do) is named, and who provides it is clear.
+- The body carries no IDs, email addresses, or private file names, because the board is public.
+
+## Definition of Done
+
+An item moves to Done only when all of this is true. Merging the pull request is what moves it,
+so these are the conditions for merging.
+
+- The change is on `main` through a pull request whose body closes the issue (`Closes #N`),
+  reviewed and merged by the owner.
+- The `CI` check passed on the pull request, and the gated deploy on `main` went green, or the
+  change was docs-only and no deploy was due.
+- Every edition the change touches mirrors it, per the four-editions rule in the README, and the
+  live site was checked wherever a deploy ran.
+- Documentation that describes the changed behavior is updated in the same pull request.
+- The board item is Done with its Completed date, and any follow-up the work uncovered is its own
+  issue rather than a note in the closed one.
