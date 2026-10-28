@@ -36,71 +36,6 @@
         </div>
       </article>
 
-      <article class="card portfolio-card">
-        <div class="card-media">
-          <img src="assets/images/portfolio/property-search-kiosk.jpg" alt="Interactive property search kiosk screen listing Clearwater Beach condos with touch controls" width="1200" height="750" loading="lazy" decoding="async">
-        </div>
-        <div class="card-body">
-          <h3>Interactive Property Search Window Display</h3>
-          <p class="card-subtitle">Touch screen kiosk, React + .NET on AWS</p>
-          <p>A touch-screen kiosk behind the window of a Clearwater Beach real estate office, running since 2010. Visitors pick sales or rentals over an aerial photo of Sand Key, browse live Stellar MLS listings and photos pulled through the Bridge Data Output API, and ask to be emailed details or called back from an on-screen keyboard. The 2026 rebuild is a React and TypeScript screen built with Vite, pixel-matched to the original against captures of the live kiosk, in front of a .NET 10 API on AWS Lambda served through CloudFront.</p>
-          <p><strong>Built for 1920&times;1080.</strong> The screen is pixel-matched to the kiosk's fixed full-HD display and runs full screen at that resolution. In any other window it scales itself to fit, letterboxed, so the live demo below looks like the kiosk on a laptop or a phone.</p>
-          <ul class="tag-list card-tags" role="list" aria-label="Technologies used on the kiosk">
-            <li class="tag">React</li>
-            <li class="tag">TypeScript</li>
-            <li class="tag">Vite</li>
-            <li class="tag">.NET 10</li>
-            <li class="tag">AWS Lambda</li>
-            <li class="tag">CloudFront</li>
-            <li class="tag">Stellar MLS</li>
-            <li class="tag">Bridge Data Output API</li>
-            <li class="tag">1920&times;1080</li>
-          </ul>
-          <div class="button-row card-actions">
-            <button type="button" class="button button-primary" (click)="kiosk.show()">
-              <app-icon name="monitor" />
-              Try the live kiosk
-            </button>
-          </div>
-          <div class="card-links">
-            <a class="card-link" href="https://github.com/mvcprogrammer/sandkey-display-web" target="_blank" rel="noopener">Screen repo</a>
-            <a class="card-link" href="https://github.com/mvcprogrammer/sandkey-display-api" target="_blank" rel="noopener">API repo</a>
-          </div>
-        </div>
-      </article>
-
-      <article class="card portfolio-card">
-        <div class="card-media">
-          <img src="assets/images/portfolio/lightsplitters-com.jpg" alt="Home page of lightsplitters.com showing the LightSplitters Media wedding, portrait, and pet photography galleries" width="1200" height="750" loading="lazy" decoding="async">
-        </div>
-        <div class="card-body">
-          <h3>lightsplitters.com</h3>
-          <p class="card-subtitle">Photography studio, Angular on AWS</p>
-          <p>The website for LightSplitters Media, a fictional Tampa Bay photography studio I created as a portfolio piece: weddings, portraits, family albums, and archival prints. An Angular 22 workspace with standalone components and signals, prerendered to static HTML with no server. A second app in the same workspace is a template for client sites, so each couple's wedding site or family album lives at its own subdomain from one shared build plus a JSON file and a folder of photos. Masonry galleries with a native dialog lightbox, responsive WebP and JPEG images, a contact form that posts to a Lambda function sending through SES, and print orders through Stripe Payment Links. All of it served from a private S3 bucket through CloudFront, with a CloudFront Function routing each subdomain to its folder.</p>
-          <ul class="tag-list card-tags" role="list" aria-label="Technologies used on lightsplitters.com">
-            <li class="tag">Angular 22</li>
-            <li class="tag">TypeScript</li>
-            <li class="tag">Signals</li>
-            <li class="tag">Prerendered SSG</li>
-            <li class="tag">SCSS</li>
-            <li class="tag">Amazon S3</li>
-            <li class="tag">CloudFront Functions</li>
-            <li class="tag">Lambda + SES</li>
-            <li class="tag">Route 53</li>
-            <li class="tag">Stripe</li>
-          </ul>
-          <div class="button-row card-actions">
-            <a class="button button-primary" href="https://lightsplitters.com" target="_blank" rel="noopener">
-              <app-icon name="globe" />
-              Visit lightsplitters.com
-            </a>
-          </div>
-          <div class="card-links">
-            <a class="card-link" href="https://github.com/mvcprogrammer/lightsplitters.com" target="_blank" rel="noopener">Site repo</a>
-          </div>
-        </div>
-      </article>
-
       <!-- FHIR API card. The explorer component is in a deferred block keyed to the accordion, so its
            code and its first request to /api/fhir load only when a visitor opens it. Open, the card
            spans the grid row (styles.css) so the two-panel results keep their width. -->
@@ -137,6 +72,71 @@
           <div class="card-links">
             <a class="card-link" href="https://github.com/mvcprogrammer/mvcprogrammer.com/tree/main/api/src/Fhir.Api" target="_blank" rel="noopener">API repo</a>
             <a class="card-link" href="https://github.com/mvcprogrammer/mvcprogrammer.com/blob/main/api/openapi.yaml" target="_blank" rel="noopener">OpenAPI spec</a>
+          </div>
+        </div>
+      </article>
+
+      <article class="card portfolio-card">
+        <div class="card-media">
+          <img src="assets/images/portfolio/lightsplitters-com.jpg" alt="Home page of lightsplitters.com showing the LightSplitters Media wedding, portrait, and pet photography galleries" width="1200" height="750" loading="lazy" decoding="async">
+        </div>
+        <div class="card-body">
+          <h3>lightsplitters.com</h3>
+          <p class="card-subtitle">Photography studio, Angular on AWS</p>
+          <p>The website for LightSplitters Media, a fictional Tampa Bay photography studio I created as a portfolio piece: weddings, portraits, family albums, and archival prints. An Angular 22 workspace with standalone components and signals, prerendered to static HTML with no server. A second app in the same workspace is a template for client sites, so each couple's wedding site or family album lives at its own subdomain from one shared build plus a JSON file and a folder of photos. Masonry galleries with a native dialog lightbox, responsive WebP and JPEG images, a contact form that posts to a Lambda function sending through SES, and print orders through Stripe Payment Links. All of it served from a private S3 bucket through CloudFront, with a CloudFront Function routing each subdomain to its folder.</p>
+          <ul class="tag-list card-tags" role="list" aria-label="Technologies used on lightsplitters.com">
+            <li class="tag">Angular 22</li>
+            <li class="tag">TypeScript</li>
+            <li class="tag">Signals</li>
+            <li class="tag">Prerendered SSG</li>
+            <li class="tag">SCSS</li>
+            <li class="tag">Amazon S3</li>
+            <li class="tag">CloudFront Functions</li>
+            <li class="tag">Lambda + SES</li>
+            <li class="tag">Route 53</li>
+            <li class="tag">Stripe</li>
+          </ul>
+          <div class="button-row card-actions">
+            <a class="button button-primary" href="https://lightsplitters.com" target="_blank" rel="noopener">
+              <app-icon name="globe" />
+              Visit lightsplitters.com
+            </a>
+          </div>
+          <div class="card-links">
+            <a class="card-link" href="https://github.com/mvcprogrammer/lightsplitters.com" target="_blank" rel="noopener">Site repo</a>
+          </div>
+        </div>
+      </article>
+
+      <article class="card portfolio-card">
+        <div class="card-media">
+          <img src="assets/images/portfolio/property-search-kiosk.jpg" alt="Interactive property search kiosk screen listing Clearwater Beach condos with touch controls" width="1200" height="750" loading="lazy" decoding="async">
+        </div>
+        <div class="card-body">
+          <h3>Interactive Property Search Window Display</h3>
+          <p class="card-subtitle">Touch screen kiosk, React + .NET on AWS</p>
+          <p>A touch-screen kiosk behind the window of a Clearwater Beach real estate office, running since 2010. Visitors pick sales or rentals over an aerial photo of Sand Key, browse live Stellar MLS listings and photos pulled through the Bridge Data Output API, and ask to be emailed details or called back from an on-screen keyboard. The 2026 rebuild is a React and TypeScript screen built with Vite, pixel-matched to the original against captures of the live kiosk, in front of a .NET 10 API on AWS Lambda served through CloudFront.</p>
+          <p><strong>Built for 1920&times;1080.</strong> The screen is pixel-matched to the kiosk's fixed full-HD display and runs full screen at that resolution. In any other window it scales itself to fit, letterboxed, so the live demo below looks like the kiosk on a laptop or a phone.</p>
+          <ul class="tag-list card-tags" role="list" aria-label="Technologies used on the kiosk">
+            <li class="tag">React</li>
+            <li class="tag">TypeScript</li>
+            <li class="tag">Vite</li>
+            <li class="tag">.NET 10</li>
+            <li class="tag">AWS Lambda</li>
+            <li class="tag">CloudFront</li>
+            <li class="tag">Stellar MLS</li>
+            <li class="tag">Bridge Data Output API</li>
+            <li class="tag">1920&times;1080</li>
+          </ul>
+          <div class="button-row card-actions">
+            <button type="button" class="button button-primary" (click)="kiosk.show()">
+              <app-icon name="monitor" />
+              Try the live kiosk
+            </button>
+          </div>
+          <div class="card-links">
+            <a class="card-link" href="https://github.com/mvcprogrammer/sandkey-display-web" target="_blank" rel="noopener">Screen repo</a>
+            <a class="card-link" href="https://github.com/mvcprogrammer/sandkey-display-api" target="_blank" rel="noopener">API repo</a>
           </div>
         </div>
       </article>
