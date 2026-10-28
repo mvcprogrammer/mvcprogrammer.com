@@ -2,7 +2,7 @@ AWSTemplateFormatVersion: '2010-09-09'
 Transform: AWS::Serverless-2016-10-31
 
 Description: >
-  FHIR API for mvcprogrammer.com/fhir. A read-only C# (.NET 10, arm64) Lambda behind a
+  FHIR API for mvcprogrammer.com/fhir. A C# (.NET 10, arm64) Lambda behind a
   CloudFront behavior at /api/fhir/*, a facade over a public FHIR R4 sandbox holding
   synthetic data. Holds no data of its own. Spec: api/openapi.yaml (FHIR tag).
 
@@ -50,7 +50,7 @@ Resources:
     DependsOn: ApiLogGroup
     Properties:
       FunctionName: mvcprogrammer-fhir-api
-      Description: Read-only FHIR R4 patient explorer API, ASP.NET Core minimal API hosted on Lambda.
+      Description: FHIR R4 patient explorer API, ASP.NET Core minimal API hosted on Lambda.
       Runtime: dotnet10
       Architectures: [arm64]
       # With Amazon.Lambda.AspNetCoreServer.Hosting the handler is the assembly name.

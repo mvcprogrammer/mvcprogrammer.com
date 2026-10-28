@@ -475,7 +475,7 @@ Push to `main`, or run the workflow manually from the Actions tab.
 
 ## Experience API
 
-The read-only API behind the Experience section. Code and design notes: [api/README.md](../api/README.md).
+The API behind the Experience section. Code and design notes: [api/README.md](../api/README.md).
 Stack: `mvcprogrammer-experience-api` (CloudFormation, SAM transform) from `api/template.yaml`.
 
 Prerequisites, once per machine:

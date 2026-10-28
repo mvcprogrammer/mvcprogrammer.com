@@ -153,7 +153,7 @@ export function PortfolioSection() {
                   FHIR R4 patient explorer, C# on Lambda with the Firely SDK
                 </p>
                 <p>
-                  A read-only window onto a public FHIR R4 test server seeded with synthetic records. Five endpoints under <code>/api/fhir</code> (patient search, summary, raw bundle, capability, and health) run as C# on .NET 10 on AWS Lambda behind this distribution, specified in the same OpenAPI document as the Experience API. The browser never talks to the sandbox; the function is the boundary, parsing every resource with the Firely SDK and mapping only the US Core fields to small DTOs.
+                  A window onto a public FHIR R4 test server seeded with synthetic records. Five endpoints under <code>/api/fhir</code> (patient search, summary, raw bundle, capability, and health) run as C# on .NET 10 on AWS Lambda behind this distribution, specified in the same OpenAPI document as the Experience API. The browser never talks to the sandbox; the function is the boundary, parsing every resource with the Firely SDK and mapping only the US Core fields to small DTOs.
                 </p>
                 <p>
                   <strong>Built to be polite to a shared sandbox.</strong> Every upstream call has a short timeout, retries with backoff, and a circuit breaker, and a failure comes back as an RFC 9457 problem the explorer turns into a plain message. Responses carry ETags and CloudFront caches them. No real patient data, nothing stored.

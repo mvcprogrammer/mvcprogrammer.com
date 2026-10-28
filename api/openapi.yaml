@@ -3,9 +3,9 @@ openapi: 3.1.0
 info:
   title: mvcprogrammer.com API
   version: 1.1.0
-  summary: "Read-only APIs behind mvcprogrammer.com: the Experience section and the FHIR R4 patient explorer."
+  summary: "APIs behind mvcprogrammer.com: the Experience section and the FHIR R4 patient explorer."
   description: |
-    Two small, public, read-only functions served same-origin under `/api`.
+    Two small, public functions served same-origin under `/api`.
 
     **Experience** (`/experience`, `/skills`) is the source of truth for the work history
     shown on [mvcprogrammer.com](https://mvcprogrammer.com). The site's static HTML
@@ -13,7 +13,7 @@ info:
     and re-renders the timeline from it.
 
     **FHIR** (`/fhir/*`) backs the patient explorer at
-    [mvcprogrammer.com/fhir](https://mvcprogrammer.com/fhir). It is a read-only facade
+    [mvcprogrammer.com/fhir](https://mvcprogrammer.com/fhir). It is a facade
     over a public FHIR R4 sandbox holding synthetic data only (HAPI by default, SMART
     Health IT as the configured fallback). The function parses FHIR resources with the
     Firely SDK, maps them to the small DTOs below, and returns a `trace` describing the
@@ -60,7 +60,7 @@ tags:
   - name: Skills
     description: Skills aggregated across positions.
   - name: FHIR
-    description: Read-only patient explorer over a public FHIR R4 sandbox. Synthetic data only.
+    description: Patient explorer over a public FHIR R4 sandbox. Synthetic data only.
   - name: Operations
     description: Liveness.
 
