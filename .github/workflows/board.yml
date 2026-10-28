@@ -5,9 +5,10 @@ name: Refresh the board and burndown
 # The pull request runs the CI check like any other and merges itself through auto-merge, so the
 # protect-main ruleset stays exactly as it is for people. Nothing is pushed when nothing changed.
 #
-# GITHUB_TOKEN cannot read or write a user-owned project, so the two scripts and the push use the
-# BOARD_TOKEN secret: a fine-grained personal access token with repository Contents and Pull
-# requests read and write, and account Projects read and write (see docs/BURNDOWN.md).
+# GITHUB_TOKEN cannot read or write a user-owned project, so the two scripts, the push, and the
+# pull request use the BOARD_TOKEN secret: a fine-grained personal access token with repository
+# Contents and Pull requests read and write, and account Projects read and write (docs/BURNDOWN.md).
+# The checkouts use the ordinary GITHUB_TOKEN; a preflight step checks the secret before anything runs.
 
 on:
   schedule:
@@ -30,13 +31,11 @@ jobs:
     name: Backfill the board and redraw the burndown
     runs-on: ubuntu-24.04
     steps:
-      # Full history: the backfill reads commit dates back to the first release. The token is kept in
-      # the checkout so the push at the end goes through the same credential.
+      # Full history: the backfill reads commit dates back to the first release.
       - name: Check out the site
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           fetch-depth: 0
-          token: ${{ secrets.BOARD_TOKEN }}
 
       # Older board items cite commits in the profile repository, which the backfill looks up in a
       # sibling clone and refuses to guess about when it is missing.
@@ -51,6 +50,18 @@ jobs:
         uses: actions/setup-node@a0853c24544627f65ddf259abe73b1d18a591444 # v5.0.0
         with:
           node-version: 24
+
+      # Fail here, with a plain message, rather than deep in a script or at the push.
+      - name: Check the BOARD_TOKEN secret
+        run: |
+          if [ -z "$GH_TOKEN" ]; then echo "::error::The BOARD_TOKEN secret is not set."; exit 1; fi
+          login=$(gh api user --jq .login) || { echo "::error::BOARD_TOKEN is not a valid token."; exit 1; }
+          echo "Token belongs to $login"
+          perms=$(gh api "repos/$GITHUB_REPOSITORY" --jq '.permissions | to_entries | map(select(.value)) | map(.key) | join(", ")') || { echo "::error::BOARD_TOKEN cannot read $GITHUB_REPOSITORY; give it access to this repository."; exit 1; }
+          echo "Repository permissions: $perms"
+          case "$perms" in *push*) ;; *) echo "::error::BOARD_TOKEN cannot push to $GITHUB_REPOSITORY; it needs Contents: read and write."; exit 1;; esac
+          gh project view 1 --owner mvcprogrammer --format json --jq .title >/dev/null || { echo "::error::BOARD_TOKEN cannot read project 1; it needs the account permission Projects: read and write."; exit 1; }
+          echo "Project 1 is readable"
 
       - name: Fill the board's dates and hours from git
         run: node tools/board-backfill.mjs --profile-repo profile | tee backfill.txt
@@ -89,7 +100,8 @@ jobs:
           git checkout -B "$branch"
           git add docs/images README.md
           git commit -m "Refresh the burndown ($today)" -m "Scheduled run of .github/workflows/board.yml: board dates and hours backfilled from git, chart redrawn."
-          git push --force origin "$branch"
+          # The push carries the token in the remote URL; Actions masks the secret in the log.
+          git push --force "https://x-access-token:${GH_TOKEN}@github.com/${GITHUB_REPOSITORY}.git" "$branch"
           if [ -z "$(gh pr list --head "$branch" --state open --json number --jq '.[0].number')" ]; then
             gh pr create --base main --head "$branch" \
               --title "Refresh the burndown ($today)" \
