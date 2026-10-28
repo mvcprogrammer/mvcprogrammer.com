@@ -1,21 +1,24 @@
 name: CI
 
 # Every test suite in the repository, on every pull request to main, so a failure is caught
-# before the merge instead of by deploy.yml afterwards. The "CI" summary job at the bottom is
-# the one the protect-main ruleset requires; the suite jobs run in parallel and report into it.
+# before the merge. deploy.yml calls the same workflow ahead of its deploy jobs, so a red suite
+# on main deploys nothing. The "CI" summary job at the bottom is the one the protect-main
+# ruleset requires; the suite jobs run in parallel and report into it.
 # No AWS credentials: this workflow only reads the repository.
 
 on:
   pull_request:
     branches: [main]
+  workflow_call:
   workflow_dispatch:
 
 permissions:
   contents: read
 
-# A new push to the same pull request cancels the run for the previous one.
+# A new push to the same pull request cancels the run for the previous one. Called from deploy.yml
+# there is no pull request, and the run id keeps each deploy's gate to itself.
 concurrency:
-  group: ci-${{ github.event.pull_request.number || github.ref }}
+  group: ci-${{ github.event.pull_request.number || github.run_id }}
   cancel-in-progress: true
 
 jobs:

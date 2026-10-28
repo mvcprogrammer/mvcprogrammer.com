@@ -26,8 +26,17 @@ env:
   STATS_DISTRIBUTION_ID: ${{ vars.STATS_DISTRIBUTION_ID }}
 
 jobs:
+  # Every test suite first, through the same workflow pull requests run. Each deploy job below
+  # waits on it, so a red suite deploys nothing and the four editions stay in step.
+  test:
+    name: Test every suite
+    uses: ./.github/workflows/ci.yml
+    permissions:
+      contents: read
+
   deploy:
     name: Sync and invalidate
+    needs: test
     runs-on: ubuntu-24.04
     steps:
       - name: Check out
@@ -73,6 +82,7 @@ jobs:
 
   deploy-blazor:
     name: Build and deploy the Blazor edition
+    needs: test
     runs-on: ubuntu-24.04
     env:
       BLAZOR_DISTRIBUTION_ID: ${{ vars.BLAZOR_DISTRIBUTION_ID }}
@@ -84,9 +94,6 @@ jobs:
         uses: actions/setup-dotnet@d4c94342e560b34958eacfc5d055d21461ed1c5d # v5.0.0
         with:
           dotnet-version: 10.0.x
-
-      - name: Test
-        run: dotnet test --project blazor/tests/Portfolio.Blazor.Tests -c Release
 
       - name: Publish
         run: dotnet publish blazor/src/Portfolio.Blazor -c Release -o publish
@@ -121,6 +128,7 @@ jobs:
 
   deploy-angular:
     name: Build and deploy the Angular edition
+    needs: test
     runs-on: ubuntu-24.04
     env:
       ANGULAR_DISTRIBUTION_ID: ${{ vars.ANGULAR_DISTRIBUTION_ID }}
@@ -140,9 +148,6 @@ jobs:
 
       - name: Install
         run: npm ci
-
-      - name: Test
-        run: npm test
 
       # The prebuild script copies the shared stylesheet, icons, images, and seed from the repository root.
       - name: Build
@@ -176,6 +181,7 @@ jobs:
 
   deploy-react:
     name: Build and deploy the React edition
+    needs: test
     runs-on: ubuntu-24.04
     env:
       REACT_DISTRIBUTION_ID: ${{ vars.REACT_DISTRIBUTION_ID }}
@@ -195,9 +201,6 @@ jobs:
 
       - name: Install
         run: npm ci
-
-      - name: Test
-        run: npm test
 
       # The prebuild script copies the shared stylesheet, icons, images, and seed from the repository root;
       # the build script type-checks the app, the tests, and the Vite config before Vite bundles.
@@ -233,6 +236,7 @@ jobs:
     name: Build and deploy the visitor dashboard
     # Runs once the stats distribution exists (the repository variable is set); until then the job is skipped.
     if: vars.STATS_DISTRIBUTION_ID != ''
+    needs: test
     runs-on: ubuntu-24.04
     defaults:
       run:
@@ -250,9 +254,6 @@ jobs:
 
       - name: Install
         run: npm ci
-
-      - name: Test
-        run: npm test
 
       # The prebuild script copies the shared stylesheet, icons, and fonts from the repository root;
       # the build script type-checks the app, the tests, and the Vite config before Vite bundles.

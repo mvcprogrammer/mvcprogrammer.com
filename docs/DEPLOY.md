@@ -23,7 +23,7 @@ assets/fonts/               self-hosted Inter and JetBrains Mono (latin subset) 
 assets/images/              og-image.jpg social preview and portfolio/ card images
 infra/lambda/resume-download/  Lambda that texts you and redirects to the resume PDF (see Resume download)
 infra/lambda/contact/       Lambda behind the contact form, emails you through SES (see Contact form)
-.github/workflows/ci.yml      every test suite on each pull request; the check main requires
+.github/workflows/ci.yml      every test suite on each pull request, and the gate deploy.yml runs first
 .github/workflows/deploy.yml  optional: sync to S3 and invalidate CloudFront on push to main
 ```
 
@@ -425,7 +425,7 @@ The beacon itself is the last block of `main.js` (mirrored by `watchEngagement()
 
 ## GitHub Actions (optional)
 
-`.github/workflows/deploy.yml` runs the same steps on every push to `main`. It authenticates with OpenID Connect (OIDC), so no long-lived access keys are stored in GitHub. Third-party actions are pinned to commit SHAs with the version in a trailing comment; bump the SHA and the comment together when upgrading.
+`.github/workflows/deploy.yml` runs the same steps on every push to `main`. It starts by calling `ci.yml` as a reusable workflow, and every deploy job waits on that gate, so a red suite deploys nothing and the four editions never go out of step; the gate adds about half a minute. It authenticates with OpenID Connect (OIDC), so no long-lived access keys are stored in GitHub. Third-party actions are pinned to commit SHAs with the version in a trailing comment; bump the SHA and the comment together when upgrading.
 
 `.github/workflows/ci.yml` runs every test suite on each pull request to `main`: the Angular, React, and Blazor editions, the visitor dashboard, the CloudFront log tools with the stats sign-in Lambda, and the two API projects, each in its own job, with a final `CI` job that fails if any of them did. The `protect-main` ruleset requires that `CI` check, so a pull request cannot be merged while a suite is red. The workflow needs no AWS credentials and uses the same pinned actions as the deploy. To add the requirement to the ruleset, edit it under Settings > Rules > Rulesets > protect-main, enable "Require status checks to pass", and add `CI`; or send the same with the API:
 
