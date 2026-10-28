@@ -9,7 +9,7 @@ public sealed class FhirCardTests : BunitContext
 {
     #region Render Tests
 
-    /// <summary>The card is last, closed, with its links and image, and the explorer is not rendered, so no FHIR request is made.</summary>
+    /// <summary>The card is first after the featured card, closed, with its links and image, and the explorer is not rendered, so no FHIR request is made.</summary>
     [Fact]
     public void Render_ShouldShowClosedCardWithoutExplorer()
     {
@@ -23,7 +23,7 @@ public sealed class FhirCardTests : BunitContext
 
         // Assert
         var cards = cut.FindAll(".portfolio-card");
-        var card = cards[^1];
+        var card = cards[1];
         Assert.Equal("fhir-api", card.Id);
         Assert.Equal("FHIR API", card.QuerySelector("h3")?.TextContent);
         Assert.Equal("assets/images/portfolio/fhir-api-blazor.jpg", card.QuerySelector(".card-media img")?.GetAttribute("src"));
@@ -67,9 +67,9 @@ public sealed class FhirCardTests : BunitContext
         }).ToList();
         Assert.Equal(
         [
-            "1 button, 1 row, after=True: Screen repo|API repo",
-            "1 button, 1 row, after=True: Site repo",
             "1 button, 1 row, after=True: API repo|OpenAPI spec",
+            "1 button, 1 row, after=True: Site repo",
+            "1 button, 1 row, after=True: Screen repo|API repo",
         ], actions);
         var visit = cards[1].QuerySelector(".card-actions a.button-primary");
         Assert.Equal("https://lightsplitters.com", visit?.GetAttribute("href"));

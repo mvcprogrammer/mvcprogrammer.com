@@ -98,9 +98,9 @@ describe('static sections', () => {
         };
       });
       expect(actions).toEqual([
-        { buttons: 1, rows: 1, rowAfterButton: true, links: ['Screen repo', 'API repo'] },
-        { buttons: 1, rows: 1, rowAfterButton: true, links: ['Site repo'] },
         { buttons: 1, rows: 1, rowAfterButton: true, links: ['API repo', 'OpenAPI spec'] },
+        { buttons: 1, rows: 1, rowAfterButton: true, links: ['Site repo'] },
+        { buttons: 1, rows: 1, rowAfterButton: true, links: ['Screen repo', 'API repo'] },
       ]);
       const visit = cards[1].querySelector<HTMLAnchorElement>('.card-actions a.button-primary');
       expect(visit?.getAttribute('href')).toBe('https://lightsplitters.com');
@@ -133,7 +133,7 @@ describe('static sections', () => {
       );
     });
 
-    it('should render the FHIR API card last, closed, without the explorer or any FHIR request', () => {
+    it('should render the FHIR API card first after the featured card, closed, without the explorer or any FHIR request', () => {
       // Arrange
       const services = createSiteTestServices();
       window.location.hash = '';
@@ -143,7 +143,7 @@ describe('static sections', () => {
 
       // Assert
       const cards = document.querySelectorAll('.portfolio-card');
-      const card = cards[cards.length - 1]!;
+      const card = cards[1]!;
       expect(card.id).toBe('fhir-api');
       expect(card.querySelector('h3')?.textContent).toBe('FHIR API');
       expect(card.querySelector('.card-media img')?.getAttribute('src')).toBe('assets/images/portfolio/fhir-api-react.jpg');
