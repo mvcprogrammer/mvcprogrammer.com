@@ -23,6 +23,7 @@ assets/fonts/               self-hosted Inter and JetBrains Mono (latin subset) 
 assets/images/              og-image.jpg social preview and portfolio/ card images
 infra/lambda/resume-download/  Lambda that texts you and redirects to the resume PDF (see Resume download)
 infra/lambda/contact/       Lambda behind the contact form, emails you through SES (see Contact form)
+.github/workflows/board.yml   daily: backfill the project board from git and redraw the burndown (see docs/BURNDOWN.md)
 .github/workflows/ci.yml      every test suite on each pull request, and the gate deploy.yml runs first
 .github/workflows/deploy.yml  optional: sync to S3 and invalidate CloudFront on push to main
 ```
