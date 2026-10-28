@@ -206,7 +206,11 @@ public sealed class FhirExplorerTests : BunitContext
         Assert.Contains("2 upstream requests in 580 ms wall time · 3 bundle entries", log, StringComparison.Ordinal);
         Assert.Contains("mapped to PatientSummary: 1 active and 1 resolved conditions, 2 vital signs", log, StringComparison.Ordinal);
         Assert.Equal("The PatientSummary the function returned", cut.Find("#fhir-dto-details summary").TextContent);
-        Assert.Contains("\"initials\":\"KW\"", cut.Find("#fhir-dto").TextContent, StringComparison.Ordinal);
+        var dto = cut.Find("#fhir-dto").TextContent;
+        Assert.Contains("\"initials\": \"KW\"", dto, StringComparison.Ordinal);
+        // Two-space indentation with a newline before each member, like JSON.stringify(value, null, 2) on the other editions
+        Assert.StartsWith("{\n  \"", dto, StringComparison.Ordinal);
+        Assert.EndsWith("\n}", dto, StringComparison.Ordinal);
     }
 
     /// <summary>A cache hit is noted with the original request time.</summary>
@@ -354,6 +358,28 @@ public sealed class FhirExplorerTests : BunitContext
         // Assert again
         Assert.Equal(string.Empty, cut.Find("#fhir-family-error").TextContent);
         Assert.DoesNotContain("is-invalid", cut.Find("#fhir-family").ClassName, StringComparison.Ordinal);
+    }
+
+    /// <summary>The search result DTO is shown indented, with each member on its own line, when it is the last DTO returned.</summary>
+    [Fact]
+    public async Task SearchAsync_ShouldShowIndentedSearchResultDto()
+    {
+        // Arrange
+        var fhir = Arrange_Explorer();
+        // The first patient is selected automatically; a failing summary leaves the search result in the panel.
+        fhir.OnGetSummary = _ => Task.FromException<FhirResponse<PatientSummary>>(new FhirProblemException("The request failed (404).", 404, "Not Found", 30, null, false));
+        var cut = await RenderReadyAsync();
+
+        // Act
+        await SubmitAsync(cut);
+
+        // Assert
+        await cut.WaitForAssertionAsync(() => Assert.Equal("The PatientSearchResult the function returned", cut.Find("#fhir-dto-details summary").TextContent));
+        var dto = cut.Find("#fhir-dto").TextContent;
+        Assert.StartsWith("{\n  \"", dto, StringComparison.Ordinal);
+        Assert.Contains("\n  \"count\": 1,\n", dto, StringComparison.Ordinal);
+        Assert.Contains("\n      \"familyName\": \"Watsica258\",\n", dto, StringComparison.Ordinal);
+        Assert.EndsWith("\n}", dto, StringComparison.Ordinal);
     }
 
     #endregion

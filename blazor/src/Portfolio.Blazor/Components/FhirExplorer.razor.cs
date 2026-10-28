@@ -368,7 +368,7 @@ public sealed partial class FhirExplorer : IAsyncDisposable
     private void ShowDto(string name, string json)
     {
         _dtoName = name;
-        _dtoJson = json;
+        _dtoJson = JsonIndenter.Indent(json);
     }
 
     private void SetStatus(string text, string kind)
