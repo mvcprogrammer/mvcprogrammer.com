@@ -66,6 +66,11 @@ export function filterVisits(visits: readonly VisitRecord[], segments: readonly 
   return segments.length === 0 ? [...visits] : visits.filter((visit) => matches(visit, segments));
 }
 
+/** True for a section id the page still has, so a retired section in an old day file is ignored. */
+function isCurrentSection(section: string): boolean {
+  return (SECTION_ORDER as readonly string[]).includes(section);
+}
+
 /** Counts of each value, with `first` keys ahead of the rest and the rest by count descending, then name. */
 export function countBy(values: Iterable<string>, first: readonly string[] = []): Counts {
   const counts = new Map<string, number>();
@@ -108,7 +113,8 @@ export function summarize(visits: readonly VisitRecord[]): Summary {
     byReferrer: countBy(visits.map((visit) => visit.referrer ?? DIRECT)),
     byCountry: countBy(visits.map((visit) => visit.country)),
     byHour,
-    sectionReach: countBy(engaged.flatMap((visit) => visit.sections ?? []), SECTION_ORDER),
+    // Only sections the page still has: older day files may carry a retired one (Freelance, removed 2026-10-22), and it gets no row.
+    sectionReach: countBy(engaged.flatMap((visit) => (visit.sections ?? []).filter(isCurrentSection)), SECTION_ORDER),
     seconds: visits.flatMap((visit) => (visit.seconds === undefined ? [] : [visit.seconds])).sort((a, b) => a - b),
     clicks: countBy(clicks),
     editionClickVisits: visits.filter((visit) => visit.clicks?.some((click) => click.startsWith('edition/')) ?? false).length,
