@@ -1,0 +1,100 @@
+name: Refresh the board and burndown
+
+# Once a day, fill the project board's Started, Completed, and Actual hours from git and redraw the
+# current sprint's burndown, then open (or update) a pull request with the chart when it changed.
+# The pull request runs the CI check like any other and merges itself through auto-merge, so the
+# protect-main ruleset stays exactly as it is for people. Nothing is pushed when nothing changed.
+#
+# GITHUB_TOKEN cannot read or write a user-owned project, so the two scripts and the push use the
+# BOARD_TOKEN secret: a fine-grained personal access token with repository Contents and Pull
+# requests read and write, and account Projects read and write (see docs/BURNDOWN.md).
+
+on:
+  schedule:
+    # 03:30 UTC, after the evening's merges in the Eastern time the board's dates are kept in.
+    - cron: "30 3 * * *"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: board-refresh
+  cancel-in-progress: false
+
+env:
+  GH_TOKEN: ${{ secrets.BOARD_TOKEN }}
+
+jobs:
+  refresh:
+    name: Backfill the board and redraw the burndown
+    runs-on: ubuntu-24.04
+    steps:
+      # Full history: the backfill reads commit dates back to the first release. The token is kept in
+      # the checkout so the push at the end goes through the same credential.
+      - name: Check out the site
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0
+          token: ${{ secrets.BOARD_TOKEN }}
+
+      # Older board items cite commits in the profile repository, which the backfill looks up in a
+      # sibling clone and refuses to guess about when it is missing.
+      - name: Check out the profile repository
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          repository: mvcprogrammer/mvcprogrammer
+          path: profile
+          fetch-depth: 0
+
+      - name: Set up Node
+        uses: actions/setup-node@a0853c24544627f65ddf259abe73b1d18a591444 # v5.0.0
+        with:
+          node-version: 24
+
+      - name: Fill the board's dates and hours from git
+        run: node tools/board-backfill.mjs --profile-repo profile | tee backfill.txt
+
+      - name: Draw the burndown
+        run: node tools/burndown.mjs | tee burndown.txt
+
+      - name: Write the job summary
+        run: |
+          {
+            echo "## $(head -1 burndown.txt)"
+            echo
+            echo '```'
+            cat burndown.txt
+            echo '```'
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      # A new sprint writes a new file; the README's image follows it.
+      - name: Point the README at the current sprint's chart
+        run: |
+          file=$(sed -n 's/^wrote .*\(docs\/images\/burndown-[^ ]*\.svg\)$/\1/p' burndown.txt)
+          sprint=$(head -1 burndown.txt | sed 's/:.*//')
+          test -n "$file" && test -n "$sprint"
+          sed -i -E "s|src=\"docs/images/burndown-[^\"]*\.svg\"|src=\"$file\"|; s|alt=\"Sprint [0-9]+ burndown|alt=\"$sprint burndown|" README.md
+
+      - name: Open or update the pull request when the chart changed
+        run: |
+          if git diff --quiet -- docs/images README.md; then
+            echo "The chart is unchanged; nothing to commit." | tee -a "$GITHUB_STEP_SUMMARY"
+            exit 0
+          fi
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          branch=chore/board-refresh
+          today=$(date -u +%F)
+          git checkout -B "$branch"
+          git add docs/images README.md
+          git commit -m "Refresh the burndown ($today)" -m "Scheduled run of .github/workflows/board.yml: board dates and hours backfilled from git, chart redrawn."
+          git push --force origin "$branch"
+          if [ -z "$(gh pr list --head "$branch" --state open --json number --jq '.[0].number')" ]; then
+            gh pr create --base main --head "$branch" \
+              --title "Refresh the burndown ($today)" \
+              --body "Scheduled run of \`board.yml\`: the board's dates and hours were backfilled from git and the current sprint's chart redrawn. Merges itself once the CI check passes."
+            # Needs the repository setting "Allow auto-merge"; without it the pull request waits for a person.
+            gh pr merge --auto --merge "$branch" || echo "Auto-merge is off for the repository; merge the pull request by hand." | tee -a "$GITHUB_STEP_SUMMARY"
+          fi
+          echo "Opened or updated the pull request on $branch." | tee -a "$GITHUB_STEP_SUMMARY"

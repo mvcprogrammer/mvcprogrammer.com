@@ -70,6 +70,31 @@ node tools/burndown.mjs
 GitHub Projects can draw a burn-up of its own, but only on paid plans and only from the day the
 chart is created; this script is how the board gets a burndown from day one and from evidence.
 
+## Scheduled refresh
+
+`.github/workflows/board.yml` runs both scripts once a day (03:30 UTC, after the evening's merges in
+the Eastern time the board keeps) and on demand from the Actions page. It backfills the board,
+redraws the current sprint's chart, points the README's image at that sprint's file, writes the
+day-by-day table to the run's job summary, and, only when the chart changed, commits to the
+`chore/board-refresh` branch and opens a pull request that merges itself once the `CI` check passes.
+A run that changes nothing pushes nothing.
+
+- **Token.** `GITHUB_TOKEN` cannot read or write a user-owned project, so the workflow uses the
+  `BOARD_TOKEN` repository secret: a fine-grained personal access token (Settings > Developer
+  settings > Personal access tokens > Fine-grained) scoped to this repository with **Contents: read
+  and write**, **Pull requests: read and write**, **Metadata: read** (added automatically), and the
+  account permission **Projects: read and write**. Give it an expiry and put the date on the board.
+  Store it with `gh secret set BOARD_TOKEN`.
+- **Past the ruleset.** `protect-main` requires a pull request and the `CI` check, and the workflow
+  honors both rather than bypassing them: the token opens the pull request and enables auto-merge
+  (this needs the repository setting "Allow auto-merge" under Settings > General > Pull Requests; with
+  it off the pull request simply waits for a person), so the merge happens when `CI` is green and
+  never before. No bypass actor was added to the ruleset.
+- **Profile clone.** Older items cite commits in the profile repository, so the workflow checks it
+  out beside the site and passes `--profile-repo profile`.
+- **Why a pull request from a bot does not confuse the backfill.** Its body carries no closing
+  keyword, so no issue is charged with its commit.
+
 ## Keeping it honest
 
 - Set the points before the work starts. If an item is re-estimated, record why on the issue.
