@@ -84,6 +84,15 @@
       </ul>
     </article>
 
+    <h2 id="jd-why">Why this matters for revenue cycle work</h2>
+    <p class="jd-takeaway"><strong>FHIR R4 is how clinical data leaves certified EHRs, and the revenue cycle is a chain of data handoffs where bad inputs become denials.</strong></p>
+    <ul class="jd-points">
+      <li><strong>Real R4, not a mock.</strong> The function parses live bundles from a public HAPI server with the Firely SDK, follows paging links, and maps only the US Core fields the page needs. Patient, Condition, Encounter, and Observation are the same resources that feed registration, coding, and charge capture.</li>
+      <li><strong>The trace is an observability habit.</strong> Every upstream call is reported with its status, timing, and page count, so a silent EHR or payer failure has nowhere to hide. Application Insights and KQL are the Azure home for the same instinct.</li>
+      <li><strong>The PHI boundary is designed in.</strong> Synthetic data only, nothing stored, request metadata the only thing logged, a guard that keeps one visitor from another's records, and a strict CSP in front of it all.</li>
+      <li><strong>Where it would go next.</strong> Coverage and ExplanationOfBenefit views for the financial side, then a billing-readiness check: missing coverage, an encounter without a diagnosis, mismatched demographics. A small version of a pre-bill review.</li>
+    </ul>
+
     <h2 id="jd-gaps">Gaps stated plainly</h2>
     <p>The repository is an AWS build by one engineer, so the JD's Azure-shaped items are not in it. For each, the nearest thing here and where the rest comes from.</p>
     <div class="jd-table-wrap">
