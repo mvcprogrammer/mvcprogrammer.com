@@ -4,8 +4,8 @@ using Hl7.Fhir.Rest;
 
 namespace Fhir.Api.Fhir;
 
-/// <summary>A search walked through its pages. <c>Bundles</c> are kept untouched for the raw endpoint.</summary>
-public sealed record SearchResult<T>(IReadOnlyList<T> Resources, int? Total, int Pages, bool Truncated, IReadOnlyList<Bundle> Bundles)
+/// <summary>A search walked through its pages. Truncation is recorded on the trace, not here.</summary>
+public sealed record SearchResult<T>(IReadOnlyList<T> Resources, int? Total, int Pages)
     where T : Resource;
 
 /// <summary>

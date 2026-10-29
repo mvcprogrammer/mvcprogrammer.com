@@ -68,7 +68,7 @@ public static class PatientMapper
         var display = (family, given) switch
         {
             ("", null) => UNKNOWN,
-            ("", _) => given!,
+            ("", { } g) => g,
             (_, null) => family,
             _ => $"{family}, {given}",
         };
