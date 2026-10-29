@@ -465,10 +465,10 @@ describe('FhirExplorer', () => {
       // Assert
       expect(target().textContent).toBe(FhirExplorer.EDIT_NONE_MESSAGE);
       expect(editField('familyName').value).toBe('');
-      expect(button('fhir-create').disabled).toBe(false);
-      expect(button('fhir-replace').disabled).toBe(true);
-      expect(button('fhir-patch').disabled).toBe(true);
-      expect(button('fhir-delete').disabled).toBe(true);
+      expect(blocked('fhir-create')).toBe(false);
+      expect(blocked('fhir-replace')).toBe(true);
+      expect(blocked('fhir-patch')).toBe(true);
+      expect(blocked('fhir-delete')).toBe(true);
       expect(host.querySelector('.fhir-edit-lead')?.textContent).toBe(FhirExplorer.EDIT_LEAD);
     });
 
@@ -488,7 +488,7 @@ describe('FhirExplorer', () => {
       expect(editField('mrn').value).toBe('eed8a921');
       expect(target().textContent).toContain('Patient/78785 was not created in this session');
       expect(target().classList.contains('is-mine')).toBe(false);
-      expect(button('fhir-replace').disabled).toBe(true);
+      expect(blocked('fhir-replace')).toBe(true);
     });
 
     it('should call the seeded patient read-only and enable the verbs for a patient this session created', async () => {
@@ -501,7 +501,7 @@ describe('FhirExplorer', () => {
 
       // Assert: the seed
       expect(target().textContent).toContain('Patient/mvc-programmer is the seeded demo patient and is read-only here');
-      expect(button('fhir-delete').disabled).toBe(true);
+      expect(blocked('fhir-delete')).toBe(true);
 
       // Act: select the session's own patient
       (host.querySelector('.fhir-patient[data-id="mine-1"]') as HTMLButtonElement).click();
@@ -510,10 +510,10 @@ describe('FhirExplorer', () => {
       // Assert
       expect(target().textContent).toContain('Editing Patient/mine-1, created in this session');
       expect(target().classList.contains('is-mine')).toBe(true);
-      expect(button('fhir-replace').disabled).toBe(false);
-      expect(button('fhir-delete').disabled).toBe(false);
+      expect(blocked('fhir-replace')).toBe(false);
+      expect(blocked('fhir-delete')).toBe(false);
       // Nothing changed yet, so there is nothing to patch.
-      expect(button('fhir-patch').disabled).toBe(true);
+      expect(blocked('fhir-patch')).toBe(true);
     });
 
     it('should refuse to create without a family name or with a bad MRN, without calling the API', async () => {
@@ -625,7 +625,7 @@ describe('FhirExplorer', () => {
       expect(host.querySelector('#fhir-card-name')?.textContent).toBe('Watsica258, Chuck');
       expect(host.querySelector('.fhir-patient[data-id="mine-1"] .fhir-patient-name')?.textContent).toBe('Watsica258, Chuck');
       expect(editField('givenName').value).toBe('Chuck');
-      expect(button('fhir-patch').disabled).toBe(true);
+      expect(blocked('fhir-patch')).toBe(true);
       expect(logText()).toContain(`→ PUT /api/fhir/patients/mine-1 · X-Demo-Session ${FakeDemoSession.TOKEN}`);
     });
 
@@ -637,7 +637,7 @@ describe('FhirExplorer', () => {
 
       // Act
       fixture.detectChanges();
-      expect(button('fhir-patch').disabled).toBe(false);
+      expect(blocked('fhir-patch')).toBe(false);
       button('fhir-patch').click();
       await fixture.whenStable();
 
@@ -702,6 +702,70 @@ describe('FhirExplorer', () => {
       // Assert
       expect(textOf(editStatus())).toBe(FhirProblemError.UPSTREAM_MESSAGE);
       expect(host.querySelector('.fhir-patient[data-id="mine-1"]')).not.toBeNull();
+    });
+
+    it('should carry the block reason as the title and say it in the status when a blocked button is pressed', async () => {
+      // Arrange: nothing selected
+      await render();
+
+      // Assert
+      expect(button('fhir-replace').title).toBe(FhirExplorer.BLOCK_NONE_MESSAGE);
+      expect(button('fhir-delete').title).toBe(FhirExplorer.BLOCK_NONE_MESSAGE);
+      expect(button('fhir-patch').title).toBe(FhirExplorer.BLOCK_NONE_MESSAGE);
+      expect(button('fhir-create').title).toBe('');
+
+      // Act
+      button('fhir-delete').click();
+      await fixture.whenStable();
+
+      // Assert
+      expect(textOf(editStatus())).toBe(FhirExplorer.BLOCK_NONE_MESSAGE);
+      expect(client.deletes).toEqual([]);
+    });
+
+    it('should give the seed and another session\'s patient their own reasons', async () => {
+      // Arrange
+      client.onSearchPatients = () => Promise.resolve(createFhirResponse(createPatientSearchResult(createPatientListItem({ id: 'mvc-programmer' }), createPatientListItem({ id: '78785' }))));
+      client.onGetSummary = (id) => Promise.resolve(createFhirResponse({ ...createPatientSummary(), patient: { ...createPatientSummary().patient, id } }));
+      await render();
+      submit();
+      await fixture.whenStable();
+
+      // Assert: the seed
+      expect(button('fhir-replace').title).toBe(FhirExplorer.BLOCK_SEED_MESSAGE);
+      button('fhir-replace').click();
+      await fixture.whenStable();
+      expect(textOf(editStatus())).toBe(FhirExplorer.BLOCK_SEED_MESSAGE);
+      expect(client.replaces).toEqual([]);
+
+      // Act: another session's
+      (host.querySelector('.fhir-patient[data-id="78785"]') as HTMLButtonElement).click();
+      await fixture.whenStable();
+
+      // Assert
+      expect(button('fhir-patch').title).toBe(FhirExplorer.BLOCK_OTHER_MESSAGE);
+      expect(button('fhir-delete').title).toBe(FhirExplorer.BLOCK_OTHER_MESSAGE);
+    });
+
+    it('should explain an unchanged patch and clear every reason once the patient is this session\'s and changed', async () => {
+      // Arrange
+      await selectOwnPatient();
+
+      // Assert: own patient, nothing changed
+      expect(button('fhir-replace').title).toBe('');
+      expect(button('fhir-patch').title).toBe(FhirExplorer.EDIT_NO_CHANGES_MESSAGE);
+      button('fhir-patch').click();
+      await fixture.whenStable();
+      expect(textOf(editStatus())).toBe(FhirExplorer.EDIT_NO_CHANGES_MESSAGE);
+      expect(client.patches).toEqual([]);
+
+      // Act
+      type(editField('givenName'), 'Chuck');
+      fixture.detectChanges();
+
+      // Assert
+      expect(button('fhir-patch').title).toBe('');
+      expect(blocked('fhir-patch')).toBe(false);
     });
 
     /** Searches, then selects a patient the fake session created. */
@@ -772,6 +836,11 @@ describe('FhirExplorer', () => {
 
   function button(id: string): HTMLButtonElement {
     return host.querySelector(`#${id}`) as HTMLButtonElement;
+  }
+
+  /** True when the button is marked aria-disabled, the panel's way of blocking a verb while keeping it hoverable. */
+  function blocked(id: string): boolean {
+    return button(id).getAttribute('aria-disabled') === 'true';
   }
 
   function target(): HTMLElement {

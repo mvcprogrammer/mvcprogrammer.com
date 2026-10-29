@@ -74,6 +74,10 @@ export class FhirExplorer implements OnInit, OnDestroy {
   static readonly EDIT_NONE_MESSAGE = 'No patient selected: the form creates a new one.';
   static readonly EDIT_MRN_MESSAGE = 'Letters, digits, hyphens, and dots only; at most 40.';
   static readonly EDIT_NO_CHANGES_MESSAGE = 'Nothing changed since the patient was loaded, so there is nothing to patch.';
+  static readonly BLOCK_NONE_MESSAGE = 'No patient is selected. Search and pick one, or create a new one.';
+  static readonly BLOCK_SEED_MESSAGE = 'The seeded demo patient is read-only. Create a patient of your own and change that.';
+  static readonly BLOCK_OTHER_MESSAGE = 'This patient was not created in this session, so it cannot be changed here. Create a patient of your own.';
+  static readonly BLOCK_WRITING_MESSAGE = 'A write is in flight; wait for it to finish.';
 
   protected readonly form = inject(FormBuilder).nonNullable.group({
     family: [FhirExplorer.FALLBACK_FAMILIES[0], [notBlank, Validators.maxLength(60)]],
@@ -165,11 +169,21 @@ export class FhirExplorer implements OnInit, OnDestroy {
     }
   });
   protected readonly canChange = computed(() => this.ownership() === 'mine' && !this.writing());
+
   protected readonly hasChanges = computed(() => {
     const loaded = this.loadedInput();
     return loaded !== null && FhirExplorer.patchOperations(loaded, FhirExplorer.toInput(this.editValue())).length > 0;
   });
   protected readonly editStatusClass = computed(() => (this.editStatusKind() === '' ? 'form-status' : `form-status ${this.editStatusKind()}`));
+
+  /** Why a create is blocked right now, or null: shown on hover and on a blocked press. */
+  protected readonly createBlock = computed(() => (this.writing() ? FhirExplorer.BLOCK_WRITING_MESSAGE : null));
+
+  /** Why a replace or delete is blocked right now, or null. */
+  protected readonly changeBlock = computed(() => this.blockReason(false));
+
+  /** Why a patch is blocked right now, or null; a patch also needs something to have changed. */
+  protected readonly patchBlock = computed(() => this.blockReason(true));
 
   private readonly client = inject(FhirClient);
   private readonly session = inject(DemoSession);
@@ -336,6 +350,10 @@ export class FhirExplorer implements OnInit, OnDestroy {
 
   /** POST: validates the form and creates a new patient with the pending idempotency key. */
   protected create(): void {
+    if (this.sayWhyBlocked(this.createBlock())) {
+      return;
+    }
+
     const input = this.validatedInput();
     if (input === null) {
       return;
@@ -348,6 +366,10 @@ export class FhirExplorer implements OnInit, OnDestroy {
 
   /** PUT: validates the form and replaces the selected patient's demographics with it. */
   protected replace(): void {
+    if (this.sayWhyBlocked(this.changeBlock())) {
+      return;
+    }
+
     const id = this.changeableId();
     const input = this.validatedInput();
     if (id === null || input === null) {
@@ -359,6 +381,10 @@ export class FhirExplorer implements OnInit, OnDestroy {
 
   /** PATCH: sends only what changed since the patient was loaded, each change guarded by a test of the old value. */
   protected patch(): void {
+    if (this.sayWhyBlocked(this.patchBlock())) {
+      return;
+    }
+
     const id = this.changeableId();
     const loaded = this.loadedInput();
     const input = this.validatedInput();
@@ -366,23 +392,49 @@ export class FhirExplorer implements OnInit, OnDestroy {
       return;
     }
 
-    const operations = FhirExplorer.patchOperations(loaded, input);
-    if (operations.length === 0) {
-      this.setEditStatus(FhirExplorer.EDIT_NO_CHANGES_MESSAGE, '');
-      return;
-    }
-
-    void this.pendingTasks.run(() => this.patchPatient(id, operations));
+    void this.pendingTasks.run(() => this.patchPatient(id, FhirExplorer.patchOperations(loaded, input)));
   }
 
   /** DELETE the selected patient. */
   protected remove(): void {
+    if (this.sayWhyBlocked(this.changeBlock())) {
+      return;
+    }
+
     const id = this.changeableId();
     if (id === null) {
       return;
     }
 
     void this.pendingTasks.run(() => this.deletePatient(id));
+  }
+
+  /** The reason a change to the selected patient is blocked, or null when it may go ahead. */
+  private blockReason(needsChanges: boolean): string | null {
+    if (this.writing()) {
+      return FhirExplorer.BLOCK_WRITING_MESSAGE;
+    }
+
+    switch (this.ownership()) {
+      case 'none':
+        return FhirExplorer.BLOCK_NONE_MESSAGE;
+      case 'seed':
+        return FhirExplorer.BLOCK_SEED_MESSAGE;
+      case 'other':
+        return FhirExplorer.BLOCK_OTHER_MESSAGE;
+      default:
+        return needsChanges && !this.hasChanges() ? FhirExplorer.EDIT_NO_CHANGES_MESSAGE : null;
+    }
+  }
+
+  /** Writes a block reason to the panel's status, so a keyboard or screen-reader user gets what the hover shows. True when blocked. */
+  private sayWhyBlocked(reason: string | null): boolean {
+    if (reason === null) {
+      return false;
+    }
+
+    this.setEditStatus(reason, '');
+    return true;
   }
 
   /** The selected patient's id when this session may change it and no write is in flight. */

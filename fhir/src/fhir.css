@@ -139,9 +139,14 @@ app-not-found {
   color: var(--accent);
 }
 
-.fhir-edit .button:disabled {
+/* A blocked verb is aria-disabled rather than disabled, so it keeps its hover (the reason is its title) and focus. */
+.fhir-edit .button[aria-disabled="true"] {
   opacity: 0.5;
   cursor: not-allowed;
+}
+
+.fhir-edit .button[aria-disabled="true"]:hover {
+  transform: none;
 }
 
 .fhir-edit .field select {
