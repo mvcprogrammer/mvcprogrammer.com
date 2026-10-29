@@ -2,11 +2,15 @@ import { CapabilitySubset } from '../models/capability-subset';
 import { FhirResponse } from '../models/fhir-response';
 import { PatientSearchResult } from '../models/patient-search-result';
 import { PatientSummary } from '../models/patient-summary';
+import { PatientWriteResult } from '../models/patient-write-result';
+import { PatientInput } from '../requests/patient-input';
+import { PatientPatchOperation } from '../requests/patient-patch-operation';
 import { PatientSearchRequest } from '../requests/patient-search-request';
 
 /**
- * Reads the FHIR API behind the patient explorer. Every method resolves with the body and the
- * response facts the explorer's log reports, and rejects with a FhirProblemError. An abstract class
+ * The FHIR API behind the patient explorer: the reads, and the writes under the demo guard. Every
+ * method resolves with the body and the response facts the explorer's log reports, and rejects with
+ * a FhirProblemError. The writes carry the session token themselves. An abstract class
  * rather than an interface so it can serve as the injection token.
  */
 export abstract class FhirClient {
@@ -21,4 +25,16 @@ export abstract class FhirClient {
 
   /** GET /api/fhir/capability: what the sandbox supports of what the explorer needs. */
   abstract getCapability(): Promise<FhirResponse<CapabilitySubset>>;
+
+  /** POST /api/fhir/patients with Idempotency-Key: 201 for a new patient, 200 when the key had already made one. */
+  abstract createPatient(input: PatientInput, idempotencyKey: string): Promise<FhirResponse<PatientWriteResult>>;
+
+  /** PUT /api/fhir/patients/{id}: full replacement of the demographics. */
+  abstract replacePatient(patientId: string, input: PatientInput): Promise<FhirResponse<PatientWriteResult>>;
+
+  /** PATCH /api/fhir/patients/{id} as application/json-patch+json. */
+  abstract patchPatient(patientId: string, operations: readonly PatientPatchOperation[]): Promise<FhirResponse<PatientWriteResult>>;
+
+  /** DELETE /api/fhir/patients/{id}: 204, repeatable. */
+  abstract deletePatient(patientId: string): Promise<FhirResponse<null>>;
 }

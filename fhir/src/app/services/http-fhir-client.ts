@@ -3,14 +3,18 @@ import { Injectable, inject } from '@angular/core';
 import { firstValueFrom } from 'rxjs';
 import { SITE_OPTIONS } from '../configurations/site-options';
 import { FhirProblemError } from '../exceptions/fhir-problem-error';
+import { DemoSession } from '../interfaces/demo-session';
 import { FhirClient } from '../interfaces/fhir-client';
 import { CapabilitySubset } from '../models/capability-subset';
 import { FhirResponse } from '../models/fhir-response';
 import { PatientSearchResult } from '../models/patient-search-result';
 import { PatientSummary } from '../models/patient-summary';
+import { PatientWriteResult } from '../models/patient-write-result';
+import { PatientInput } from '../requests/patient-input';
+import { PatientPatchOperation } from '../requests/patient-patch-operation';
 import { PatientSearchRequest } from '../requests/patient-search-request';
 
-/** FHIR API client over HttpClient. Paths are relative, so CloudFront routes /api/fhir on this origin to the Lambda. */
+/** FHIR API client over HttpClient. Paths are relative, so CloudFront routes /api/fhir on this origin to the Lambda. Writes carry the demo session's token. */
 @Injectable()
 export class HttpFhirClient extends FhirClient {
   /** The function's own budget is 22 s under CloudFront's 30 s; the browser waits a little past that. */
@@ -19,8 +23,17 @@ export class HttpFhirClient extends FhirClient {
   private static readonly JSON_ACCEPT = 'application/json, application/problem+json';
   private static readonly FHIR_ACCEPT = 'application/fhir+json, application/problem+json';
 
+  /** The header every write carries. */
+  static readonly SESSION_HEADER = 'X-Demo-Session';
+
+  /** The header a create is made idempotent on. */
+  static readonly IDEMPOTENCY_HEADER = 'Idempotency-Key';
+
+  private static readonly JSON_PATCH = 'application/json-patch+json';
+
   private readonly http = inject(HttpClient);
   private readonly options = inject(SITE_OPTIONS);
+  private readonly session = inject(DemoSession);
 
   /** @inheritdoc */
   override searchPatients(request: PatientSearchRequest): Promise<FhirResponse<PatientSearchResult>> {
@@ -63,6 +76,59 @@ export class HttpFhirClient extends FhirClient {
   /** @inheritdoc */
   override getCapability(): Promise<FhirResponse<CapabilitySubset>> {
     return this.getJson<CapabilitySubset>(`${this.options.fhirApiBase}/capability`);
+  }
+
+  /** @inheritdoc */
+  override createPatient(input: PatientInput, idempotencyKey: string): Promise<FhirResponse<PatientWriteResult>> {
+    return this.send<PatientWriteResult>('POST', `${this.options.fhirApiBase}/patients`, input, 'application/json', {
+      [HttpFhirClient.IDEMPOTENCY_HEADER]: idempotencyKey,
+    });
+  }
+
+  /** @inheritdoc */
+  override replacePatient(patientId: string, input: PatientInput): Promise<FhirResponse<PatientWriteResult>> {
+    return this.send<PatientWriteResult>('PUT', this.patientPath(patientId), input, 'application/json');
+  }
+
+  /** @inheritdoc */
+  override patchPatient(patientId: string, operations: readonly PatientPatchOperation[]): Promise<FhirResponse<PatientWriteResult>> {
+    return this.send<PatientWriteResult>('PATCH', this.patientPath(patientId), operations, HttpFhirClient.JSON_PATCH);
+  }
+
+  /** @inheritdoc */
+  override deletePatient(patientId: string): Promise<FhirResponse<null>> {
+    return this.send<null>('DELETE', this.patientPath(patientId), null, null);
+  }
+
+  private patientPath(patientId: string): string {
+    return `${this.options.fhirApiBase}/patients/${encodeURIComponent(patientId)}`;
+  }
+
+  /** A write: the session header always, a body in its media type when there is one, and the answer's facts; a 204 has a null body. */
+  private async send<T>(method: string, path: string, body: unknown, contentType: string | null, extraHeaders: Record<string, string> = {}): Promise<FhirResponse<T>> {
+    const started = performance.now();
+    const headers: Record<string, string> = {
+      Accept: HttpFhirClient.JSON_ACCEPT,
+      [HttpFhirClient.SESSION_HEADER]: this.session.token,
+      ...extraHeaders,
+    };
+    if (contentType !== null) {
+      headers['Content-Type'] = contentType;
+    }
+
+    try {
+      const response = await firstValueFrom(
+        this.http.request<T>(method, path, {
+          body: body === null ? undefined : JSON.stringify(body),
+          observe: 'response',
+          headers,
+          timeout: HttpFhirClient.TIMEOUT_MS,
+        }),
+      );
+      return HttpFhirClient.toFhirResponse(response, (response.status === 204 ? null : response.body) as T, started);
+    } catch (error: unknown) {
+      throw FhirProblemError.from(error, HttpFhirClient.elapsed(started));
+    }
   }
 
   private async getJson<T>(path: string): Promise<FhirResponse<T>> {

@@ -133,6 +133,66 @@
     </section>
   </div>
 
+  <!-- Edit: the write side. One form for the five fields a demo patient has; create is the submit,
+       replace, patch, and delete act on the selected patient when this session created it. -->
+  <section class="fhir-panel fhir-edit" aria-labelledby="fhir-edit-title">
+    <h2 class="fhir-panel-title" id="fhir-edit-title">Create or change a demo patient</h2>
+    <p class="fhir-edit-lead">{{ EDIT_LEAD }}</p>
+    <p class="fhir-edit-target" id="fhir-edit-target" [class.is-mine]="ownership() === 'mine'">{{ editTarget() }}</p>
+    <form class="fhir-search" [class.is-loading]="writing()" id="fhir-edit" novalidate aria-label="Demo patient" [formGroup]="editForm" (ngSubmit)="create()">
+      <div class="fhir-edit-grid">
+        <div class="field">
+          <label class="field-label" for="fhir-edit-familyName">Family name <span class="fhir-required" aria-hidden="true">*</span></label>
+          <input id="fhir-edit-familyName" formControlName="familyName" type="text" required maxlength="60" autocomplete="off" spellcheck="false" aria-describedby="fhir-edit-familyName-error"
+                 [class.is-invalid]="editError('familyName') !== ''" [attr.aria-invalid]="editError('familyName') !== '' ? 'true' : null">
+          <p class="field-error" id="fhir-edit-familyName-error" aria-live="polite">{{ editError('familyName') }}</p>
+        </div>
+        <div class="field">
+          <label class="field-label" for="fhir-edit-givenName">Given name</label>
+          <input id="fhir-edit-givenName" formControlName="givenName" type="text" maxlength="60" autocomplete="off" spellcheck="false" aria-describedby="fhir-edit-givenName-error"
+                 [class.is-invalid]="editError('givenName') !== ''" [attr.aria-invalid]="editError('givenName') !== '' ? 'true' : null">
+          <p class="field-error" id="fhir-edit-givenName-error" aria-live="polite">{{ editError('givenName') }}</p>
+        </div>
+        <div class="field">
+          <label class="field-label" for="fhir-edit-sex">Sex</label>
+          <select id="fhir-edit-sex" formControlName="sex" aria-describedby="fhir-edit-sex-error">
+            <option value="">not recorded</option>
+            <option value="male">male</option>
+            <option value="female">female</option>
+            <option value="other">other</option>
+            <option value="unknown">unknown</option>
+          </select>
+          <p class="field-error" id="fhir-edit-sex-error" aria-live="polite">{{ editError('sex') }}</p>
+        </div>
+        <div class="field">
+          <label class="field-label" for="fhir-edit-birthDate">Birth date</label>
+          <input id="fhir-edit-birthDate" formControlName="birthDate" type="date" autocomplete="off" aria-describedby="fhir-edit-birthDate-error"
+                 [class.is-invalid]="editError('birthDate') !== ''" [attr.aria-invalid]="editError('birthDate') !== '' ? 'true' : null">
+          <p class="field-error" id="fhir-edit-birthDate-error" aria-live="polite">{{ editError('birthDate') }}</p>
+        </div>
+        <div class="field">
+          <label class="field-label" for="fhir-edit-mrn">MRN <span class="fhir-optional">(optional)</span></label>
+          <input id="fhir-edit-mrn" formControlName="mrn" type="text" maxlength="40" autocomplete="off" spellcheck="false" placeholder="MVC-0042" aria-describedby="fhir-edit-mrn-error"
+                 [class.is-invalid]="editError('mrn') !== ''" [attr.aria-invalid]="editError('mrn') !== '' ? 'true' : null">
+          <p class="field-error" id="fhir-edit-mrn-error" aria-live="polite">{{ editError('mrn') }}</p>
+        </div>
+      </div>
+      <div class="fhir-edit-actions">
+        <button class="button button-primary" type="submit" id="fhir-create" [disabled]="writing()">Create patient</button>
+        <button class="button button-secondary" type="button" id="fhir-replace" [disabled]="!canChange()" (click)="replace()">Replace (PUT)</button>
+        <button class="button button-secondary" type="button" id="fhir-patch" [disabled]="!canChange() || !hasChanges()" (click)="patch()">Patch changes</button>
+        <button class="button button-secondary" type="button" id="fhir-delete" [disabled]="!canChange()" (click)="remove()">Delete</button>
+      </div>
+      <p [class]="editStatusClass()" id="fhir-edit-status" role="status" aria-live="polite">
+        @if (editStatusText() === '') {
+          Create sends <code>POST /api/fhir/patients</code> with <code>Idempotency-Key</code>; replace, patch, and delete send <code>PUT</code>, <code>PATCH</code> (JSON Patch), and <code>DELETE</code> to <code>/api/fhir/patients/&lbrace;id&rbrace;</code>. Every write carries <code>X-Demo-Session</code>.
+        } @else {
+          {{ editStatusText() }}
+        }
+      </p>
+    </form>
+  </section>
+
   <!-- Under the hood: what the browser asked for, what the function asked the sandbox for, and what came back. -->
   <section class="fhir-hood" aria-labelledby="fhir-hood-title">
     <div class="fhir-hood-head">

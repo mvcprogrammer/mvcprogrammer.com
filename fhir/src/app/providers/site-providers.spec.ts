@@ -1,15 +1,17 @@
 import { HttpClient } from '@angular/common/http';
 import { TestBed } from '@angular/core/testing';
 import { SITE_OPTIONS } from '../configurations/site-options';
+import { DemoSession } from '../interfaces/demo-session';
 import { EngagementTracker } from '../interfaces/engagement-tracker';
 import { FhirClient } from '../interfaces/fhir-client';
 import { BeaconEngagementTracker } from '../services/beacon-engagement-tracker';
+import { BrowserDemoSession } from '../services/browser-demo-session';
 import { HttpFhirClient } from '../services/http-fhir-client';
 import { provideSite, validateSiteOptions } from './site-providers';
 import { TEST_SITE_OPTIONS } from '../../testing/site-testing';
 
 describe('provideSite', () => {
-  it('should register the options, HttpClient, the FHIR client, and the tracker', () => {
+  it('should register the options, HttpClient, the session, the FHIR client, and the tracker', () => {
     // Arrange
     TestBed.configureTestingModule({ providers: [provideSite(TEST_SITE_OPTIONS)] });
 
@@ -17,12 +19,14 @@ describe('provideSite', () => {
     const options = TestBed.inject(SITE_OPTIONS);
     const http = TestBed.inject(HttpClient);
     const fhir = TestBed.inject(FhirClient);
+    const session = TestBed.inject(DemoSession);
     const tracker = TestBed.inject(EngagementTracker);
 
     // Assert
     expect(options).toBe(TEST_SITE_OPTIONS);
     expect(http).toBeInstanceOf(HttpClient);
     expect(fhir).toBeInstanceOf(HttpFhirClient);
+    expect(session).toBeInstanceOf(BrowserDemoSession);
     expect(tracker).toBeInstanceOf(BeaconEngagementTracker);
   });
 

@@ -86,4 +86,30 @@ describe('FhirProblemError', () => {
       expect(error.message).toBe(FhirProblemError.NOT_JSON_MESSAGE);
     });
   });
+
+  describe('errors', () => {
+    it('should keep the string arrays of a validation problem and nothing else', () => {
+      // Arrange
+      const response = new HttpErrorResponse({
+        status: 400,
+        headers: new HttpHeaders(),
+        error: { title: 'Validation failed', status: 400, detail: 'One or more fields are invalid.', errors: { familyName: ['required', 'too long'], mrn: 'not an array', body: [1, 'kept'] } },
+      });
+
+      // Act
+      const error = FhirProblemError.from(response, 5);
+
+      // Assert
+      expect(error.errors).toEqual({ familyName: ['required', 'too long'], body: ['kept'] });
+      expect(error.message).toBe('One or more fields are invalid.');
+    });
+
+    it('should be empty when the problem has no errors', () => {
+      // Act
+      const error = FhirProblemError.from(new HttpErrorResponse({ status: 404, headers: new HttpHeaders(), error: { title: 'Not found', status: 404 } }), 5);
+
+      // Assert
+      expect(error.errors).toEqual({});
+    });
+  });
 });

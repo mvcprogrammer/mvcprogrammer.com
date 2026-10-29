@@ -24,6 +24,7 @@ export class FhirProblemError extends Error {
    * @param durationMs Round trip until the failure.
    * @param xCache CloudFront's X-Cache header, when present.
    * @param timedOut True when the browser aborted the request.
+   * @param errors The field errors of a 400 validation problem, keyed by field or header name; empty otherwise.
    */
   constructor(
     message: string,
@@ -32,6 +33,7 @@ export class FhirProblemError extends Error {
     readonly durationMs: number,
     readonly xCache: string | null,
     readonly timedOut: boolean,
+    readonly errors: Readonly<Record<string, readonly string[]>> = {},
   ) {
     super(message);
     this.name = 'FhirProblemError';
@@ -66,7 +68,24 @@ export class FhirProblemError extends Error {
 
     const title = cause !== null && typeof cause === 'object' && typeof cause.title === 'string' ? cause.title : null;
     const detail = cause !== null && typeof cause === 'object' && typeof cause.detail === 'string' ? cause.detail : null;
-    return new FhirProblemError(detail ?? FhirProblemError.messageFor(error.status), error.status, title, durationMs, xCache, false);
+    return new FhirProblemError(detail ?? FhirProblemError.messageFor(error.status), error.status, title, durationMs, xCache, false, FhirProblemError.errorsOf(cause));
+  }
+
+  /** The `errors` map of a ValidationProblemDetails body, with only the string arrays kept. */
+  private static errorsOf(cause: unknown): Readonly<Record<string, readonly string[]>> {
+    const errors = cause !== null && typeof cause === 'object' ? (cause as { errors?: unknown }).errors : undefined;
+    if (errors === null || typeof errors !== 'object') {
+      return {};
+    }
+
+    const result: Record<string, readonly string[]> = {};
+    for (const [field, messages] of Object.entries(errors as Record<string, unknown>)) {
+      if (Array.isArray(messages)) {
+        result[field] = messages.filter((m): m is string => typeof m === 'string');
+      }
+    }
+
+    return result;
   }
 
   private static messageFor(status: number): string {

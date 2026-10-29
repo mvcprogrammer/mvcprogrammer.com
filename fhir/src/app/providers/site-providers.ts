@@ -1,14 +1,16 @@
 import { provideHttpClient, withFetch } from '@angular/common/http';
 import { EnvironmentProviders, makeEnvironmentProviders } from '@angular/core';
 import { SITE_OPTIONS, SiteOptions } from '../configurations/site-options';
+import { DemoSession } from '../interfaces/demo-session';
 import { EngagementTracker } from '../interfaces/engagement-tracker';
 import { FhirClient } from '../interfaces/fhir-client';
 import { BeaconEngagementTracker } from '../services/beacon-engagement-tracker';
+import { BrowserDemoSession } from '../services/browser-demo-session';
 import { HttpFhirClient } from '../services/http-fhir-client';
 
 /**
- * Registers the app's services: the options, HttpClient over fetch, the FHIR client behind its
- * abstract token, and the engagement tracker. The Angular counterpart of AddPortfolioServices().
+ * Registers the app's services: the options, HttpClient over fetch, the demo session, the FHIR
+ * client behind its abstract token, and the engagement tracker. The Angular counterpart of AddPortfolioServices().
  * @param options Site endpoints. Validated up front so a misconfigured build fails at startup.
  */
 export function provideSite(options: SiteOptions): EnvironmentProviders {
@@ -17,6 +19,7 @@ export function provideSite(options: SiteOptions): EnvironmentProviders {
   return makeEnvironmentProviders([
     provideHttpClient(withFetch()),
     { provide: SITE_OPTIONS, useValue: options },
+    { provide: DemoSession, useClass: BrowserDemoSession },
     { provide: FhirClient, useClass: HttpFhirClient },
     { provide: EngagementTracker, useClass: BeaconEngagementTracker },
   ]);

@@ -3,9 +3,11 @@ import { HttpTestingController, provideHttpClientTesting } from '@angular/common
 import { TestBed } from '@angular/core/testing';
 import { SITE_OPTIONS } from '../configurations/site-options';
 import { FhirProblemError } from '../exceptions/fhir-problem-error';
+import { DemoSession } from '../interfaces/demo-session';
 import { HttpFhirClient } from './http-fhir-client';
+import { FakeDemoSession } from '../../testing/fake-demo-session';
 import { TEST_SITE_OPTIONS } from '../../testing/site-testing';
-import { createCapabilitySubset, createPatientSearchResult, createPatientSummary } from '../../testing/test-data';
+import { createCapabilitySubset, createPatientSearchResult, createPatientSummary, createPatientWriteResult } from '../../testing/test-data';
 
 describe('HttpFhirClient', () => {
   let client: HttpFhirClient;
@@ -13,7 +15,7 @@ describe('HttpFhirClient', () => {
 
   beforeEach(() => {
     TestBed.configureTestingModule({
-      providers: [provideHttpClient(), provideHttpClientTesting(), { provide: SITE_OPTIONS, useValue: TEST_SITE_OPTIONS }, HttpFhirClient],
+      providers: [provideHttpClient(), provideHttpClientTesting(), { provide: SITE_OPTIONS, useValue: TEST_SITE_OPTIONS }, { provide: DemoSession, useValue: new FakeDemoSession() }, HttpFhirClient],
     });
     client = TestBed.inject(HttpFhirClient);
     http = TestBed.inject(HttpTestingController);
@@ -161,6 +163,112 @@ describe('HttpFhirClient', () => {
 
       // Assert
       await expect(pending).resolves.toMatchObject({ body: capability });
+    });
+  });
+
+  describe('createPatient', () => {
+    it('should POST the input as JSON with the session and idempotency headers and map a 201', async () => {
+      // Arrange
+      const input = { familyName: 'Dickens', givenName: 'Charles' };
+      const result = createPatientWriteResult(input);
+
+      // Act
+      const pending = client.createPatient(input, '0c9b8a7d-6e5f-4a3b-8c2d-1e0f9a8b7c6d');
+      const request = http.expectOne('api/fhir/patients');
+      request.flush(result, { status: 201, statusText: 'Created', headers: { 'cache-control': 'no-store', location: '/api/fhir/patients/new-1/summary' } });
+
+      // Assert
+      expect(request.request.method).toBe('POST');
+      expect(request.request.headers.get('X-Demo-Session')).toBe(FakeDemoSession.TOKEN);
+      expect(request.request.headers.get('Idempotency-Key')).toBe('0c9b8a7d-6e5f-4a3b-8c2d-1e0f9a8b7c6d');
+      expect(request.request.headers.get('Content-Type')).toBe('application/json');
+      expect(request.request.headers.get('Accept')).toBe('application/json, application/problem+json');
+      expect(request.request.body).toBe(JSON.stringify(input));
+      expect(request.request.timeout).toBe(HttpFhirClient.TIMEOUT_MS);
+      const response = await pending;
+      expect(response.status).toBe(201);
+      expect(response.body).toEqual(result);
+      expect(response.etag).toBeNull();
+    });
+
+    it('should map a 200 for a repeated key and a 400 validation problem with its field errors', async () => {
+      // Act
+      const repeated = client.createPatient({ familyName: 'Dickens' }, '0c9b8a7d-6e5f-4a3b-8c2d-1e0f9a8b7c6d');
+      http.expectOne('api/fhir/patients').flush(createPatientWriteResult({ familyName: 'Dickens' }), { status: 200, statusText: 'OK' });
+      const rejected = client.createPatient({ familyName: '' }, '0c9b8a7d-6e5f-4a3b-8c2d-1e0f9a8b7c6d');
+      http.expectOne('api/fhir/patients').flush(
+        { type: 'https://mvcprogrammer.com/api/problems/validation-failed', title: 'Validation failed', status: 400, detail: 'One or more fields are invalid.', errors: { familyName: ['required'] } },
+        { status: 400, statusText: 'Bad Request' },
+      );
+
+      // Assert
+      expect((await repeated).status).toBe(200);
+      const error = await rejected.catch((e: unknown) => e);
+      expect(error).toBeInstanceOf(FhirProblemError);
+      expect((error as FhirProblemError).status).toBe(400);
+      expect((error as FhirProblemError).errors).toEqual({ familyName: ['required'] });
+    });
+  });
+
+  describe('replacePatient, patchPatient, deletePatient', () => {
+    it('should PUT the input to the patient path with the session header', async () => {
+      // Act
+      const pending = client.replacePatient('new 1', { familyName: 'Dickens' });
+      const request = http.expectOne('api/fhir/patients/new%201');
+      request.flush(createPatientWriteResult({ familyName: 'Dickens' }, 'new 1'));
+
+      // Assert
+      expect(request.request.method).toBe('PUT');
+      expect(request.request.headers.get('X-Demo-Session')).toBe(FakeDemoSession.TOKEN);
+      expect(request.request.headers.has('Idempotency-Key')).toBe(false);
+      expect(request.request.headers.get('Content-Type')).toBe('application/json');
+      expect((await pending).body.patient.id).toBe('new 1');
+    });
+
+    it('should PATCH the operations as application/json-patch+json', async () => {
+      // Arrange
+      const operations = [{ op: 'test' as const, path: '/givenName' as const, value: 'Charles' }, { op: 'replace' as const, path: '/givenName' as const, value: 'Chuck' }];
+
+      // Act
+      const pending = client.patchPatient('new-1', operations);
+      const request = http.expectOne('api/fhir/patients/new-1');
+      request.flush(createPatientWriteResult({ familyName: 'Dickens', givenName: 'Chuck' }));
+
+      // Assert
+      expect(request.request.method).toBe('PATCH');
+      expect(request.request.headers.get('Content-Type')).toBe('application/json-patch+json');
+      expect(request.request.body).toBe(JSON.stringify(operations));
+      expect((await pending).body.patient.givenName).toBe('Chuck');
+    });
+
+    it('should DELETE without a body and resolve a 204 with a null body', async () => {
+      // Act
+      const pending = client.deletePatient('new-1');
+      const request = http.expectOne('api/fhir/patients/new-1');
+      request.flush(null, { status: 204, statusText: 'No Content' });
+
+      // Assert
+      expect(request.request.method).toBe('DELETE');
+      expect(request.request.body).toBeNull();
+      expect(request.request.headers.has('Content-Type')).toBe(false);
+      const response = await pending;
+      expect(response.status).toBe(204);
+      expect(response.body).toBeNull();
+    });
+
+    it('should reject a write with the problem the function sent', async () => {
+      // Act
+      const pending = client.deletePatient('mvc-programmer');
+      http.expectOne('api/fhir/patients/mvc-programmer').flush(
+        { type: 'https://mvcprogrammer.com/api/problems/read-only', title: 'Demo patient is read-only', status: 403, detail: 'Read-only.' },
+        { status: 403, statusText: 'Forbidden' },
+      );
+
+      // Assert
+      const error = (await pending.catch((e: unknown) => e)) as FhirProblemError;
+      expect(error.status).toBe(403);
+      expect(error.message).toBe('Read-only.');
+      expect(error.errors).toEqual({});
     });
   });
 });

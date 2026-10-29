@@ -1,15 +1,21 @@
 import { ChangeDetectionStrategy, Component, ElementRef, OnDestroy, OnInit, PendingTasks, afterRenderEffect, computed, inject, signal, viewChild } from '@angular/core';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
+import { Sex } from '../../enumerations/sex';
 import { FhirProblemError } from '../../exceptions/fhir-problem-error';
 import { notBlank } from '../../validators/not-blank';
+import { DemoSession } from '../../interfaces/demo-session';
 import { FhirClient } from '../../interfaces/fhir-client';
 import { ConditionItem } from '../../models/condition-item';
+import { PatientDemographics } from '../../models/patient-demographics';
 import { FhirResponse } from '../../models/fhir-response';
 import { LogLine } from '../../models/log-line';
 import { PatientListItem } from '../../models/patient-list-item';
 import { PatientSummary } from '../../models/patient-summary';
+import { PatientWriteResult } from '../../models/patient-write-result';
 import { Trace } from '../../models/trace';
 import { VitalSign } from '../../models/vital-sign';
+import { PatientInput } from '../../requests/patient-input';
+import { PatientPatchOperation, PatientPatchPath } from '../../requests/patient-patch-operation';
 
 /** A vital sign's date split for the table: the date on one line, the local time under it. */
 interface DateParts {
@@ -17,10 +23,16 @@ interface DateParts {
   readonly time: string;
 }
 
+/** Whose the selected patient is, which decides what the edit panel may do to it. */
+export type Ownership = 'none' | 'mine' | 'seed' | 'other';
+
+/** The edit form's fields, in the order they are patched. */
+const EDIT_FIELDS: readonly PatientPatchPath[] = ['/familyName', '/givenName', '/sex', '/birthDate', '/mrn'];
+
 /**
  * The FHIR R4 patient explorer, the one page of fhir.mvcprogrammer.com: search, the patient list, the
- * summary card, and the "under the hood" log. The first request to /api/fhir (the capability check)
- * happens when the page renders.
+ * summary card, the edit panel (create, replace, patch, delete under the demo guard), and the "under
+ * the hood" log. The first request to /api/fhir (the capability check) happens when the page renders.
  */
 @Component({
   selector: 'app-fhir-explorer',
@@ -55,11 +67,44 @@ export class FhirExplorer implements OnInit, OnDestroy {
   static readonly SUMMARY_FAILED_MESSAGE = 'Nothing to show.';
   static readonly RAW_FAILED_MESSAGE = 'The raw bundle could not be loaded.';
 
+  /** The seeded demo patient, read-only to the writes. */
+  static readonly SEED_PATIENT_ID = 'mvc-programmer';
+
+  static readonly EDIT_LEAD = 'Writes go to the same throwaway sandbox. Only patients created in this browser session can be replaced, patched, or deleted; the seeded patient is read-only. A session can create five.';
+  static readonly EDIT_NONE_MESSAGE = 'No patient selected: the form creates a new one.';
+  static readonly EDIT_MRN_MESSAGE = 'Letters, digits, hyphens, and dots only; at most 40.';
+  static readonly EDIT_NO_CHANGES_MESSAGE = 'Nothing changed since the patient was loaded, so there is nothing to patch.';
+
   protected readonly form = inject(FormBuilder).nonNullable.group({
     family: [FhirExplorer.FALLBACK_FAMILIES[0], [notBlank, Validators.maxLength(60)]],
     birthdate: ['', [Validators.pattern(/^\d{4}-\d{2}-\d{2}$/)]],
     identifier: ['', [Validators.maxLength(120)]],
   });
+
+  protected readonly EDIT_LEAD = FhirExplorer.EDIT_LEAD;
+
+  protected readonly editForm = inject(FormBuilder).nonNullable.group({
+    familyName: ['', [notBlank, Validators.maxLength(60)]],
+    givenName: ['', [Validators.maxLength(60)]],
+    sex: [''],
+    birthDate: ['', [Validators.pattern(/^\d{4}-\d{2}-\d{2}$/)]],
+    mrn: ['', [Validators.maxLength(40), Validators.pattern(/^[A-Za-z0-9\-.]*$/)]],
+  });
+
+  /** True once a write found the edit form invalid; its errors show from then on. */
+  protected readonly editValidated = signal(false);
+  protected readonly writing = signal(false);
+  protected readonly editStatusText = signal('');
+  protected readonly editStatusKind = signal<'is-ok' | 'is-error' | ''>('');
+
+  /** The function's field errors from the last 400, keyed by field. */
+  protected readonly serverErrors = signal<Readonly<Record<string, readonly string[]>>>({});
+
+  /** The input view of the selected patient when its summary loaded, the document a patch is diffed against. */
+  protected readonly loadedInput = signal<PatientInput | null>(null);
+
+  /** The edit form as a signal, so the ownership and diff computations follow it. */
+  private readonly editValue = signal(this.editForm.getRawValue());
 
   /** True once a submit found the form invalid; errors show from then on. */
   protected readonly validated = signal(false);
@@ -93,13 +138,51 @@ export class FhirExplorer implements OnInit, OnDestroy {
     return (this.resolvedShown() ? 'hide ' : '+') + `${count} resolved`;
   });
 
+  protected readonly ownership = computed<Ownership>(() => {
+    const summary = this.summary();
+    if (summary === null) {
+      return 'none';
+    }
+
+    if (summary.patient.id === FhirExplorer.SEED_PATIENT_ID) {
+      return 'seed';
+    }
+
+    const mine = summary.patient.identifiers.some((i) => i.system === DemoSession.SESSION_SYSTEM && i.value === this.session.token);
+    return mine ? 'mine' : 'other';
+  });
+  protected readonly editTarget = computed(() => {
+    const id = this.summary()?.patient.id;
+    switch (this.ownership()) {
+      case 'mine':
+        return `Editing Patient/${id}, created in this session: replace, patch, and delete are allowed.`;
+      case 'seed':
+        return `Patient/${id} is the seeded demo patient and is read-only here. The form can create a new patient.`;
+      case 'other':
+        return `Patient/${id} was not created in this session, so it cannot be changed here. The form can create a new patient.`;
+      default:
+        return FhirExplorer.EDIT_NONE_MESSAGE;
+    }
+  });
+  protected readonly canChange = computed(() => this.ownership() === 'mine' && !this.writing());
+  protected readonly hasChanges = computed(() => {
+    const loaded = this.loadedInput();
+    return loaded !== null && FhirExplorer.patchOperations(loaded, FhirExplorer.toInput(this.editValue())).length > 0;
+  });
+  protected readonly editStatusClass = computed(() => (this.editStatusKind() === '' ? 'form-status' : `form-status ${this.editStatusKind()}`));
+
   private readonly client = inject(FhirClient);
+  private readonly session = inject(DemoSession);
   private readonly pendingTasks = inject(PendingTasks);
+  /** The idempotency key of the create in progress or retried; renewed once a create succeeds. */
+  private createKey: string | null = null;
   private readonly log = viewChild<ElementRef<HTMLElement>>('log');
   private rawLoadedFor: string | null = null;
   private destroyed = false;
 
   constructor() {
+    this.editForm.valueChanges.subscribe(() => this.editValue.set(this.editForm.getRawValue()));
+
     // The log keeps its newest line in view, as a terminal does.
     afterRenderEffect(() => {
       this.lines();
@@ -233,6 +316,303 @@ export class FhirExplorer implements OnInit, OnDestroy {
     }
   }
 
+  /** A field's message: the form's own rule once a write was attempted, else what the function said about it. */
+  protected editError(field: 'familyName' | 'givenName' | 'sex' | 'birthDate' | 'mrn'): string {
+    const control = this.editForm.controls[field];
+    if (this.editValidated() && control.invalid) {
+      if (control.hasError('required')) {
+        return FhirExplorer.FAMILY_REQUIRED_MESSAGE;
+      }
+
+      if (field === 'birthDate') {
+        return FhirExplorer.BIRTHDATE_FORMAT_MESSAGE;
+      }
+
+      return field === 'mrn' ? FhirExplorer.EDIT_MRN_MESSAGE : FhirExplorer.FAMILY_LENGTH_MESSAGE;
+    }
+
+    return this.serverErrors()[field]?.[0] ?? '';
+  }
+
+  /** POST: validates the form and creates a new patient with the pending idempotency key. */
+  protected create(): void {
+    const input = this.validatedInput();
+    if (input === null) {
+      return;
+    }
+
+    this.createKey ??= this.session.newKey();
+    const key = this.createKey;
+    void this.pendingTasks.run(() => this.createPatient(input, key));
+  }
+
+  /** PUT: validates the form and replaces the selected patient's demographics with it. */
+  protected replace(): void {
+    const id = this.changeableId();
+    const input = this.validatedInput();
+    if (id === null || input === null) {
+      return;
+    }
+
+    void this.pendingTasks.run(() => this.replacePatient(id, input));
+  }
+
+  /** PATCH: sends only what changed since the patient was loaded, each change guarded by a test of the old value. */
+  protected patch(): void {
+    const id = this.changeableId();
+    const loaded = this.loadedInput();
+    const input = this.validatedInput();
+    if (id === null || loaded === null || input === null) {
+      return;
+    }
+
+    const operations = FhirExplorer.patchOperations(loaded, input);
+    if (operations.length === 0) {
+      this.setEditStatus(FhirExplorer.EDIT_NO_CHANGES_MESSAGE, '');
+      return;
+    }
+
+    void this.pendingTasks.run(() => this.patchPatient(id, operations));
+  }
+
+  /** DELETE the selected patient. */
+  protected remove(): void {
+    const id = this.changeableId();
+    if (id === null) {
+      return;
+    }
+
+    void this.pendingTasks.run(() => this.deletePatient(id));
+  }
+
+  /** The selected patient's id when this session may change it and no write is in flight. */
+  private changeableId(): string | null {
+    return this.canChange() ? (this.summary()?.patient.id ?? null) : null;
+  }
+
+  /** The form as PatientInput after its own validation, or null with the errors showing. */
+  private validatedInput(): PatientInput | null {
+    this.serverErrors.set({});
+    if (this.editForm.invalid) {
+      this.editValidated.set(true);
+      return null;
+    }
+
+    this.editValidated.set(false);
+    return FhirExplorer.toInput(this.editForm.getRawValue());
+  }
+
+  private async createPatient(input: PatientInput, key: string): Promise<void> {
+    this.writing.set(true);
+    this.setEditStatus('Creating…', '');
+    this.write(`→ POST ${FhirExplorer.API}/patients · X-Demo-Session ${this.session.token} · Idempotency-Key ${key}`, 'request');
+
+    try {
+      const response = await this.client.createPatient(input, key);
+      if (this.destroyed) {
+        return;
+      }
+
+      const result = response.body;
+      this.createKey = null;
+      this.writeResponse('/patients', response);
+      this.writeTrace(result.trace, response);
+      this.write(`  ${response.status === 201 ? 'created' : 'already created by this key, returned'} Patient/${result.patient.id} · mapped to PatientWriteResult`, 'detail');
+      this.showDto('PatientWriteResult', result);
+      this.showCreated(result.patient);
+      this.setEditStatus(response.status === 201 ? `Created Patient/${result.patient.id}; it is selected and yours to change.` : `Patient/${result.patient.id} had already been created with this key; nothing new was made.`, 'is-ok');
+      await this.loadSummary(result.patient.id);
+    } catch (error: unknown) {
+      this.failWrite('/patients', error);
+    } finally {
+      this.writing.set(false);
+    }
+  }
+
+  private async replacePatient(id: string, input: PatientInput): Promise<void> {
+    const path = `/patients/${encodeURIComponent(id)}`;
+    this.writing.set(true);
+    this.setEditStatus('Replacing…', '');
+    this.write(`→ PUT ${FhirExplorer.API}${path} · X-Demo-Session ${this.session.token}`, 'request');
+
+    try {
+      const response = await this.client.replacePatient(id, input);
+      if (this.destroyed) {
+        return;
+      }
+
+      this.afterChange(path, response, 'Replaced');
+    } catch (error: unknown) {
+      this.failWrite(path, error);
+    } finally {
+      this.writing.set(false);
+    }
+  }
+
+  private async patchPatient(id: string, operations: readonly PatientPatchOperation[]): Promise<void> {
+    const path = `/patients/${encodeURIComponent(id)}`;
+    this.writing.set(true);
+    this.setEditStatus('Patching…', '');
+    this.write(`→ PATCH ${FhirExplorer.API}${path} · application/json-patch+json · X-Demo-Session ${this.session.token}`, 'request');
+    for (const op of operations) {
+      this.write(`  ${op.op} ${op.path}${op.value !== undefined ? ` = ${JSON.stringify(op.value)}` : ''}`, 'detail');
+    }
+
+    try {
+      const response = await this.client.patchPatient(id, operations);
+      if (this.destroyed) {
+        return;
+      }
+
+      this.afterChange(path, response, 'Patched');
+    } catch (error: unknown) {
+      this.failWrite(path, error);
+    } finally {
+      this.writing.set(false);
+    }
+  }
+
+  private async deletePatient(id: string): Promise<void> {
+    const path = `/patients/${encodeURIComponent(id)}`;
+    this.writing.set(true);
+    this.setEditStatus('Deleting…', '');
+    this.write(`→ DELETE ${FhirExplorer.API}${path} · X-Demo-Session ${this.session.token}`, 'request');
+
+    try {
+      const response = await this.client.deletePatient(id);
+      if (this.destroyed) {
+        return;
+      }
+
+      this.write(`← ${response.status} ${path} in ${response.durationMs} ms · ${FhirExplorer.describeCache(response.xCache)}`, 'response');
+      this.patients.update((list) => (list ?? []).filter((p) => p.id !== id));
+      this.countLabel.set(`(${this.patients()?.length ?? 0})`);
+      this.selectedId.set(null);
+      this.loadedInput.set(null);
+      this.showSummaryMessage(`Patient/${id} was deleted. The form still holds its fields, so it can be created again.`);
+      this.setEditStatus(`Deleted Patient/${id}.`, 'is-ok');
+    } catch (error: unknown) {
+      this.failWrite(path, error);
+    } finally {
+      this.writing.set(false);
+    }
+  }
+
+  /**
+   * Logs a replace or patch and applies the patient it returned to the row, the summary card, and
+   * the form. The summary is not re-read: the browser and CloudFront may hold the old one for a
+   * while (max-age 60, s-maxage 600), and the write result is the record as the sandbox stored it.
+   */
+  private afterChange(path: string, response: FhirResponse<PatientWriteResult>, verb: string): void {
+    const result = response.body;
+    this.writeResponse(path, response);
+    this.writeTrace(result.trace, response);
+    this.write(`  ${verb.toLowerCase()} Patient/${result.patient.id} · mapped to PatientWriteResult; the card and form follow it (a cached summary may lag for a few minutes)`, 'detail');
+    this.showDto('PatientWriteResult', result);
+    this.patients.update((list) => (list ?? []).map((p) => (p.id === result.patient.id ? FhirExplorer.toListItem(result.patient) : p)));
+    this.summary.update((summary) => (summary !== null && summary.patient.id === result.patient.id ? { ...summary, patient: result.patient } : summary));
+    this.loadIntoForm(result.patient);
+    this.setEditStatus(`${verb} Patient/${result.patient.id}.`, 'is-ok');
+  }
+
+  /** Adds the new patient to the top of the list so it can be selected like any match. */
+  private showCreated(patient: PatientDemographics): void {
+    this.patients.update((list) => [FhirExplorer.toListItem(patient), ...(list ?? []).filter((p) => p.id !== patient.id)]);
+    this.countLabel.set(`(${this.patients()?.length ?? 0})`);
+    this.listMessage.set(FhirExplorer.NO_MATCH_MESSAGE);
+  }
+
+  private failWrite(path: string, error: unknown): void {
+    if (this.destroyed) {
+      return;
+    }
+
+    const problem = FhirExplorer.asProblem(error);
+    this.writeFailure(path, problem);
+    this.serverErrors.set(problem.errors);
+    for (const [field, messages] of Object.entries(problem.errors)) {
+      this.write(`  ${field}: ${messages.join(' ')}`, 'error');
+    }
+
+    this.setEditStatus(problem.message, 'is-error');
+  }
+
+  private setEditStatus(text: string, kind: 'is-ok' | 'is-error' | ''): void {
+    this.editStatusText.set(text);
+    this.editStatusKind.set(kind);
+  }
+
+  /** Puts a loaded patient's fields in the form and remembers them as the patch baseline. */
+  private loadIntoForm(patient: PatientDemographics): void {
+    const input: PatientInput = {
+      familyName: patient.familyName === 'Unknown' ? '' : patient.familyName,
+      givenName: patient.givenName,
+      sex: patient.sex,
+      birthDate: patient.birthDate,
+      mrn: patient.mrn,
+    };
+    this.editForm.setValue({
+      familyName: input.familyName,
+      givenName: input.givenName ?? '',
+      sex: input.sex ?? '',
+      birthDate: input.birthDate ?? '',
+      mrn: input.mrn ?? '',
+    });
+    this.loadedInput.set(input);
+    this.editValidated.set(false);
+    this.serverErrors.set({});
+  }
+
+  /** The form's raw value as the body the function takes: trimmed, blanks omitted. */
+  private static toInput(value: { familyName: string; givenName: string; sex: string; birthDate: string; mrn: string }): PatientInput {
+    const text = (s: string): string | undefined => (s.trim() === '' ? undefined : s.trim());
+    return {
+      familyName: value.familyName.trim(),
+      givenName: text(value.givenName),
+      sex: text(value.sex) as Sex | undefined,
+      birthDate: text(value.birthDate),
+      mrn: text(value.mrn),
+    };
+  }
+
+  /** RFC 6902 operations that take `before` to `after`: a test of the old value, then add, replace, or remove, per changed field. */
+  static patchOperations(before: PatientInput, after: PatientInput): PatientPatchOperation[] {
+    const operations: PatientPatchOperation[] = [];
+    for (const path of EDIT_FIELDS) {
+      const field = path.slice(1) as keyof PatientInput;
+      const was = before[field];
+      const now = after[field];
+      if (was === now) {
+        continue;
+      }
+
+      if (was !== undefined) {
+        operations.push({ op: 'test', path, value: was });
+      }
+
+      if (now === undefined) {
+        operations.push({ op: 'remove', path });
+      } else {
+        operations.push({ op: was === undefined ? 'add' : 'replace', path, value: now });
+      }
+    }
+
+    return operations;
+  }
+
+  private static toListItem(patient: PatientDemographics): PatientListItem {
+    return {
+      id: patient.id,
+      name: patient.name,
+      familyName: patient.familyName,
+      givenName: patient.givenName,
+      birthDate: patient.birthDate,
+      birthYear: patient.birthDate ? Number(patient.birthDate.slice(0, 4)) : undefined,
+      sex: patient.sex,
+      mrn: patient.mrn,
+    };
+  }
+
   private async search(family: string, birthdate: string, identifier: string, fallbackIndex: number | null): Promise<void> {
     this.searching.set(true);
     this.setStatus('Searching…', '');
@@ -308,6 +688,7 @@ export class FhirExplorer implements OnInit, OnDestroy {
       this.showDto('PatientSummary', body);
       this.resolvedShown.set(false);
       this.summary.set(body);
+      this.loadIntoForm(body.patient);
     } catch (error: unknown) {
       if (this.destroyed || this.selectedId() !== id) {
         return;
