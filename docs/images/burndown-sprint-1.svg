@@ -1,6 +1,6 @@
 <svg xmlns="http://www.w3.org/2000/svg" width="880" height="440" viewBox="0 0 880 440" role="img" aria-labelledby="t d">
   <title id="t">mvcprogrammer.com Sprint 1 burndown</title>
-  <desc id="d">Story points remaining per day against the ideal line. 2026-10-19 to 2026-11-01 · 43 items, 90 points · 43 done · 0.23 h/point from git</desc>
+  <desc id="d">Story points remaining per day against the ideal line. 2026-10-19 to 2026-11-01 · 45 items, 92 points · 45 done · 0.23 h/point from git</desc>
   <style>
     .bg { fill: #ffffff; }
     text { font: 13px -apple-system, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; fill: #57606a; }
@@ -18,12 +18,12 @@
   </style>
   <rect class="bg" width="880" height="440" rx="8"/>
   <text class="title" x="56" y="26">Sprint 1 burndown</text>
-  <text x="56" y="44">2026-10-19 to 2026-11-01 · 43 items, 90 points · 43 done · 0.23 h/point from git</text>
+  <text x="56" y="44">2026-10-19 to 2026-11-01 · 45 items, 92 points · 45 done · 0.23 h/point from git</text>
   <line class="grid" x1="56" x2="852" y1="376.0" y2="376.0"/><text x="46" y="380.0" text-anchor="end">0</text>
-  <line class="grid" x1="56" x2="852" y1="294.2" y2="294.2"/><text x="46" y="298.2" text-anchor="end">23</text>
-  <line class="grid" x1="56" x2="852" y1="216.0" y2="216.0"/><text x="46" y="220.0" text-anchor="end">45</text>
-  <line class="grid" x1="56" x2="852" y1="134.2" y2="134.2"/><text x="46" y="138.2" text-anchor="end">68</text>
-  <line class="grid" x1="56" x2="852" y1="56.0" y2="56.0"/><text x="46" y="60.0" text-anchor="end">90</text>
+  <line class="grid" x1="56" x2="852" y1="296.0" y2="296.0"/><text x="46" y="300.0" text-anchor="end">23</text>
+  <line class="grid" x1="56" x2="852" y1="216.0" y2="216.0"/><text x="46" y="220.0" text-anchor="end">46</text>
+  <line class="grid" x1="56" x2="852" y1="136.0" y2="136.0"/><text x="46" y="140.0" text-anchor="end">69</text>
+  <line class="grid" x1="56" x2="852" y1="56.0" y2="56.0"/><text x="46" y="60.0" text-anchor="end">92</text>
   <line class="axis" x1="56" x2="56" y1="56" y2="376"/>
   <line class="axis" x1="56" x2="852" y1="376" y2="376"/>
   <text x="56.0" y="396" text-anchor="middle">Mon 19</text>
@@ -41,17 +41,18 @@
   <text x="790.8" y="396" text-anchor="middle">Sat 31</text>
   <text x="852.0" y="396" text-anchor="middle">Sun 1</text>
   <path class="ideal" d="M56.0,56.0 L117.2,80.6 L178.5,105.2 L239.7,129.8 L300.9,154.5 L362.2,179.1 L423.4,203.7 L484.6,228.3 L545.8,252.9 L607.1,277.5 L668.3,302.2 L729.5,326.8 L790.8,351.4 L852.0,376.0"/>
-  <path class="actual" d="M56.0,70.2 L117.2,159.1 L178.5,258.7 L239.7,297.8 L300.9,297.8 L362.2,297.8 L423.4,297.8 L484.6,297.8 L545.8,308.4 L607.1,376.0"/>
-  <circle class="dot" cx="56.0" cy="70.2" r="4"><title>2026-10-19: 86 points remaining</title></circle>
-  <circle class="dot" cx="117.2" cy="159.1" r="4"><title>2026-10-20: 61 points remaining</title></circle>
-  <circle class="dot" cx="178.5" cy="258.7" r="4"><title>2026-10-21: 33 points remaining</title></circle>
-  <circle class="dot" cx="239.7" cy="297.8" r="4"><title>2026-10-22: 22 points remaining</title></circle>
-  <circle class="dot" cx="300.9" cy="297.8" r="4"><title>2026-10-23: 22 points remaining</title></circle>
-  <circle class="dot" cx="362.2" cy="297.8" r="4"><title>2026-10-24: 22 points remaining</title></circle>
-  <circle class="dot" cx="423.4" cy="297.8" r="4"><title>2026-10-25: 22 points remaining</title></circle>
-  <circle class="dot" cx="484.6" cy="297.8" r="4"><title>2026-10-26: 22 points remaining</title></circle>
-  <circle class="dot" cx="545.8" cy="308.4" r="4"><title>2026-10-27: 19 points remaining</title></circle>
-  <circle class="dot" cx="607.1" cy="376.0" r="4"><title>2026-10-28: 0 points remaining</title></circle>
-  <line class="today" x1="607.1" x2="607.1" y1="56" y2="376"/>
+  <path class="actual" d="M56.0,69.9 L117.2,156.9 L178.5,254.3 L239.7,292.5 L300.9,292.5 L362.2,292.5 L423.4,292.5 L484.6,292.5 L545.8,303.0 L607.1,372.5 L668.3,372.5"/>
+  <circle class="dot" cx="56.0" cy="69.9" r="4"><title>2026-10-19: 88 points remaining</title></circle>
+  <circle class="dot" cx="117.2" cy="156.9" r="4"><title>2026-10-20: 63 points remaining</title></circle>
+  <circle class="dot" cx="178.5" cy="254.3" r="4"><title>2026-10-21: 35 points remaining</title></circle>
+  <circle class="dot" cx="239.7" cy="292.5" r="4"><title>2026-10-22: 24 points remaining</title></circle>
+  <circle class="dot" cx="300.9" cy="292.5" r="4"><title>2026-10-23: 24 points remaining</title></circle>
+  <circle class="dot" cx="362.2" cy="292.5" r="4"><title>2026-10-24: 24 points remaining</title></circle>
+  <circle class="dot" cx="423.4" cy="292.5" r="4"><title>2026-10-25: 24 points remaining</title></circle>
+  <circle class="dot" cx="484.6" cy="292.5" r="4"><title>2026-10-26: 24 points remaining</title></circle>
+  <circle class="dot" cx="545.8" cy="303.0" r="4"><title>2026-10-27: 21 points remaining</title></circle>
+  <circle class="dot" cx="607.1" cy="372.5" r="4"><title>2026-10-28: 1 points remaining</title></circle>
+  <circle class="dot" cx="668.3" cy="372.5" r="4"><title>2026-10-29: 1 points remaining</title></circle>
+  <line class="today" x1="668.3" x2="668.3" y1="56" y2="376"/>
   <text x="852" y="426" text-anchor="end">points remaining · dashed: ideal · solid: actual</text>
 </svg>
