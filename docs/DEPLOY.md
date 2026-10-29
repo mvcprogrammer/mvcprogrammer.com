@@ -899,14 +899,14 @@ origin list and the Experience API's permissions are untouched.
 
 | Piece | Value |
 | --- | --- |
-| CloudFront distribution | `<FHIR_DISTRIBUTION_ID>` (`<domain>.cloudfront.net`), origin path `/fhir`, same S3 OAC `E2KEES7ZY0UA4S`, the `fhir-api` origin with its OAC `E3OMK0SCVK2C13` behind `/api/fhir/*`, 403 → `/index.html` 200, standard logging to the `fhir/` prefix |
+| CloudFront distribution | `E2IFX9QJTIW1A4` (dpnwjccnpnc2d.cloudfront.net), origin path `/fhir`, same S3 OAC `E2KEES7ZY0UA4S`, the `fhir-api` origin with its OAC `E3OMK0SCVK2C13` behind `/api/fhir/*`, 403 → `/index.html` 200, standard logging to the `fhir/` prefix |
 | Response headers policy | the static site's `mvcprogrammer-security-headers` (`28b549c3-c562-418c-a803-abe16efe78eb`), unchanged |
-| ACM certificate | `<certificate ARN>` (fhir.mvcprogrammer.com, DNS-validated) |
+| ACM certificate | `arn:aws:acm:us-east-1:334383610383:certificate/1f36a56c-f631-4942-9ff1-54cf8b4dc7dd` (fhir.mvcprogrammer.com, DNS-validated) |
 | Route 53 | A and AAAA aliases for `fhir.mvcprogrammer.com` to the distribution |
 | Bucket policy | the `AWS:SourceArn` condition lists every distribution (six with this one) |
 | FHIR API | Lambda permission `fhir-cloudfront-invoke` on `mvcprogrammer-fhir-api` lets the distribution invoke the function URL, outside the SAM template like the editions' |
 | Edge function | `mvcprogrammer-www-redirect` on the default behavior for `/ping`; on the main distribution it also sends `/fhir` here (section 4b) |
-| GitHub variable | `FHIR_DISTRIBUTION_ID` = `<FHIR_DISTRIBUTION_ID>` |
+| GitHub variable | `FHIR_DISTRIBUTION_ID` = `E2IFX9QJTIW1A4` |
 | IAM | `infra/iam/github-actions-deploy-role-policy.json` lists the distribution under `cloudfront:CreateInvalidation`; apply with the `put-role-policy` command in the Blazor section |
 
 ### Create the resources
@@ -918,9 +918,9 @@ since the explorer only calls `/api/fhir/*`.
 ```bash
 # 1. Certificate (us-east-1), then add the CNAME it asks for to the hosted zone and wait for ISSUED
 aws acm request-certificate --region us-east-1 --domain-name fhir.mvcprogrammer.com --validation-method DNS
-aws acm describe-certificate --region us-east-1 --certificate-arn <certificate ARN> \
+aws acm describe-certificate --region us-east-1 --certificate-arn arn:aws:acm:us-east-1:334383610383:certificate/1f36a56c-f631-4942-9ff1-54cf8b4dc7dd \
   --query 'Certificate.DomainValidationOptions[0].ResourceRecord'
-aws acm wait certificate-validated --region us-east-1 --certificate-arn <certificate ARN>
+aws acm wait certificate-validated --region us-east-1 --certificate-arn arn:aws:acm:us-east-1:334383610383:certificate/1f36a56c-f631-4942-9ff1-54cf8b4dc7dd
 
 # 2. Distribution, cloned from the Angular edition's config
 aws cloudfront get-distribution-config --id E33NA2ZQ9O29DK --query DistributionConfig > /tmp/angular-config.json
@@ -931,7 +931,7 @@ c['CallerReference'] = f'fhir-{int(time.time())}'
 c['Comment'] = 'fhir.mvcprogrammer.com (FHIR patient explorer)'
 c['Aliases'] = {'Quantity': 1, 'Items': ['fhir.mvcprogrammer.com']}
 for key in ('ACMCertificateArn', 'Certificate'):
-    c['ViewerCertificate'][key] = '<certificate ARN>'
+    c['ViewerCertificate'][key] = 'arn:aws:acm:us-east-1:334383610383:certificate/1f36a56c-f631-4942-9ff1-54cf8b4dc7dd'
 c['Logging']['Prefix'] = 'fhir/'
 origins = [o for o in c['Origins']['Items'] if o['Id'] != 'experience-api']
 for origin in origins:
@@ -949,20 +949,20 @@ aws cloudfront create-distribution --distribution-config file:///tmp/fhir-config
 
 # 3. Let the new distribution read the bucket and call the FHIR API
 aws s3api get-bucket-policy --bucket mvcprogrammer.com --query Policy --output text > /tmp/bucket-policy.json
-#    add "arn:aws:cloudfront::334383610383:distribution/<FHIR_DISTRIBUTION_ID>" to the AWS:SourceArn list of
+#    add "arn:aws:cloudfront::334383610383:distribution/E2IFX9QJTIW1A4" to the AWS:SourceArn list of
 #    AllowCloudFrontServicePrincipalReadOnly, then
 aws s3api put-bucket-policy --bucket mvcprogrammer.com --policy file:///tmp/bucket-policy.json
 aws lambda add-permission --function-name mvcprogrammer-fhir-api \
   --statement-id fhir-cloudfront-invoke --action lambda:InvokeFunctionUrl \
   --principal cloudfront.amazonaws.com --function-url-auth-type AWS_IAM \
-  --source-arn arn:aws:cloudfront::334383610383:distribution/<FHIR_DISTRIBUTION_ID>
+  --source-arn arn:aws:cloudfront::334383610383:distribution/E2IFX9QJTIW1A4
 
 # 4. DNS: A and AAAA aliases, the same change batch shape as the apex (CloudFront zone Z2FDTNDATAQYW2)
 aws route53 change-resource-record-sets --hosted-zone-id Z02467662SJ3B6YDOZKEF --change-batch file://records.json
 
 # 5. Deploy role and GitHub: add the distribution ARN to infra/iam/github-actions-deploy-role-policy.json,
 #    apply it with put-role-policy, and set the repository variable
-gh variable set FHIR_DISTRIBUTION_ID --body <FHIR_DISTRIBUTION_ID>
+gh variable set FHIR_DISTRIBUTION_ID --body E2IFX9QJTIW1A4
 
 # 6. Once the first deploy has filled fhir/, publish the edge function so /fhir on the main site lands here (section 4b)
 ```
@@ -977,7 +977,7 @@ aws s3 sync . s3://mvcprogrammer.com/fhir/ --delete \
 aws s3 sync . s3://mvcprogrammer.com/fhir/ --delete \
   --cache-control "public, max-age=300, s-maxage=31536000" \
   --exclude "main-*.js" --exclude "polyfills-*.js" --exclude "chunk-*.js" --exclude "fhir-*.css"
-aws cloudfront create-invalidation --distribution-id <FHIR_DISTRIBUTION_ID> --paths "/*"
+aws cloudfront create-invalidation --distribution-id E2IFX9QJTIW1A4 --paths "/*"
 ```
 
 Verify:
