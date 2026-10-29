@@ -1,5 +1,3 @@
-using Microsoft.Extensions.Configuration;
-using Microsoft.Extensions.DependencyInjection;
 using Portfolio.Blazor.Configurations;
 using Portfolio.Blazor.Interfaces;
 using Portfolio.Blazor.Services;

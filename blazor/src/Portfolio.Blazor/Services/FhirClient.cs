@@ -1,5 +1,4 @@
 using System.Diagnostics;
-using System.Net.Http.Headers;
 using System.Net.Http.Json;
 using System.Text.Json;
 using System.Text.Json.Serialization.Metadata;
@@ -144,7 +143,7 @@ public sealed class FhirClient : IFhirClient
             }
             catch (JsonException)
             {
-                problem = null;
+                // A body that is not ProblemDetails is reported without one.
             }
 
             throw FhirProblemException.FromResponse((int)response.StatusCode, problem, started.ElapsedMilliseconds, Header(response, "x-cache"));

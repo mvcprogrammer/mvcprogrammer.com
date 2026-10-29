@@ -105,6 +105,10 @@ dotnet_naming_symbols.constants.applicable_accessibilities = *
 dotnet_naming_symbols.constants.required_modifiers = const
 dotnet_naming_style.screaming_snake.capitalization = all_upper
 dotnet_naming_style.screaming_snake.word_separator = _
+# ReSharper (Rider and InspectCode) also applies the constants rule above to enum members,
+# which Roslyn does not. Part 8 keeps enum members PascalCase, so this ReSharper-only key
+# restores that; Roslyn ignores resharper_ keys, so the build is unaffected.
+resharper_csharp_naming_rule.enum_member = AaBb
 
 # Static readonly fields: SCREAMING_SNAKE_CASE as well. They are immutable values fixed at
 # startup (lookup tables, serializer options, pinned lists), and the solution has always named

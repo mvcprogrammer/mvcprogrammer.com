@@ -176,7 +176,7 @@ public sealed partial class FhirExplorer : IAsyncDisposable
             ShowDto("PatientSearchResult", JsonSerializer.Serialize(result, PortfolioJsonContext.Default.PatientSearchResult));
 
             // The prefilled example may have been wiped from the sandbox; walk the fallback list once, without extra inputs.
-            if (result.Count == 0 && birthdate.Length == 0 && identifier.Length == 0 && fallbackIndex is int index && index < FALLBACK_FAMILIES.Count)
+            if (result.Count == 0 && birthdate.Length == 0 && identifier.Length == 0 && fallbackIndex is { } index && index < FALLBACK_FAMILIES.Count)
             {
                 var next = FALLBACK_FAMILIES[index];
                 Write($"  nothing for \"{family}\"; the sandbox may have been wiped, trying \"{next}\"", "note");
@@ -187,7 +187,7 @@ public sealed partial class FhirExplorer : IAsyncDisposable
             }
 
             _patients = result.Items;
-            _countLabel = result.Count == 0 ? "(0)" : $"({result.Count}{(result.Total is int total && total > result.Count ? $" of {total}" : string.Empty)})";
+            _countLabel = result.Count == 0 ? "(0)" : $"({result.Count}{(result.Total is { } total && total > result.Count ? $" of {total}" : string.Empty)})";
             _listMessage = NO_MATCH_MESSAGE;
             SetStatus(result.Count == 0 ? "No matches." : $"{result.Count} {Plural(result.Count, "patient", "patients")} for “{family}”; the first is selected.", "is-ok");
             if (result.Items.Count > 0)
