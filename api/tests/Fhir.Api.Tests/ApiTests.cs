@@ -486,33 +486,381 @@ public sealed class ApiTests
 
     #endregion
 
-    #region Writes (stubbed)
+    #region Writes
 
-    /// <summary>The write operations openapi.yaml 1.2.0 specifies answer 501 with the promised problem until #144 ships them, and never reach the sandbox.</summary>
+    private const string SESSION = "6f1d2c3b-9a8e-4b7c-9d6e-5f4a3b2c1d0e";
+    private const string OTHER_SESSION = "0a0a0a0a-0a0a-4a0a-8a0a-0a0a0a0a0a0a";
+    private const string KEY = "0c9b8a7d-6e5f-4a3b-8c2d-1e0f9a8b7c6d";
+    private const string INPUT = """{"familyName":"Dickens","givenName":"Charles","sex":"male","birthDate":"1979-04-12","mrn":"MVC-0042"}""";
+
+    /// <summary>A patient as the sandbox stores one the explorer created: the input plus the session and idempotency identifiers.</summary>
+    private static Patient Created(string id = "1842", string session = SESSION, string key = KEY)
+    {
+        var patient = Fixtures.Patient(id, mrn: null);
+        patient.Identifier.Add(new Hl7.Fhir.Model.Identifier("https://mvcprogrammer.com/fhir/mrn", "MVC-0042") { Type = new CodeableConcept(Fixtures.V2_0203, "MR") });
+        patient.Identifier.Add(new Hl7.Fhir.Model.Identifier("https://mvcprogrammer.com/fhir/demo-session", session));
+        patient.Identifier.Add(new Hl7.Fhir.Model.Identifier("https://mvcprogrammer.com/fhir/idempotency", key));
+        return patient;
+    }
+
+    private static HttpRequestMessage Write(HttpMethod method, string path, string? body = null, string? session = SESSION, string? key = null, string mediaType = "application/json")
+    {
+        var request = new HttpRequestMessage(method, path);
+        if (session is not null)
+        {
+            request.Headers.Add("X-Demo-Session", session);
+        }
+
+        if (key is not null)
+        {
+            request.Headers.Add("Idempotency-Key", key);
+        }
+
+        if (body is not null)
+        {
+            request.Content = new StringContent(body, System.Text.Encoding.UTF8, mediaType);
+        }
+
+        return request;
+    }
+
+    [Fact]
+    public async Task Create_is_a_conditional_create_on_the_key_and_answers_201_with_location()
+    {
+        // Arrange
+        using var factory = new FhirApiFactory();
+        factory.Handler.On(HttpMethod.Get, "/Patient?_summary=count", Fixtures.CountOnly(0));
+        factory.Handler.On(HttpMethod.Post, "/Patient", Created(), HttpStatusCode.Created);
+        using var client = factory.CreateClient();
+
+        // Act
+        var response = await client.SendAsync(Write(HttpMethod.Post, "/api/fhir/patients", INPUT, key: KEY), Ct);
+
+        // Assert
+        Assert.Equal(HttpStatusCode.Created, response.StatusCode);
+        Assert.Equal("/api/fhir/patients/1842/summary", response.Headers.Location?.ToString());
+        Assert.Equal("no-store", response.Headers.CacheControl?.ToString());
+        Assert.Null(response.Headers.ETag);
+        var result = await response.Content.ReadFromJsonAsync<PatientWriteResult>(ApiJson.OPTIONS, Ct);
+        Assert.NotNull(result);
+        Assert.Equal("Dickens, Charles", result.Patient.Name);
+        Assert.Equal("MVC-0042", result.Patient.Mrn);
+        Assert.Contains(result.Patient.Identifiers, i => i.System == "https://mvcprogrammer.com/fhir/demo-session" && i.Value == SESSION);
+        Assert.Equal(["GET", "POST"], result.Trace.Requests.Select(r => r.Method));
+
+        var post = Assert.Single(factory.Handler.Sent, r => r.Method == HttpMethod.Post);
+        Assert.Equal("identifier=https%3A%2F%2Fmvcprogrammer.com%2Ffhir%2Fidempotency%7C" + KEY, post.IfNoneExist);
+        Assert.Contains("\"family\":\"Dickens\"", post.Body);
+        Assert.Contains(SESSION, post.Body);
+        Assert.Contains(KEY, post.Body);
+        Assert.DoesNotContain("\"id\"", post.Body);
+    }
+
+    [Fact]
+    public async Task Create_with_a_used_key_answers_200_and_creates_nothing()
+    {
+        // Arrange
+        using var factory = new FhirApiFactory();
+        factory.Handler.On(HttpMethod.Get, "/Patient?_summary=count", Fixtures.CountOnly(1));
+        factory.Handler.On(HttpMethod.Post, "/Patient", Created(), HttpStatusCode.OK);
+        using var client = factory.CreateClient();
+
+        // Act
+        var response = await client.SendAsync(Write(HttpMethod.Post, "/api/fhir/patients", INPUT, key: KEY), Ct);
+
+        // Assert
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+        Assert.Equal("/api/fhir/patients/1842/summary", response.Headers.Location?.ToString());
+        var result = await response.Content.ReadFromJsonAsync<PatientWriteResult>(ApiJson.OPTIONS, Ct);
+        Assert.Equal("1842", result?.Patient.Id);
+    }
+
     [Theory]
-    [InlineData("POST", "/api/fhir/patients")]
-    [InlineData("PUT", "/api/fhir/patients/1842")]
-    [InlineData("PATCH", "/api/fhir/patients/1842")]
-    [InlineData("DELETE", "/api/fhir/patients/1842")]
-    public async Task Patient_writes_are_501_problems_until_built(string method, string path)
+    [InlineData(null, KEY, INPUT, "X-Demo-Session")]
+    [InlineData("not-a-uuid", KEY, INPUT, "X-Demo-Session")]
+    [InlineData(SESSION, null, INPUT, "Idempotency-Key")]
+    [InlineData(SESSION, KEY, """{"givenName":"Charles"}""", "familyName")]
+    [InlineData(SESSION, KEY, """{"familyName":"Dickens","birthDate":"2999-01-01"}""", "birthDate")]
+    [InlineData(SESSION, KEY, """{"familyName":"Dickens","mrn":"has space"}""", "mrn")]
+    [InlineData(SESSION, KEY, "not json", "body")]
+    public async Task Create_rejects_bad_headers_and_bodies_with_a_validation_problem(string? session, string? key, string body, string field)
     {
         // Arrange
         using var factory = new FhirApiFactory();
         using var client = factory.CreateClient();
-        using var request = new HttpRequestMessage(new HttpMethod(method), path);
-        if (method != "DELETE")
-        {
-            request.Content = new StringContent("{}", System.Text.Encoding.UTF8, method == "PATCH" ? "application/json-patch+json" : "application/json");
-        }
 
         // Act
-        var response = await client.SendAsync(request, Ct);
+        var response = await client.SendAsync(Write(HttpMethod.Post, "/api/fhir/patients", body, session, key), Ct);
 
         // Assert
-        var problem = await AssertProblem(response, HttpStatusCode.NotImplemented, "not-implemented");
-        Assert.Equal("Patient writes are specified and arrive with the explorer's next release.", problem.GetProperty("detail").GetString());
-        Assert.Equal(path, problem.GetProperty("instance").GetString());
+        var problem = await AssertProblem(response, HttpStatusCode.BadRequest, "validation-failed");
+        Assert.True(problem.GetProperty("errors").TryGetProperty(field, out var messages), $"expected an error for {field}");
+        Assert.NotEmpty(messages.EnumerateArray());
+        Assert.Equal("no-store", response.Headers.CacheControl?.ToString());
         Assert.Empty(factory.Handler.Requests);
+    }
+
+    [Fact]
+    public async Task Create_answers_429_once_the_session_has_its_patients()
+    {
+        // Arrange
+        using var factory = new FhirApiFactory(new Dictionary<string, string> { ["Fhir:MaxPatientsPerSession"] = "2" });
+        factory.Handler.On(HttpMethod.Get, "/Patient?_summary=count", Fixtures.CountOnly(2));
+        using var client = factory.CreateClient();
+
+        // Act
+        var response = await client.SendAsync(Write(HttpMethod.Post, "/api/fhir/patients", INPUT, key: KEY), Ct);
+
+        // Assert
+        var problem = await AssertProblem(response, HttpStatusCode.TooManyRequests, "rate-limited");
+        Assert.Contains("2 patients", problem.GetProperty("detail").GetString());
+        Assert.NotNull(response.Headers.RetryAfter?.Delta);
+        Assert.DoesNotContain(factory.Handler.Sent, r => r.Method == HttpMethod.Post);
+    }
+
+    [Fact]
+    public async Task Replace_rewrites_the_demographics_and_keeps_the_session_identifiers()
+    {
+        // Arrange
+        using var factory = new FhirApiFactory();
+        factory.Handler.On(HttpMethod.Get, "/Patient/1842", Created());
+        factory.Handler.On(HttpMethod.Put, "/Patient/1842", (request, _, ct) => Echo(request, ct));
+        using var client = factory.CreateClient();
+
+        // Act
+        var response = await client.SendAsync(Write(HttpMethod.Put, "/api/fhir/patients/1842", """{"familyName":"Dickens","givenName":"Chuck","sex":"male"}"""), Ct);
+
+        // Assert
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+        Assert.Equal("no-store", response.Headers.CacheControl?.ToString());
+        var result = await response.Content.ReadFromJsonAsync<PatientWriteResult>(ApiJson.OPTIONS, Ct);
+        Assert.NotNull(result);
+        Assert.Equal("Dickens, Chuck", result.Patient.Name);
+        Assert.Null(result.Patient.BirthDate);
+        Assert.Null(result.Patient.Mrn);
+        Assert.Equal(["GET", "PUT"], result.Trace.Requests.Select(r => r.Method));
+
+        var put = Assert.Single(factory.Handler.Sent, r => r.Method == HttpMethod.Put);
+        Assert.Contains("\"id\":\"1842\"", put.Body);
+        Assert.Contains(SESSION, put.Body);
+        Assert.Contains(KEY, put.Body);
+        Assert.DoesNotContain("MVC-0042", put.Body);
+    }
+
+    [Fact]
+    public async Task Replace_of_the_seeded_patient_is_a_403_problem_without_touching_the_sandbox()
+    {
+        // Arrange
+        using var factory = new FhirApiFactory();
+        using var client = factory.CreateClient();
+
+        // Act
+        var response = await client.SendAsync(Write(HttpMethod.Put, "/api/fhir/patients/mvc-programmer", INPUT), Ct);
+
+        // Assert
+        var problem = await AssertProblem(response, HttpStatusCode.Forbidden, "read-only");
+        Assert.Contains("seeded demo patient", problem.GetProperty("detail").GetString());
+        Assert.Empty(factory.Handler.Requests);
+    }
+
+    [Theory]
+    [InlineData("other-session")]
+    [InlineData("not-created-by-the-explorer")]
+    [InlineData("missing")]
+    public async Task Writes_to_a_patient_that_is_not_this_sessions_are_404_problems(string which)
+    {
+        // Arrange
+        using var factory = new FhirApiFactory();
+        switch (which)
+        {
+            case "other-session":
+                factory.Handler.On(HttpMethod.Get, "/Patient/1842", Created(session: OTHER_SESSION));
+                break;
+            case "not-created-by-the-explorer":
+                factory.Handler.On(HttpMethod.Get, "/Patient/1842", Fixtures.Patient("1842"));
+                break;
+            default:
+                factory.Handler.On(HttpMethod.Get, "/Patient/1842", FakeFhirHandler.Outcome("no such patient"), HttpStatusCode.NotFound);
+                break;
+        }
+
+        using var client = factory.CreateClient();
+
+        // Act
+        var response = await client.SendAsync(Write(HttpMethod.Put, "/api/fhir/patients/1842", INPUT), Ct);
+
+        // Assert
+        var problem = await AssertProblem(response, HttpStatusCode.NotFound, "not-found");
+        Assert.Contains("This session created no Patient with id '1842'", problem.GetProperty("detail").GetString());
+        Assert.DoesNotContain(factory.Handler.Sent, r => r.Method == HttpMethod.Put);
+    }
+
+    [Fact]
+    public async Task Patch_applies_the_operations_to_the_input_view_and_writes_the_result()
+    {
+        // Arrange
+        using var factory = new FhirApiFactory();
+        factory.Handler.On(HttpMethod.Get, "/Patient/1842", Created());
+        factory.Handler.On(HttpMethod.Put, "/Patient/1842", (request, _, ct) => Echo(request, ct));
+        using var client = factory.CreateClient();
+        const string patch = """[{"op":"test","path":"/givenName","value":"Charles"},{"op":"replace","path":"/givenName","value":"Chuck"},{"op":"remove","path":"/mrn"}]""";
+
+        // Act
+        var response = await client.SendAsync(Write(HttpMethod.Patch, "/api/fhir/patients/1842", patch, mediaType: "application/json-patch+json"), Ct);
+
+        // Assert
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+        var result = await response.Content.ReadFromJsonAsync<PatientWriteResult>(ApiJson.OPTIONS, Ct);
+        Assert.NotNull(result);
+        Assert.Equal("Dickens, Chuck", result.Patient.Name);
+        Assert.Equal("1979-04-12", result.Patient.BirthDate);
+        Assert.Null(result.Patient.Mrn);
+        var put = Assert.Single(factory.Handler.Sent, r => r.Method == HttpMethod.Put);
+        Assert.Contains(SESSION, put.Body);
+    }
+
+    [Theory]
+    [InlineData("""[{"op":"test","path":"/givenName","value":"Nobody"}]""", "'test' on /givenName) failed")]
+    [InlineData("""[{"op":"replace","path":"/address","value":"x"}]""", "not a PatientInput property")]
+    [InlineData("""[{"op":"replace","path":"/sex","value":"robot"}]""", "use male, female, other, or unknown")]
+    public async Task Patch_that_cannot_be_applied_is_a_409_problem_and_writes_nothing(string patch, string detailPart)
+    {
+        // Arrange
+        using var factory = new FhirApiFactory();
+        factory.Handler.On(HttpMethod.Get, "/Patient/1842", Created());
+        using var client = factory.CreateClient();
+
+        // Act
+        var response = await client.SendAsync(Write(HttpMethod.Patch, "/api/fhir/patients/1842", patch, mediaType: "application/json-patch+json"), Ct);
+
+        // Assert
+        var problem = await AssertProblem(response, HttpStatusCode.Conflict, "conflict");
+        Assert.Contains(detailPart, problem.GetProperty("detail").GetString());
+        Assert.DoesNotContain(factory.Handler.Sent, r => r.Method == HttpMethod.Put);
+    }
+
+    [Fact]
+    public async Task Patch_that_leaves_the_patient_invalid_is_a_validation_problem()
+    {
+        // Arrange
+        using var factory = new FhirApiFactory();
+        factory.Handler.On(HttpMethod.Get, "/Patient/1842", Created());
+        using var client = factory.CreateClient();
+
+        // Act
+        var response = await client.SendAsync(Write(HttpMethod.Patch, "/api/fhir/patients/1842", """[{"op":"remove","path":"/familyName"}]""", mediaType: "application/json-patch+json"), Ct);
+
+        // Assert
+        var problem = await AssertProblem(response, HttpStatusCode.BadRequest, "validation-failed");
+        Assert.True(problem.GetProperty("errors").TryGetProperty("familyName", out _));
+        Assert.DoesNotContain(factory.Handler.Sent, r => r.Method == HttpMethod.Put);
+    }
+
+    [Fact]
+    public async Task Patch_in_the_wrong_media_type_is_a_415_problem()
+    {
+        // Arrange
+        using var factory = new FhirApiFactory();
+        using var client = factory.CreateClient();
+
+        // Act
+        var response = await client.SendAsync(Write(HttpMethod.Patch, "/api/fhir/patients/1842", "[]"), Ct);
+
+        // Assert
+        var problem = await AssertProblem(response, HttpStatusCode.UnsupportedMediaType, "unsupported-media-type");
+        Assert.Contains("application/json-patch+json", problem.GetProperty("detail").GetString());
+        Assert.Empty(factory.Handler.Requests);
+    }
+
+    [Fact]
+    public async Task Delete_answers_204_and_again_once_the_sandbox_reports_the_patient_gone()
+    {
+        // Arrange
+        using var factory = new FhirApiFactory();
+        var deleted = false;
+        factory.Handler.On(HttpMethod.Get, "/Patient/1842", (_, _, _) => Task.FromResult(deleted
+            ? FakeFhirHandler.Json(FakeFhirHandler.Outcome("gone"), HttpStatusCode.Gone)
+            : FakeFhirHandler.Json(Created())));
+        factory.Handler.On(HttpMethod.Delete, "/Patient/1842", (_, _, _) =>
+        {
+            deleted = true;
+            return Task.FromResult(new HttpResponseMessage(HttpStatusCode.NoContent));
+        });
+        using var client = factory.CreateClient();
+
+        // Act
+        var first = await client.SendAsync(Write(HttpMethod.Delete, "/api/fhir/patients/1842"), Ct);
+        var second = await client.SendAsync(Write(HttpMethod.Delete, "/api/fhir/patients/1842"), Ct);
+
+        // Assert
+        Assert.Equal(HttpStatusCode.NoContent, first.StatusCode);
+        Assert.Equal("no-store", first.Headers.CacheControl?.ToString());
+        Assert.Equal(HttpStatusCode.NoContent, second.StatusCode);
+        Assert.Single(factory.Handler.Sent, r => r.Method == HttpMethod.Delete);
+    }
+
+    [Fact]
+    public async Task Delete_of_the_seeded_patient_is_a_403_problem()
+    {
+        // Arrange
+        using var factory = new FhirApiFactory();
+        using var client = factory.CreateClient();
+
+        // Act
+        var response = await client.SendAsync(Write(HttpMethod.Delete, "/api/fhir/patients/mvc-programmer"), Ct);
+
+        // Assert
+        await AssertProblem(response, HttpStatusCode.Forbidden, "read-only");
+        Assert.Empty(factory.Handler.Requests);
+    }
+
+    [Fact]
+    public async Task Write_budget_is_separate_from_the_read_budget()
+    {
+        // Arrange
+        using var factory = new FhirApiFactory(new Dictionary<string, string> { ["Fhir:WriteRateLimitBudget"] = "1" });
+        factory.Handler.On(HttpMethod.Get, "/Patient/1842", Created());
+        factory.Handler.On(HttpMethod.Put, "/Patient/1842", (request, _, ct) => Echo(request, ct));
+        factory.Handler.On(HttpMethod.Get, "/Patient?", Fixtures.Searchset([]));
+        using var client = factory.CreateClient();
+
+        // Act
+        var first = await client.SendAsync(Write(HttpMethod.Put, "/api/fhir/patients/1842", INPUT), Ct);
+        var second = await client.SendAsync(Write(HttpMethod.Put, "/api/fhir/patients/1842", INPUT), Ct);
+        var read = await client.GetAsync("/api/fhir/patients?family=A", Ct);
+
+        // Assert
+        Assert.Equal(HttpStatusCode.OK, first.StatusCode);
+        var problem = await AssertProblem(second, HttpStatusCode.TooManyRequests, "rate-limited");
+        Assert.Contains("1 writes", problem.GetProperty("detail").GetString());
+        Assert.Equal(HttpStatusCode.OK, read.StatusCode);
+    }
+
+    [Fact]
+    public async Task Create_when_the_sandbox_is_down_is_a_502_problem()
+    {
+        // Arrange
+        using var factory = new FhirApiFactory();
+        factory.Handler.On(HttpMethod.Get, "/Patient?_summary=count", Fixtures.CountOnly(0));
+        factory.Handler.OnServerError("/Patient");
+        using var client = factory.CreateClient();
+
+        // Act
+        var response = await client.SendAsync(Write(HttpMethod.Post, "/api/fhir/patients", INPUT, key: KEY), Ct);
+
+        // Assert
+        await AssertProblem(response, HttpStatusCode.BadGateway, "upstream-unavailable");
+        Assert.Equal("no-store", response.Headers.CacheControl?.ToString());
+    }
+
+    /// <summary>Answers a PUT with the resource it was sent, as the sandbox does.</summary>
+    private static async Task<HttpResponseMessage> Echo(HttpRequestMessage request, CancellationToken ct)
+    {
+        var body = await request.Content!.ReadAsStringAsync(ct);
+        return new HttpResponseMessage(HttpStatusCode.OK)
+        {
+            Content = new StringContent(body, System.Text.Encoding.UTF8, "application/fhir+json"),
+        };
     }
 
     #endregion

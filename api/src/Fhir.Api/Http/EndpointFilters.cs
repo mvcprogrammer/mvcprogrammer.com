@@ -77,3 +77,63 @@ public sealed class UpstreamProblemFilter : IEndpointFilter
         }
     }
 }
+
+/// <summary>Answers 429 with Retry-After once an address has used its write budget, which is separate from, and smaller than, the read budget.</summary>
+public sealed class WriteRateLimitFilter([FromKeyedServices(WriteRateLimitFilter.LIMITER_KEY)] RateLimiter limiter) : IEndpointFilter
+{
+    /// <summary>The DI key of the write limiter.</summary>
+    public const string LIMITER_KEY = "write";
+
+    public async ValueTask<object?> InvokeAsync(EndpointFilterInvocationContext context, EndpointFilterDelegate next)
+    {
+        ArgumentNullException.ThrowIfNull(context);
+        ArgumentNullException.ThrowIfNull(next);
+
+        var http = context.HttpContext;
+        if (!limiter.TryAcquire(ClientAddress.Of(http), out var retryAfter))
+        {
+            return Problems.RateLimited(
+                http,
+                $"This address has made {limiter.Budget} writes in the last {(int)limiter.Window.TotalMinutes} minutes. Try again in {retryAfter} seconds.",
+                retryAfter);
+        }
+
+        return await next(context);
+    }
+}
+
+/// <summary>Turns the write exceptions into the problem responses promised in openapi.yaml. Sits inside <see cref="UpstreamProblemFilter"/>, which handles the upstream ones.</summary>
+public sealed class WriteProblemFilter(IOptions<FhirOptions> options) : IEndpointFilter
+{
+    public async ValueTask<object?> InvokeAsync(EndpointFilterInvocationContext context, EndpointFilterDelegate next)
+    {
+        ArgumentNullException.ThrowIfNull(context);
+        ArgumentNullException.ThrowIfNull(next);
+
+        try
+        {
+            return await next(context);
+        }
+        catch (PatientValidationException ex)
+        {
+            return Problems.ValidationFailed(context.HttpContext, ex.Errors);
+        }
+        catch (DemoPatientReadOnlyException ex)
+        {
+            return Problems.ReadOnly(context.HttpContext, "Demo patient is read-only", ex.Message);
+        }
+        catch (WritablePatientNotFoundException ex)
+        {
+            context.HttpContext.Response.Headers.CacheControl = "no-store";
+            return Problems.NotFound(context.HttpContext, "Patient not found", ex.Message);
+        }
+        catch (PatchConflictException ex)
+        {
+            return Problems.Conflict(context.HttpContext, "Patch not applied", ex.Message);
+        }
+        catch (SessionCapExceededException ex)
+        {
+            return Problems.RateLimited(context.HttpContext, ex.Message, options.Value.RateLimitWindowSeconds);
+        }
+    }
+}

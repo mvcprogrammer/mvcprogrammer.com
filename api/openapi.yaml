@@ -2,7 +2,7 @@ openapi: 3.1.0
 
 info:
   title: mvcprogrammer.com API
-  version: 1.2.0
+  version: 1.3.0
   summary: "APIs behind mvcprogrammer.com: the Experience section and the FHIR R4 patient explorer."
   description: |
     Two small, public functions served same-origin under `/api`.
@@ -41,7 +41,7 @@ info:
       the admin API ships; they will require an API key.
     - FHIR writes (`POST`, `PUT`, `PATCH`, `DELETE` on patients) are open to visitors of the
       explorer, because the sandbox holds synthetic data only, under a demo guard enforced in
-      the function (specified in 1.2.0, stubbed to `501` until the write slice ships):
+      the function (specified in 1.2.0, implemented in 1.3.0):
       - The seeded demo patient is read-only.
       - A visitor can only change or delete a patient the explorer created in the same
         session. The explorer mints a session token, sends it as `X-Demo-Session`, and every
@@ -130,7 +130,7 @@ paths:
       tags: [Admin]
       operationId: createPosition
       summary: Create a position (stub)
-      description: Stores a new position under the id in the body. Currently answers `501`.
+      description: Stores a new position under the id in the body.
       security:
         - ApiKey: []
       requestBody:
@@ -205,7 +205,7 @@ paths:
       tags: [Admin]
       operationId: updatePosition
       summary: Replace a position (stub)
-      description: Full replacement of the position at `positionId`. Currently answers `501`.
+      description: Full replacement of the position at `positionId`.
       security:
         - ApiKey: []
       parameters:
@@ -240,7 +240,7 @@ paths:
       tags: [Admin]
       operationId: deletePosition
       summary: Delete a position (stub)
-      description: Removes the position at `positionId`. Currently answers `501`.
+      description: Removes the position at `positionId`.
       security:
         - ApiKey: []
       parameters:
@@ -380,13 +380,12 @@ paths:
     post:
       tags: [FHIR]
       operationId: createPatient
-      summary: Create a demo patient (stub)
+      summary: Create a demo patient
       description: |
         Creates a `Patient` on the sandbox from the body, tagged with the visitor's session
         token and the idempotency key as identifiers, and returns the demographics the summary
         would show plus the upstream trace. The create is conditional on the idempotency key,
         so repeating the request returns the patient already made with `200` instead of `201`.
-        Currently answers `501`.
       parameters:
         - $ref: '#/components/parameters/DemoSession'
         - $ref: '#/components/parameters/IdempotencyKey'
@@ -431,8 +430,6 @@ paths:
           $ref: '#/components/responses/WriteRateLimited'
         '500':
           $ref: '#/components/responses/InternalError'
-        '501':
-          $ref: '#/components/responses/FhirNotImplemented'
         '502':
           $ref: '#/components/responses/UpstreamUnavailable'
         '504':
@@ -442,14 +439,13 @@ paths:
     put:
       tags: [FHIR]
       operationId: replacePatient
-      summary: Replace a demo patient (stub)
+      summary: Replace a demo patient
       description: |
         Full replacement of the patient's demographics: every field of `PatientInput` is
         written and anything omitted is cleared. The session-token and idempotency
         identifiers are kept by the function, never by the caller. Only a patient created by
         the same session can be replaced; the seeded demo patient answers `403`, and any
         other id answers `404`. Idempotent: repeating the request leaves the same resource.
-        Currently answers `501`.
       parameters:
         - $ref: '#/components/parameters/PatientId'
         - $ref: '#/components/parameters/DemoSession'
@@ -482,8 +478,6 @@ paths:
           $ref: '#/components/responses/WriteRateLimited'
         '500':
           $ref: '#/components/responses/InternalError'
-        '501':
-          $ref: '#/components/responses/FhirNotImplemented'
         '502':
           $ref: '#/components/responses/UpstreamUnavailable'
         '504':
@@ -492,7 +486,7 @@ paths:
     patch:
       tags: [FHIR]
       operationId: patchPatient
-      summary: Change part of a demo patient (stub)
+      summary: Change part of a demo patient
       description: |
         Applies a JSON Patch (RFC 6902) to the patient's `PatientInput` view and writes the
         result back, so a caller can change one field without resending the rest. Paths are
@@ -500,7 +494,6 @@ paths:
         `/mrn`); any other path, or a `test` operation that fails, answers `409`. The same
         guard as `PUT` applies. Not idempotent in general (`add` to a missing field then
         `remove` is), so the explorer disables the button while a patch is in flight.
-        Currently answers `501`.
       parameters:
         - $ref: '#/components/parameters/PatientId'
         - $ref: '#/components/parameters/DemoSession'
@@ -537,8 +530,6 @@ paths:
           $ref: '#/components/responses/WriteRateLimited'
         '500':
           $ref: '#/components/responses/InternalError'
-        '501':
-          $ref: '#/components/responses/FhirNotImplemented'
         '502':
           $ref: '#/components/responses/UpstreamUnavailable'
         '504':
@@ -547,11 +538,11 @@ paths:
     delete:
       tags: [FHIR]
       operationId: deletePatient
-      summary: Delete a demo patient (stub)
+      summary: Delete a demo patient
       description: |
         Deletes the patient on the sandbox. The same guard as `PUT` applies. Idempotent:
         deleting a patient this session already deleted answers `204` again, as the sandbox
-        reports the resource gone rather than missing. Currently answers `501`.
+        reports the resource gone rather than missing.
       parameters:
         - $ref: '#/components/parameters/PatientId'
         - $ref: '#/components/parameters/DemoSession'
@@ -571,8 +562,6 @@ paths:
           $ref: '#/components/responses/WriteRateLimited'
         '500':
           $ref: '#/components/responses/InternalError'
-        '501':
-          $ref: '#/components/responses/FhirNotImplemented'
         '502':
           $ref: '#/components/responses/UpstreamUnavailable'
         '504':
@@ -966,18 +955,6 @@ components:
             status: 501
             detail: Write operations are part of the admin API, which has not shipped yet.
             instance: /api/experience
-    FhirNotImplemented:
-      description: The operation is specified but not built yet.
-      content:
-        application/problem+json:
-          schema:
-            $ref: '#/components/schemas/Problem'
-          example:
-            type: https://mvcprogrammer.com/api/problems/not-implemented
-            title: Not implemented
-            status: 501
-            detail: Patient writes are specified and arrive with the explorer's next release.
-            instance: /api/fhir/patients
     ValidationFailed:
       description: A header is missing or malformed, or the body fails validation. `errors` names each field.
       content:

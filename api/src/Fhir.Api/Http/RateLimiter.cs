@@ -15,16 +15,32 @@ public sealed class RateLimiter
     private const int MAX_TRACKED_ADDRESSES = 10_000;
 
     private readonly ConcurrentDictionary<string, Queue<long>> _stamps = new(StringComparer.Ordinal);
-    private readonly FhirOptions _options;
+    private readonly int _budget;
+    private readonly TimeSpan _window;
     private readonly TimeProvider _time;
 
+    /// <summary>The read limiter: the options' request budget and window.</summary>
     public RateLimiter(IOptions<FhirOptions> options, TimeProvider time)
+        : this(budget: Value(options).RateLimitBudget, window: Value(options).RateLimitWindow, time)
     {
-        ArgumentNullException.ThrowIfNull(options);
+    }
+
+    /// <summary>A limiter with its own budget over the given window; the write limiter is built this way.</summary>
+    public RateLimiter(int budget, TimeSpan window, TimeProvider time)
+    {
+        ArgumentOutOfRangeException.ThrowIfLessThan(budget, 1);
+        ArgumentOutOfRangeException.ThrowIfLessThanOrEqual(window, TimeSpan.Zero);
         ArgumentNullException.ThrowIfNull(time);
-        _options = options.Value;
+        _budget = budget;
+        _window = window;
         _time = time;
     }
+
+    /// <summary>The budget this limiter enforces, for the problem detail.</summary>
+    public int Budget => _budget;
+
+    /// <summary>The window this limiter enforces, for the problem detail.</summary>
+    public TimeSpan Window => _window;
 
     /// <summary>Records the request and says whether it is within budget. When it is not, <paramref name="retryAfterSeconds"/> is how long until the oldest stamp leaves the window.</summary>
     public bool TryAcquire(string address, out int retryAfterSeconds)
@@ -32,7 +48,7 @@ public sealed class RateLimiter
         ArgumentException.ThrowIfNullOrWhiteSpace(address);
 
         var now = _time.GetUtcNow().ToUnixTimeMilliseconds();
-        var windowMs = (long)_options.RateLimitWindow.TotalMilliseconds;
+        var windowMs = (long)_window.TotalMilliseconds;
         var queue = _stamps.GetOrAdd(address, _ => new Queue<long>());
         lock (queue)
         {
@@ -41,7 +57,7 @@ public sealed class RateLimiter
                 queue.Dequeue();
             }
 
-            if (queue.Count >= _options.RateLimitBudget)
+            if (queue.Count >= _budget)
             {
                 retryAfterSeconds = (int)Math.Max(1, Math.Ceiling((windowMs - (now - queue.Peek())) / 1000.0));
                 return false;
@@ -57,6 +73,12 @@ public sealed class RateLimiter
 
         retryAfterSeconds = 0;
         return true;
+    }
+
+    private static FhirOptions Value(IOptions<FhirOptions> options)
+    {
+        ArgumentNullException.ThrowIfNull(options);
+        return options.Value;
     }
 
     private void Prune(long now, long windowMs)

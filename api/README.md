@@ -89,8 +89,8 @@ request is answered from the sandbox, mapped at the boundary into the small DTOs
 api/src/Fhir.Api/
   Program.cs                Minimal API host, same shape as the Experience one.
   Configuration/            FhirOptions: base URL, page cap, page sizes, timeouts, retry, rate limit, capability TTL.
-  Endpoints/                /api/fhir/patients (GET, and POST stubbed), .../{id} (PUT, PATCH, DELETE stubbed), .../{id}/summary,
-                            .../{id}/raw, /api/fhir/capability, /api/fhir/health.
+  Endpoints/                /api/fhir/patients (GET, POST), .../{id} (PUT, PATCH, DELETE), .../{id}/summary, .../{id}/raw,
+                            /api/fhir/capability, /api/fhir/health.
   Fhir/                     IFhirGateway over a Firely FhirClient: read, search with paging, _summary=count, metadata;
                             UpstreamNotFound / UpstreamUnavailable / UpstreamTimeout; CapabilityCache.
   Services/                 PatientExplorerService: the Patient first, then four bounded searches concurrently.
@@ -116,12 +116,16 @@ wiped or down. `FHIR_SOURCE_NAME` is the label the trace carries.
 
 ## Design notes
 
-- **Writes, spec first.** `openapi.yaml` 1.2.0 specifies `POST /fhir/patients` and `PUT`, `PATCH`
-  (JSON Patch), and `DELETE` on `/fhir/patients/{id}`, open to visitors of the explorer under a demo
-  guard the function enforces: the seeded patient is read-only, a session can only change what it
-  created (an identifier carries the `X-Demo-Session` token), creates are idempotent through a
-  conditional create on `Idempotency-Key`, and writes have their own budget. The routes exist and
-  answer `501` until the write slice (#144) lands.
+- **Writes under a demo guard.** `POST /fhir/patients` and `PUT`, `PATCH` (JSON Patch), and `DELETE`
+  on `/fhir/patients/{id}` are open to visitors of the explorer (specified in `openapi.yaml` 1.2.0,
+  built in 1.3.0). `PatientWriteService` enforces the guard: the seeded patient is read-only (403), a
+  session can only change what it created (every created patient carries the `X-Demo-Session` token
+  as an identifier; anything else is 404, so other records cannot be probed), creates are idempotent
+  through a FHIR conditional create on `Idempotency-Key` (a repeat answers 200), and writes have their
+  own per-address budget plus a cap of patients per session (429). `PatientInput` is the only shape
+  that reaches the sandbox; the patch applier (`PatientPatchApplier`) covers the six RFC 6902
+  operations over its five fields in-house, since a general JSON Patch library would need a mutable
+  model and brings nothing the five scalar paths need.
 - **The function is the boundary.** The browser never talks to the sandbox. Resources are parsed
   by the Firely SDK (`Hl7.Fhir.R4`) into typed objects and mapped to DTOs; only the raw-bundle
   endpoint passes FHIR JSON through, as a `collection` Bundle of what the summary fetched.
