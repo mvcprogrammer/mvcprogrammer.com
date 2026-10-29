@@ -65,8 +65,9 @@ export function ColophonSection() {
               an effect, and renders the iframe only while it is open, so the explorer and the C#
               Lambda behind it load only when a visitor asks. The function reads a public sandbox of
               synthetic records through the Firely SDK, maps the resources to small DTOs, and reports
-              every upstream call so the explorer can show what happened. Nothing is stored, and no
-              real patient data is involved.
+              every upstream call so the explorer can show what happened; its write side creates,
+              replaces, patches, and deletes demo patients under a guard tied to the visitor's
+              session. Nothing is stored, and no real patient data is involved.
             </dd>
           </div>
           <div className="colophon-item">
