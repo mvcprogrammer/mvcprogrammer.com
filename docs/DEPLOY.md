@@ -903,7 +903,7 @@ origin list and the Experience API's permissions are untouched.
 | Piece | Value |
 | --- | --- |
 | CloudFront distribution | `E2IFX9QJTIW1A4` (dpnwjccnpnc2d.cloudfront.net), origin path `/fhir`, same S3 OAC `E2KEES7ZY0UA4S`, the `fhir-api` origin with its OAC `E3OMK0SCVK2C13` behind `/api/fhir/*`, 403 → `/index.html` 200, standard logging to the `fhir/` prefix |
-| Response headers policy | `mvcprogrammer-fhir-headers` (`<FHIR_HEADERS_POLICY_ID>`): the site's policy with `frame-ancestors https://mvcprogrammer.com https://blazor.mvcprogrammer.com https://angular.mvcprogrammer.com https://react.mvcprogrammer.com` instead of `'none'`, no `X-Frame-Options`, and `connect-src 'self'` only, so the editions' demo dialog can frame the explorer and nothing else can (#142) |
+| Response headers policy | `mvcprogrammer-fhir-headers` (`337bb8ed-9a38-44c5-945f-78ef345a7c1f`): the site's policy with `frame-ancestors https://mvcprogrammer.com https://blazor.mvcprogrammer.com https://angular.mvcprogrammer.com https://react.mvcprogrammer.com` instead of `'none'`, no `X-Frame-Options`, and `connect-src 'self'` only, so the editions' demo dialog can frame the explorer and nothing else can (#142) |
 | ACM certificate | `arn:aws:acm:us-east-1:334383610383:certificate/1f36a56c-f631-4942-9ff1-54cf8b4dc7dd` (fhir.mvcprogrammer.com, DNS-validated) |
 | Route 53 | A and AAAA aliases for `fhir.mvcprogrammer.com` to the distribution |
 | Bucket policy | the `AWS:SourceArn` condition lists every distribution (six with this one) |
