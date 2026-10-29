@@ -26,7 +26,7 @@ if (dryRun)
 {
     foreach (var p in positions)
     {
-        Console.WriteLine($"  {PositionMapper.SortKeyPrefix}{p.Id}  {p.StartDate} .. {p.EndDate ?? "present"}  {p.Title} @ {p.Organization}  ({p.Skills.Count} skills)");
+        Console.WriteLine($"  {PositionMapper.SORT_KEY_PREFIX}{p.Id}  {p.StartDate} .. {p.EndDate ?? "present"}  {p.Title} @ {p.Organization}  ({p.Skills.Count} skills)");
     }
 
     return 0;

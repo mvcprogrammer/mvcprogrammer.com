@@ -26,7 +26,7 @@ public class ApiTests : IClassFixture<WebApplicationFactory<Program>>
         Assert.Equal(HttpStatusCode.OK, response.StatusCode);
         Assert.Equal("application/json", response.Content.Headers.ContentType?.MediaType);
         Assert.NotNull(response.Headers.ETag);
-        Assert.Equal(CacheableJson.CacheControl, response.Headers.CacheControl?.ToString());
+        Assert.Equal(CacheableJson.CACHE_CONTROL, response.Headers.CacheControl?.ToString());
 
         var list = await response.Content.ReadFromJsonAsync<PositionList>(ApiJson.Options, Ct);
         Assert.NotNull(list);
