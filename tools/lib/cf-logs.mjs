@@ -14,8 +14,8 @@ import { gunzipSync } from 'node:zlib';
 /** The zone days are cut on: the site's owner reads the report in Tampa Bay, and the dashboard labels agree with it. */
 export const TIME_ZONE = 'America/New_York';
 
-/** Log prefixes in the bucket, one per distribution: the main site, then the three framework editions. */
-export const DEFAULT_PREFIXES = ['cf/', 'blazor/', 'angular/', 'react/'];
+/** Log prefixes in the bucket, one per distribution: the main site, the three framework editions, and the patient explorer. */
+export const DEFAULT_PREFIXES = ['cf/', 'blazor/', 'angular/', 'react/', 'fhir/'];
 
 /** A visitor that sends no further request within this many minutes has left. */
 export const SESSION_GAP_MINUTES = 30;

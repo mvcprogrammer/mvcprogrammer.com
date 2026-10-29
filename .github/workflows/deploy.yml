@@ -179,6 +179,59 @@ jobs:
             --distribution-id "${ANGULAR_DISTRIBUTION_ID}" \
             --paths "/*"
 
+  deploy-fhir:
+    name: Build and deploy the FHIR explorer
+    needs: test
+    runs-on: ubuntu-24.04
+    env:
+      FHIR_DISTRIBUTION_ID: ${{ vars.FHIR_DISTRIBUTION_ID }}
+    defaults:
+      run:
+        working-directory: fhir
+    steps:
+      - name: Check out
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - name: Set up Node
+        uses: actions/setup-node@a0853c24544627f65ddf259abe73b1d18a591444 # v5.0.0
+        with:
+          node-version: 24
+          cache: npm
+          cache-dependency-path: fhir/package-lock.json
+
+      - name: Install
+        run: npm ci
+
+      # The prebuild script copies the shared stylesheet, theme script, icons, fonts, and images from the repository root.
+      - name: Build
+        run: npm run build
+
+      - name: Configure AWS credentials (OIDC)
+        uses: aws-actions/configure-aws-credentials@e1253824e5c10ff9df46874f81ed3ec929e19cfd # v6.3.0
+        with:
+          role-to-assume: ${{ secrets.AWS_ROLE_ARN }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      # The bundles carry a content hash in their names and can be cached for a long time; index.html
+      # and the shared files get the short browser TTL. CloudFront compresses on the fly.
+      - name: Sync fingerprinted bundles (long browser TTL)
+        run: |
+          aws s3 sync dist/fhir-explorer/browser/ "s3://${S3_BUCKET}/fhir/" --delete \
+            --cache-control "public, max-age=604800, s-maxage=31536000, immutable" \
+            --exclude "*" --include "main-*.js" --include "polyfills-*.js" --include "chunk-*.js" --include "fhir-*.css"
+
+      - name: Sync everything else (short browser TTL)
+        run: |
+          aws s3 sync dist/fhir-explorer/browser/ "s3://${S3_BUCKET}/fhir/" --delete \
+            --cache-control "public, max-age=300, s-maxage=31536000" \
+            --exclude "main-*.js" --exclude "polyfills-*.js" --exclude "chunk-*.js" --exclude "fhir-*.css"
+
+      - name: Invalidate CloudFront
+        run: |
+          aws cloudfront create-invalidation \
+            --distribution-id "${FHIR_DISTRIBUTION_ID}" \
+            --paths "/*"
+
   deploy-react:
     name: Build and deploy the React edition
     needs: test

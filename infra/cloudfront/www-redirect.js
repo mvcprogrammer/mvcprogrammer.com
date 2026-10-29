@@ -4,9 +4,9 @@
 //   2. Answer the engagement beacon (GET /ping?e=view&s=<section> and /ping?e=leave&t=<seconds>, sent by
 //      main.js and its Blazor and Angular mirrors) with an empty 204 at the edge. The request is still
 //      written to the access logs, which is all tools/cf-stats.mjs needs; nothing reaches S3.
-//   3. Send the FHIR patient explorer's old URL, /fhir (with or without a trailing slash), to the FHIR API
-//      card on the home page with a 301. The explorer lived at /fhir from 2026-10-20 to 2026-10-21; the
-//      card's accordion opens itself when the URL carries #fhir-api.
+//   3. Send /fhir (with or without a trailing slash) to the patient explorer's own host with a 301. The
+//      explorer lived at /fhir from 2026-10-20 to 2026-10-21, then inside the FHIR API card until the
+//      fhir.mvcprogrammer.com app took it over (#125, 2026-10).
 // Deploy: see docs/DEPLOY.md, section 4b.
 function handler(event) {
   var request = event.request;
@@ -29,7 +29,7 @@ function handler(event) {
     return {
       statusCode: 301,
       statusDescription: 'Moved Permanently',
-      headers: { location: { value: 'https://mvcprogrammer.com/#fhir-api' } }
+      headers: { location: { value: 'https://fhir.mvcprogrammer.com/' } }
     };
   }
   return request;
