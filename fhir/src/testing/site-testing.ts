@@ -1,7 +1,9 @@
 import { Provider } from '@angular/core';
 import { SITE_OPTIONS, SiteOptions } from '../app/configurations/site-options';
+import { DemoSession } from '../app/interfaces/demo-session';
 import { EngagementTracker } from '../app/interfaces/engagement-tracker';
 import { FhirClient } from '../app/interfaces/fhir-client';
+import { FakeDemoSession } from './fake-demo-session';
 import { FakeEngagementTracker } from './fake-engagement-tracker';
 import { FakeFhirClient } from './fake-fhir-client';
 
@@ -14,19 +16,23 @@ export const TEST_SITE_OPTIONS: SiteOptions = {
 /** The fakes a test registers through createSiteTestServices(). */
 export interface SiteTestServices {
   readonly fhir: FakeFhirClient;
+  readonly session: FakeDemoSession;
   readonly engagement: FakeEngagementTracker;
   readonly providers: Provider[];
 }
 
-/** Builds the test options and the fakes for the FHIR client and the tracker, with their providers. */
+/** Builds the test options and the fakes for the FHIR client, the session, and the tracker, with their providers. */
 export function createSiteTestServices(): SiteTestServices {
   const fhir = new FakeFhirClient();
+  const session = new FakeDemoSession();
   const engagement = new FakeEngagementTracker();
   return {
     fhir,
+    session,
     engagement,
     providers: [
       { provide: SITE_OPTIONS, useValue: TEST_SITE_OPTIONS },
+      { provide: DemoSession, useValue: session },
       { provide: FhirClient, useValue: fhir },
       { provide: EngagementTracker, useValue: engagement },
     ],

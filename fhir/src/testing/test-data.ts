@@ -5,7 +5,10 @@ import { FhirResponse } from '../app/models/fhir-response';
 import { PatientListItem } from '../app/models/patient-list-item';
 import { PatientSearchResult } from '../app/models/patient-search-result';
 import { PatientSummary } from '../app/models/patient-summary';
+import { PatientWriteResult } from '../app/models/patient-write-result';
 import { Trace } from '../app/models/trace';
+import { PatientInput } from '../app/requests/patient-input';
+import { FakeDemoSession } from './fake-demo-session';
 
 /** A FHIR API answer around a body; override the response facts the test cares about. */
 export function createFhirResponse<T>(body: T, overrides: Partial<Omit<FhirResponse<T>, 'body'>> = {}): FhirResponse<T> {
@@ -107,5 +110,48 @@ export function createCapabilitySubset(overrides: Partial<CapabilitySubset> = {}
       { type: 'Encounter', supported: true, searchParams: [{ name: 'patient', supported: true }] },
     ],
     ...overrides,
+  };
+}
+
+/** A patient summary for a patient this session created: the demo-session identifier carries the fake session's token. */
+export function createOwnPatientSummary(id = 'mine-1'): PatientSummary {
+  const summary = createPatientSummary();
+  return {
+    ...summary,
+    patient: {
+      ...summary.patient,
+      id,
+      identifiers: [
+        ...summary.patient.identifiers,
+        { system: 'https://mvcprogrammer.com/fhir/demo-session', value: FakeDemoSession.TOKEN },
+        { system: 'https://mvcprogrammer.com/fhir/idempotency', value: '0c9b8a7d-6e5f-4a3b-8c2d-000000000001' },
+      ],
+    },
+  };
+}
+
+/** What a write returns for the given input, as the function maps it: demographics plus a one-request trace. */
+export function createPatientWriteResult(input: PatientInput, id = 'new-1'): PatientWriteResult {
+  const given = input.givenName && input.givenName.trim() !== '' ? input.givenName.trim() : undefined;
+  return {
+    patient: {
+      id,
+      name: given ? `${input.familyName}, ${given}` : input.familyName,
+      familyName: input.familyName,
+      givenName: given,
+      initials: ((given?.charAt(0) ?? '') + input.familyName.charAt(0)).toUpperCase(),
+      sex: input.sex,
+      birthDate: input.birthDate,
+      mrn: input.mrn,
+      identifiers: [
+        ...(input.mrn ? [{ system: 'https://mvcprogrammer.com/fhir/mrn', value: input.mrn, type: 'MR' }] : []),
+        { system: 'https://mvcprogrammer.com/fhir/demo-session', value: FakeDemoSession.TOKEN },
+        { system: 'https://mvcprogrammer.com/fhir/idempotency', value: '0c9b8a7d-6e5f-4a3b-8c2d-000000000001' },
+      ],
+    },
+    trace: createTrace({
+      requests: [{ method: 'POST', url: 'https://hapi.fhir.org/baseR4/Patient', status: 201, durationMs: 180, entries: 1, pages: 1 }],
+      totalDurationMs: 180,
+    }),
   };
 }

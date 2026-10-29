@@ -18,12 +18,16 @@ fhir/
   src/app/app.config.ts         Router, global error listeners, and provideSite() with the API base and the site URL.
   src/app/app.routes.ts         "" is the explorer page; everything else is NotFound.
   src/app/pages/                Explorer (the one page; starts the engagement tracker) and NotFound.
-  src/app/components/           The explorer, the header (brand back to the site, theme toggle), footer, icon and sprite, social links.
+  src/app/components/           The explorer (search, summary, the edit panel for the four writes, the log), the header (brand
+                                back to the site, theme toggle), footer, icon and sprite, social links.
   src/app/configurations/       SiteOptions and its injection token.
-  src/app/interfaces/           FhirClient and EngagementTracker: abstract classes that double as injection tokens.
-  src/app/services/             HttpFhirClient over HttpClient, and the beacon tracker (GET /ping, mirrored from ../main.js).
+  src/app/interfaces/           FhirClient, DemoSession (the session token and idempotency keys), and EngagementTracker: abstract
+                                classes that double as injection tokens.
+  src/app/services/             HttpFhirClient over HttpClient (reads and writes), BrowserDemoSession (sessionStorage), and the beacon
+                                tracker (GET /ping, mirrored from ../main.js).
   src/app/providers/            provideSite(): validates the options and registers everything above.
-  src/app/models/, requests/    Interfaces matching the FHIR section of ../api/openapi.yaml.
+  src/app/models/, requests/    Interfaces matching the FHIR section of ../api/openapi.yaml, PatientInput and the JSON Patch
+                                operation among them.
   src/app/enumerations/         ClinicalStatus and Sex.
   src/app/exceptions/           FhirProblemError, built from an RFC 9457 problem response.
   src/app/validators/           notBlank, for the family-name field.
@@ -57,6 +61,13 @@ npm test                               # run the suite once (Vitest on jsdom)
 npm run test:watch                     # re-run on change
 npx ng test --watch=false --filter "FhirExplorer"       # one suite or test by name
 ```
+
+The edit panel is the write side of the demo. Every write carries the session token (`X-Demo-Session`,
+a UUID kept in `sessionStorage` for the life of the tab), a create carries an idempotency key the
+explorer reuses until the create succeeds, and a patch is built as a JSON Patch of the fields that
+changed since the patient was loaded, each guarded by a `test` of the old value. The function decides
+what is allowed: the seeded patient is read-only, and only a patient this session created can be
+replaced, patched, or deleted. The panel says which case the selected patient is.
 
 The dev server has no `/api`, so the capability check fails and the explorer says so in its log.
 Serve the build output behind the real CloudFront behaviors (or any host that proxies `/api/fhir`)

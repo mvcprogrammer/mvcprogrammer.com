@@ -1,25 +1,31 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { FhirProblemError } from '../../exceptions/fhir-problem-error';
 import { FhirExplorer } from './fhir-explorer';
+import { Sex } from '../../enumerations/sex';
 import { createSiteTestServices, textOf, type } from '../../../testing/site-testing';
+import { FakeDemoSession } from '../../../testing/fake-demo-session';
 import { FakeFhirClient } from '../../../testing/fake-fhir-client';
 import {
   createCapabilitySubset,
   createEmptyPatientSearchResult,
   createFhirResponse,
+  createOwnPatientSummary,
   createPatientListItem,
   createPatientSearchResult,
   createPatientSummary,
+  createPatientWriteResult,
 } from '../../../testing/test-data';
 
 describe('FhirExplorer', () => {
   let client: FakeFhirClient;
+  let session: FakeDemoSession;
   let fixture: ComponentFixture<FhirExplorer>;
   let host: HTMLElement;
 
   beforeEach(async () => {
     const services = createSiteTestServices();
     client = services.fhir;
+    session = services.session;
     await TestBed.configureTestingModule({ imports: [FhirExplorer], providers: services.providers }).compileComponents();
   });
 
@@ -451,6 +457,263 @@ describe('FhirExplorer', () => {
     });
   });
 
+  describe('edit panel', () => {
+    it('should start with nothing selected and the form empty, create enabled, the other verbs disabled', async () => {
+      // Act
+      await render();
+
+      // Assert
+      expect(target().textContent).toBe(FhirExplorer.EDIT_NONE_MESSAGE);
+      expect(editField('familyName').value).toBe('');
+      expect(button('fhir-create').disabled).toBe(false);
+      expect(button('fhir-replace').disabled).toBe(true);
+      expect(button('fhir-patch').disabled).toBe(true);
+      expect(button('fhir-delete').disabled).toBe(true);
+      expect(host.querySelector('.fhir-edit-lead')?.textContent).toBe(FhirExplorer.EDIT_LEAD);
+    });
+
+    it('should fill the form from a loaded summary and call another session\'s patient read-only here', async () => {
+      // Arrange
+      await render();
+
+      // Act
+      submit();
+      await fixture.whenStable();
+
+      // Assert
+      expect(editField('familyName').value).toBe('Watsica258');
+      expect(editField('givenName').value).toBe('Kimi714');
+      expect((host.querySelector('#fhir-edit-sex') as HTMLSelectElement).value).toBe('female');
+      expect(editField('birthDate').value).toBe('1963-03-02');
+      expect(editField('mrn').value).toBe('eed8a921');
+      expect(target().textContent).toContain('Patient/78785 was not created in this session');
+      expect(target().classList.contains('is-mine')).toBe(false);
+      expect(button('fhir-replace').disabled).toBe(true);
+    });
+
+    it('should call the seeded patient read-only and enable the verbs for a patient this session created', async () => {
+      // Arrange
+      client.onSearchPatients = () => Promise.resolve(createFhirResponse(createPatientSearchResult(createPatientListItem({ id: 'mvc-programmer' }), createPatientListItem({ id: 'mine-1' }))));
+      client.onGetSummary = (id) => Promise.resolve(createFhirResponse(id === 'mine-1' ? createOwnPatientSummary() : { ...createPatientSummary(), patient: { ...createPatientSummary().patient, id } }));
+      await render();
+      submit();
+      await fixture.whenStable();
+
+      // Assert: the seed
+      expect(target().textContent).toContain('Patient/mvc-programmer is the seeded demo patient and is read-only here');
+      expect(button('fhir-delete').disabled).toBe(true);
+
+      // Act: select the session's own patient
+      (host.querySelector('.fhir-patient[data-id="mine-1"]') as HTMLButtonElement).click();
+      await fixture.whenStable();
+
+      // Assert
+      expect(target().textContent).toContain('Editing Patient/mine-1, created in this session');
+      expect(target().classList.contains('is-mine')).toBe(true);
+      expect(button('fhir-replace').disabled).toBe(false);
+      expect(button('fhir-delete').disabled).toBe(false);
+      // Nothing changed yet, so there is nothing to patch.
+      expect(button('fhir-patch').disabled).toBe(true);
+    });
+
+    it('should refuse to create without a family name or with a bad MRN, without calling the API', async () => {
+      // Arrange
+      await render();
+      type(editField('mrn'), 'has space');
+
+      // Act
+      editSubmit();
+      await fixture.whenStable();
+
+      // Assert
+      expect(host.querySelector('#fhir-edit-familyName-error')?.textContent).toBe(FhirExplorer.FAMILY_REQUIRED_MESSAGE);
+      expect(host.querySelector('#fhir-edit-mrn-error')?.textContent).toBe(FhirExplorer.EDIT_MRN_MESSAGE);
+      expect(client.creates).toEqual([]);
+    });
+
+    it('should create with the session\'s key, log the write, list and select the new patient, and renew the key', async () => {
+      // Arrange
+      await render();
+      client.onGetSummary = (id) => Promise.resolve(createFhirResponse(createOwnPatientSummary(id)));
+      type(editField('familyName'), 'Dickens');
+      type(editField('givenName'), 'Charles');
+      type(editField('mrn'), 'MVC-0042');
+
+      // Act
+      editSubmit();
+      await fixture.whenStable();
+
+      // Assert
+      const create = client.creates[0];
+      expect(create.input).toEqual({ familyName: 'Dickens', givenName: 'Charles', mrn: 'MVC-0042' });
+      expect(create.key).toBe(session.keys[0]);
+      expect(textOf(editStatus())).toContain('Created Patient/new-1');
+      expect(host.querySelector('.fhir-patient[data-id="new-1"] .fhir-patient-name')?.textContent).toBe('Dickens, Charles');
+      expect(client.summaryCalls).toEqual(['new-1']);
+      expect(target().textContent).toContain('Editing Patient/new-1');
+      const log = logText();
+      expect(log).toContain(`→ POST /api/fhir/patients · X-Demo-Session ${FakeDemoSession.TOKEN} · Idempotency-Key ${create.key}`);
+      expect(log).toContain('← 201 /patients');
+      expect(log).toContain('↳ POST https://hapi.fhir.org/baseR4/Patient');
+      expect(log).toContain('created Patient/new-1 · mapped to PatientWriteResult');
+
+      // Act: a second create takes a new key
+      editSubmit();
+      await fixture.whenStable();
+
+      // Assert
+      expect(client.creates[1].key).toBe(session.keys[1]);
+      expect(client.creates[1].key).not.toBe(create.key);
+    });
+
+    it('should reuse the key on a retry after a failure and show the function\'s field errors', async () => {
+      // Arrange
+      await render();
+      type(editField('familyName'), 'Dickens');
+      client.onCreatePatient = () =>
+        Promise.reject(new FhirProblemError('One or more fields are invalid.', 400, 'Validation failed', 30, null, false, { familyName: ['too long for the sandbox'] }));
+
+      // Act
+      editSubmit();
+      await fixture.whenStable();
+      editSubmit();
+      await fixture.whenStable();
+
+      // Assert
+      expect(client.creates).toHaveLength(2);
+      expect(client.creates[0].key).toBe(client.creates[1].key);
+      expect(textOf(editStatus())).toBe('One or more fields are invalid.');
+      expect(editStatus().classList.contains('is-error')).toBe(true);
+      expect(host.querySelector('#fhir-edit-familyName-error')?.textContent).toBe('too long for the sandbox');
+      expect(logText()).toContain('← 400 /patients: Validation failed');
+      expect(logText()).toContain('familyName: too long for the sandbox');
+    });
+
+    it('should say that the key had already created the patient on a 200', async () => {
+      // Arrange
+      await render();
+      client.onCreatePatient = (input) => Promise.resolve(createFhirResponse(createPatientWriteResult(input, 'again-1'), { status: 200, xCache: null, etag: null }));
+      client.onGetSummary = (id) => Promise.resolve(createFhirResponse(createOwnPatientSummary(id)));
+      type(editField('familyName'), 'Dickens');
+
+      // Act
+      editSubmit();
+      await fixture.whenStable();
+
+      // Assert
+      expect(textOf(editStatus())).toContain('had already been created with this key');
+      expect(logText()).toContain('already created by this key, returned Patient/again-1');
+    });
+
+    it('should replace the selected patient with the whole form and reload its summary', async () => {
+      // Arrange
+      await selectOwnPatient();
+      type(editField('givenName'), 'Chuck');
+      type(editField('mrn'), '');
+
+      // Act
+      button('fhir-replace').click();
+      await fixture.whenStable();
+
+      // Assert
+      const replace = client.replaces[0];
+      expect(replace.id).toBe('mine-1');
+      expect(replace.input).toEqual({ familyName: 'Watsica258', givenName: 'Chuck', sex: Sex.Female, birthDate: '1963-03-02' });
+      expect(textOf(editStatus())).toBe('Replaced Patient/mine-1.');
+      // The summary is not re-read; the card, the row, and the form follow the write result.
+      expect(client.summaryCalls).toEqual(['mine-1']);
+      expect(host.querySelector('#fhir-card-name')?.textContent).toBe('Watsica258, Chuck');
+      expect(host.querySelector('.fhir-patient[data-id="mine-1"] .fhir-patient-name')?.textContent).toBe('Watsica258, Chuck');
+      expect(editField('givenName').value).toBe('Chuck');
+      expect(button('fhir-patch').disabled).toBe(true);
+      expect(logText()).toContain(`→ PUT /api/fhir/patients/mine-1 · X-Demo-Session ${FakeDemoSession.TOKEN}`);
+    });
+
+    it('should patch only the changed fields, each guarded by a test of the old value', async () => {
+      // Arrange
+      await selectOwnPatient();
+      type(editField('givenName'), 'Chuck');
+      type(editField('mrn'), '');
+
+      // Act
+      fixture.detectChanges();
+      expect(button('fhir-patch').disabled).toBe(false);
+      button('fhir-patch').click();
+      await fixture.whenStable();
+
+      // Assert
+      const patch = client.patches[0];
+      expect(patch.id).toBe('mine-1');
+      expect(patch.operations).toEqual([
+        { op: 'test', path: '/givenName', value: 'Kimi714' },
+        { op: 'replace', path: '/givenName', value: 'Chuck' },
+        { op: 'test', path: '/mrn', value: 'eed8a921' },
+        { op: 'remove', path: '/mrn' },
+      ]);
+      expect(textOf(editStatus())).toBe('Patched Patient/mine-1.');
+      expect(logText()).toContain('→ PATCH /api/fhir/patients/mine-1 · application/json-patch+json');
+      expect(logText()).toContain('replace /givenName = "Chuck"');
+    });
+
+    it('should show a 409 from a patch as the status and leave the patient as it was', async () => {
+      // Arrange
+      await selectOwnPatient();
+      type(editField('givenName'), 'Chuck');
+      client.onPatchPatient = () => Promise.reject(new FhirProblemError("Operation 0 ('test' on /givenName) failed; the patient was not changed.", 409, 'Patch not applied', 40, null, false));
+      fixture.detectChanges();
+
+      // Act
+      button('fhir-patch').click();
+      await fixture.whenStable();
+
+      // Assert
+      expect(textOf(editStatus())).toContain('failed; the patient was not changed');
+      expect(client.summaryCalls).toEqual(['mine-1']);
+      expect(logText()).toContain('← 409 /patients/mine-1: Patch not applied');
+    });
+
+    it('should delete the selected patient, drop its row, clear the summary, and keep the form', async () => {
+      // Arrange
+      await selectOwnPatient();
+
+      // Act
+      button('fhir-delete').click();
+      await fixture.whenStable();
+
+      // Assert
+      expect(client.deletes).toEqual(['mine-1']);
+      expect(host.querySelector('.fhir-patient[data-id="mine-1"]')).toBeNull();
+      expect(host.querySelector('#fhir-summary-empty')?.textContent).toContain('Patient/mine-1 was deleted');
+      expect(target().textContent).toBe(FhirExplorer.EDIT_NONE_MESSAGE);
+      expect(editField('familyName').value).toBe('Watsica258');
+      expect(textOf(editStatus())).toBe('Deleted Patient/mine-1.');
+      expect(logText()).toContain('← 204 /patients/mine-1');
+    });
+
+    it('should show an upstream failure of a delete as the status', async () => {
+      // Arrange
+      await selectOwnPatient();
+      client.onDeletePatient = () => Promise.reject(new FhirProblemError(FhirProblemError.UPSTREAM_MESSAGE, 502, 'FHIR sandbox unavailable', 900, null, false));
+
+      // Act
+      button('fhir-delete').click();
+      await fixture.whenStable();
+
+      // Assert
+      expect(textOf(editStatus())).toBe(FhirProblemError.UPSTREAM_MESSAGE);
+      expect(host.querySelector('.fhir-patient[data-id="mine-1"]')).not.toBeNull();
+    });
+
+    /** Searches, then selects a patient the fake session created. */
+    async function selectOwnPatient(): Promise<void> {
+      client.onSearchPatients = () => Promise.resolve(createFhirResponse(createPatientSearchResult(createPatientListItem({ id: 'mine-1', name: 'Watsica258, Kimi714' }))));
+      client.onGetSummary = (id) => Promise.resolve(createFhirResponse(createOwnPatientSummary(id)));
+      await render();
+      submit();
+      await fixture.whenStable();
+    }
+  });
+
   describe('ngOnDestroy', () => {
     it('should drop a response that arrives after the component is destroyed', async () => {
       // Arrange
@@ -497,6 +760,26 @@ describe('FhirExplorer', () => {
 
   function raw(): HTMLElement {
     return host.querySelector('#fhir-raw') as HTMLElement;
+  }
+
+  function editSubmit(): void {
+    (host.querySelector('#fhir-edit') as HTMLFormElement).dispatchEvent(new Event('submit', { bubbles: true, cancelable: true }));
+  }
+
+  function editField(name: string): HTMLInputElement {
+    return host.querySelector(`#fhir-edit-${name}`) as HTMLInputElement;
+  }
+
+  function button(id: string): HTMLButtonElement {
+    return host.querySelector(`#${id}`) as HTMLButtonElement;
+  }
+
+  function target(): HTMLElement {
+    return host.querySelector('#fhir-edit-target') as HTMLElement;
+  }
+
+  function editStatus(): HTMLElement {
+    return host.querySelector('#fhir-edit-status') as HTMLElement;
   }
 
   function logText(): string {
