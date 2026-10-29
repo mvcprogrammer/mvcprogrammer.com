@@ -4,13 +4,15 @@ using System.Text.RegularExpressions;
 using Api.Shared.Http;
 using Fhir.Api.Fhir;
 using Fhir.Api.Http;
+using Fhir.Api.Mapping;
+using Fhir.Api.Models;
 using Fhir.Api.Services;
 using Hl7.Fhir.Model;
 using Hl7.Fhir.Serialization;
 
 namespace Fhir.Api.Endpoints;
 
-/// <summary>HTTP in, HTTP out for /api/fhir. Validates the inputs promised in openapi.yaml and leaves the rest to the service.</summary>
+/// <summary>HTTP in, HTTP out for /api/fhir. Validates the inputs promised in openapi.yaml (parameters, headers, body shape) and leaves the rest to the two services.</summary>
 public static partial class FhirEndpoints
 {
     /// <summary>Sandbox data can change under the explorer: shared caches hold ten minutes, browsers revalidate after one.</summary>
@@ -22,8 +24,13 @@ public static partial class FhirEndpoints
     private const int MAX_FAMILY_LENGTH = 60;
     private const int MAX_IDENTIFIER_LENGTH = 120;
 
-    /// <summary>The detail every stubbed write answers with; the wording openapi.yaml promises.</summary>
-    private const string WRITES_NOT_IMPLEMENTED = "Patient writes are specified and arrive with the explorer's next release.";
+    /// <summary>The header carrying the visitor's session token on every write.</summary>
+    public const string SESSION_HEADER = "X-Demo-Session";
+
+    /// <summary>The header carrying the key a create is made idempotent on.</summary>
+    public const string IDEMPOTENCY_HEADER = "Idempotency-Key";
+
+    private const string JSON_PATCH_MEDIA_TYPE = "application/json-patch+json";
 
     /// <summary>Firely's System.Text.Json serializer for R4 POCOs, pretty-printed for the raw-bundle toggle.</summary>
     private static readonly JsonSerializerOptions FHIR_JSON = new JsonSerializerOptions().ForFhir(ModelInfo.ModelInspector).Pretty();
@@ -41,13 +48,16 @@ public static partial class FhirEndpoints
         guarded.MapGet("/patients/{patientId}/raw", GetPatientRawBundle).WithName("getPatientRawBundle");
         guarded.MapGet("/capability", GetCapability).WithName("getFhirCapability");
 
-        // Write side, stubbed. Each answers 501 until the write slice lands (#144); the routes and
-        // names already match openapi.yaml 1.2.0 so the contract is settled before the code. The
-        // bodies are not bound yet, so nothing is validated ahead of the 501.
-        group.MapPost("/patients", CreatePatient).WithName("createPatient");
-        group.MapPut("/patients/{patientId}", ReplacePatient).WithName("replacePatient");
-        group.MapPatch("/patients/{patientId}", PatchPatient).WithName("patchPatient");
-        group.MapDelete("/patients/{patientId}", DeletePatient).WithName("deletePatient");
+        // Writes: their own budget on top of the read one, then the write problems, then the upstream ones.
+        var writes = group.MapGroup(string.Empty)
+            .AddEndpointFilter<RateLimitFilter>()
+            .AddEndpointFilter<WriteRateLimitFilter>()
+            .AddEndpointFilter<UpstreamProblemFilter>()
+            .AddEndpointFilter<WriteProblemFilter>();
+        writes.MapPost("/patients", CreatePatient).WithName("createPatient");
+        writes.MapPut("/patients/{patientId}", ReplacePatient).WithName("replacePatient");
+        writes.MapPatch("/patients/{patientId}", PatchPatient).WithName("patchPatient");
+        writes.MapDelete("/patients/{patientId}", DeletePatient).WithName("deletePatient");
 
         group.MapGet("/health", GetHealth).WithName("getFhirHealth").WithTags("Operations");
         return group;
@@ -109,22 +119,143 @@ public static partial class FhirEndpoints
         return CacheableJson.Ok(context, subset, CAPABILITY_CACHE_CONTROL);
     }
 
-    private static IResult CreatePatient(HttpContext context) => Problems.NotImplemented(context, WRITES_NOT_IMPLEMENTED);
+    private static async Task<IResult> CreatePatient(HttpContext context, IPatientWriteService service, CancellationToken cancellationToken)
+    {
+        var errors = new Dictionary<string, string[]>(StringComparer.Ordinal);
+        var session = Token(context, SESSION_HEADER, errors);
+        var key = Token(context, IDEMPOTENCY_HEADER, errors);
+        var input = await ReadBodyAsync<PatientInput>(context, errors, cancellationToken);
+        if (errors.Count > 0 || session is null || key is null || input is null)
+        {
+            return Problems.ValidationFailed(context, errors);
+        }
 
-    private static IResult ReplacePatient(HttpContext context, string patientId) => Problems.NotImplemented(context, WRITES_NOT_IMPLEMENTED);
+        var (result, created) = await service.CreateAsync(input, session, key, cancellationToken);
+        var location = $"/api/fhir/patients/{Uri.EscapeDataString(result.Patient.Id)}/summary";
+        return NoStoreJson.Json(context, result, created ? StatusCodes.Status201Created : StatusCodes.Status200OK, location);
+    }
 
-    private static IResult PatchPatient(HttpContext context, string patientId) => Problems.NotImplemented(context, WRITES_NOT_IMPLEMENTED);
+    private static async Task<IResult> ReplacePatient(HttpContext context, IPatientWriteService service, string patientId, CancellationToken cancellationToken)
+    {
+        if (!IsFhirId(patientId))
+        {
+            return Problems.InvalidParameter(context, "'patientId' must be a FHIR id: 1 to 64 letters, digits, hyphens, or dots.");
+        }
 
-    private static IResult DeletePatient(HttpContext context, string patientId) => Problems.NotImplemented(context, WRITES_NOT_IMPLEMENTED);
+        var errors = new Dictionary<string, string[]>(StringComparer.Ordinal);
+        var session = Token(context, SESSION_HEADER, errors);
+        var input = await ReadBodyAsync<PatientInput>(context, errors, cancellationToken);
+        if (errors.Count > 0 || session is null || input is null)
+        {
+            return Problems.ValidationFailed(context, errors);
+        }
+
+        var result = await service.ReplaceAsync(patientId, input, session, cancellationToken);
+        return NoStoreJson.Json(context, result, StatusCodes.Status200OK);
+    }
+
+    private static async Task<IResult> PatchPatient(HttpContext context, IPatientWriteService service, string patientId, CancellationToken cancellationToken)
+    {
+        if (!IsFhirId(patientId))
+        {
+            return Problems.InvalidParameter(context, "'patientId' must be a FHIR id: 1 to 64 letters, digits, hyphens, or dots.");
+        }
+
+        if (!IsMediaType(context, JSON_PATCH_MEDIA_TYPE))
+        {
+            return Problems.UnsupportedMediaType(context, $"Send the patch as {JSON_PATCH_MEDIA_TYPE}.");
+        }
+
+        var errors = new Dictionary<string, string[]>(StringComparer.Ordinal);
+        var session = Token(context, SESSION_HEADER, errors);
+        var operations = await ReadBodyAsync<List<PatientPatchOperation>>(context, errors, cancellationToken, requireMediaType: false);
+        if (operations is { Count: 0 or > PatientPatchApplier.MAX_OPERATIONS })
+        {
+            errors["body"] = [$"A patch has between 1 and {PatientPatchApplier.MAX_OPERATIONS} operations."];
+        }
+
+        if (errors.Count > 0 || session is null || operations is null)
+        {
+            return Problems.ValidationFailed(context, errors);
+        }
+
+        var result = await service.PatchAsync(patientId, operations, session, cancellationToken);
+        return NoStoreJson.Json(context, result, StatusCodes.Status200OK);
+    }
+
+    private static async Task<IResult> DeletePatient(HttpContext context, IPatientWriteService service, string patientId, CancellationToken cancellationToken)
+    {
+        if (!IsFhirId(patientId))
+        {
+            return Problems.InvalidParameter(context, "'patientId' must be a FHIR id: 1 to 64 letters, digits, hyphens, or dots.");
+        }
+
+        var errors = new Dictionary<string, string[]>(StringComparer.Ordinal);
+        var session = Token(context, SESSION_HEADER, errors);
+        if (session is null)
+        {
+            return Problems.ValidationFailed(context, errors);
+        }
+
+        await service.DeleteAsync(patientId, session, cancellationToken);
+        return NoStoreJson.NoContent(context);
+    }
+
+    /// <summary>A UUID header, lower-cased, or null with an error recorded under the header's name.</summary>
+    private static string? Token(HttpContext context, string header, Dictionary<string, string[]> errors)
+    {
+        var value = context.Request.Headers[header].FirstOrDefault()?.Trim().ToLowerInvariant();
+        if (value is not null && DemoTokenPattern().IsMatch(value))
+        {
+            return value;
+        }
+
+        errors[header] = [$"'{header}' is required and must be a UUID."];
+        return null;
+    }
+
+    /// <summary>The JSON body as <typeparamref name="T"/>, or null with the problem recorded under "body".</summary>
+    private static async Task<T?> ReadBodyAsync<T>(HttpContext context, Dictionary<string, string[]> errors, CancellationToken cancellationToken, bool requireMediaType = true)
+        where T : class
+    {
+        if (requireMediaType && !IsMediaType(context, "application/json"))
+        {
+            errors["body"] = ["Send the body as application/json."];
+            return null;
+        }
+
+        try
+        {
+            var value = await JsonSerializer.DeserializeAsync<T>(context.Request.Body, ApiJson.OPTIONS, cancellationToken);
+            if (value is null)
+            {
+                errors["body"] = ["A JSON body is required."];
+            }
+
+            return value;
+        }
+        catch (JsonException ex)
+        {
+            errors["body"] = [$"The body is not valid JSON for this operation: {ex.Message}"];
+            return null;
+        }
+    }
+
+    private static bool IsMediaType(HttpContext context, string mediaType) =>
+        context.Request.ContentType is { } contentType
+        && contentType.Split(';', 2)[0].Trim().Equals(mediaType, StringComparison.OrdinalIgnoreCase);
 
     private static IResult GetHealth(HttpContext context, IConfiguration configuration)
     {
         context.Response.Headers.CacheControl = "no-store";
-        return Results.Ok(new Models.Health("ok", configuration["API_VERSION"] ?? "0.0.0"));
+        return Results.Ok(new Health("ok", configuration["API_VERSION"] ?? "0.0.0"));
     }
 
     private static bool IsFhirId(string id) => FhirIdPattern().IsMatch(id);
 
     [GeneratedRegex(@"^[A-Za-z0-9\-\.]{1,64}$")]
     private static partial Regex FhirIdPattern();
+
+    [GeneratedRegex(@"^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$")]
+    private static partial Regex DemoTokenPattern();
 }

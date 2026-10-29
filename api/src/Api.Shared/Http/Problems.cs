@@ -35,6 +35,56 @@ public static class Problems
             detail: detail,
             instance: context.Request.Path);
 
+    /// <summary>400 in the ValidationProblemDetails shape: one entry per invalid field. Never cached.</summary>
+    public static IResult ValidationFailed(HttpContext context, IReadOnlyDictionary<string, string[]> errors)
+    {
+        ArgumentNullException.ThrowIfNull(errors);
+        context.Response.Headers.CacheControl = "no-store";
+        return Results.ValidationProblem(
+            errors.ToDictionary(e => e.Key, e => e.Value, StringComparer.Ordinal),
+            type: TYPE_BASE + "validation-failed",
+            title: "Validation failed",
+            statusCode: StatusCodes.Status400BadRequest,
+            detail: "One or more fields are invalid.",
+            instance: context.Request.Path);
+    }
+
+    /// <summary>403 for a resource the caller may read but never change.</summary>
+    public static IResult ReadOnly(HttpContext context, string title, string detail)
+    {
+        context.Response.Headers.CacheControl = "no-store";
+        return Results.Problem(
+            type: TYPE_BASE + "read-only",
+            title: title,
+            statusCode: StatusCodes.Status403Forbidden,
+            detail: detail,
+            instance: context.Request.Path);
+    }
+
+    /// <summary>409 for a change that cannot be applied to the current state.</summary>
+    public static IResult Conflict(HttpContext context, string title, string detail)
+    {
+        context.Response.Headers.CacheControl = "no-store";
+        return Results.Problem(
+            type: TYPE_BASE + "conflict",
+            title: title,
+            statusCode: StatusCodes.Status409Conflict,
+            detail: detail,
+            instance: context.Request.Path);
+    }
+
+    /// <summary>415 for a body in a media type the operation does not take.</summary>
+    public static IResult UnsupportedMediaType(HttpContext context, string detail)
+    {
+        context.Response.Headers.CacheControl = "no-store";
+        return Results.Problem(
+            type: TYPE_BASE + "unsupported-media-type",
+            title: "Unsupported media type",
+            statusCode: StatusCodes.Status415UnsupportedMediaType,
+            detail: detail,
+            instance: context.Request.Path);
+    }
+
     /// <summary>429 with Retry-After. Never cached.</summary>
     public static IResult RateLimited(HttpContext context, string detail, int retryAfterSeconds)
     {

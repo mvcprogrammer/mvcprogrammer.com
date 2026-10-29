@@ -11,7 +11,8 @@ public static class ServiceCollectionExtensions
 {
     /// <summary>
     /// Options from the Fhir section with the two SAM-set variables on top, the resilient upstream
-    /// client, the gateway, the capability cache, the rate limiter, and the service. Everything is
+    /// client, the gateway, the capability cache, the read and write rate limiters, and the two
+    /// services. Everything is
     /// a singleton: the function holds no per-request state beyond what a call creates.
     /// </summary>
     public static IServiceCollection AddFhirExplorer(this IServiceCollection services, IConfiguration configuration)
@@ -36,6 +37,7 @@ public static class ServiceCollectionExtensions
             .Validate(o => o.BaseUrl.IsAbsoluteUri && o.BaseUrl.Scheme is "https" or "http", "Fhir:BaseUrl must be an absolute http(s) URL.")
             .Validate(o => o.AttemptTimeoutMs > 0 && o.TotalTimeoutMs > o.AttemptTimeoutMs, "Fhir:TotalTimeoutMs must exceed Fhir:AttemptTimeoutMs.")
             .Validate(o => o.PageCap >= 1 && o.RateLimitBudget >= 1 && o.RateLimitWindowSeconds >= 1, "Fhir limits must be positive.")
+            .Validate(o => o.WriteRateLimitBudget >= 1 && o.MaxPatientsPerSession >= 1 && !string.IsNullOrWhiteSpace(o.SeedPatientId), "Fhir write limits must be positive and Fhir:SeedPatientId set.")
             .ValidateOnStart();
 
         services.TryAddSingleton(TimeProvider.System);
@@ -64,7 +66,13 @@ public static class ServiceCollectionExtensions
         services.AddSingleton<IFhirGateway, FhirGateway>();
         services.AddSingleton<CapabilityCache>();
         services.AddSingleton<RateLimiter>();
+        services.AddKeyedSingleton(WriteRateLimitFilter.LIMITER_KEY, (sp, _) =>
+        {
+            var options = sp.GetRequiredService<IOptions<FhirOptions>>().Value;
+            return new RateLimiter(options.WriteRateLimitBudget, options.RateLimitWindow, sp.GetRequiredService<TimeProvider>());
+        });
         services.AddSingleton<IPatientExplorerService, PatientExplorerService>();
+        services.AddSingleton<IPatientWriteService, PatientWriteService>();
         return services;
     }
 

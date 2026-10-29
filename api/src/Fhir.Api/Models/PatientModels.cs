@@ -93,3 +93,21 @@ public sealed record PatientSummary(
 
 /// <summary>Mirrors Health in openapi.yaml.</summary>
 public sealed record Health(string Status, string Version);
+
+/// <summary>What a visitor can write about a demo patient. Mirrors PatientInput in openapi.yaml.</summary>
+public sealed record PatientInput(
+    string FamilyName,
+    [property: JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)] string? GivenName,
+    [property: JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)] Sex? Sex,
+    [property: JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)] string? BirthDate,
+    [property: JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)] string? Mrn);
+
+/// <summary>One RFC 6902 operation against the <see cref="PatientInput"/> view of a patient. Mirrors an item of PatientPatch in openapi.yaml.</summary>
+public sealed record PatientPatchOperation(
+    string Op,
+    string Path,
+    [property: JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)] string? From,
+    [property: JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)] string? Value);
+
+/// <summary>What a write returns. Mirrors PatientWriteResult in openapi.yaml.</summary>
+public sealed record PatientWriteResult(PatientDemographics Patient, Trace Trace);

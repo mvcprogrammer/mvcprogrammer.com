@@ -48,6 +48,15 @@ public sealed class FhirOptions
     /// <summary>The rate-limit window.</summary>
     public int RateLimitWindowSeconds { get; set; } = 600;
 
+    /// <summary>Writes one IP may make per window, per warm instance, on top of the read budget.</summary>
+    public int WriteRateLimitBudget { get; set; } = 10;
+
+    /// <summary>Patients one session token may create. Counted on the sandbox by the session identifier.</summary>
+    public int MaxPatientsPerSession { get; set; } = 5;
+
+    /// <summary>The seeded demo patient every visitor searches for first. Read-only to the write operations.</summary>
+    public string SeedPatientId { get; set; } = "mvc-programmer";
+
     /// <summary>How long a read CapabilityStatement is kept per instance.</summary>
     public int CapabilityTtlSeconds { get; set; } = 3_600;
 

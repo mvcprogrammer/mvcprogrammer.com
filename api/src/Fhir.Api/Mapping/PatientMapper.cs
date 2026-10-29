@@ -130,10 +130,11 @@ public static class PatientMapper
         return age < 0 ? null : age;
     }
 
+    /// <summary>The MR-typed identifier, else the first identifier that is not one of the explorer's own (session, idempotency), which are bookkeeping rather than record numbers.</summary>
     internal static string? MrnOf(Patient patient)
     {
         var mrn = patient.Identifier.FirstOrDefault(i => TypeCodeOf(i) == MRN_TYPE_CODE && !string.IsNullOrWhiteSpace(i.Value))
-            ?? patient.Identifier.FirstOrDefault(i => !string.IsNullOrWhiteSpace(i.Value));
+            ?? patient.Identifier.FirstOrDefault(i => !string.IsNullOrWhiteSpace(i.Value) && i.System is not (Fhir.DemoIdentifiers.SESSION_SYSTEM or Fhir.DemoIdentifiers.IDEMPOTENCY_SYSTEM));
         return mrn?.Value;
     }
 

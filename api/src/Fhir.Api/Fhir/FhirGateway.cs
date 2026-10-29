@@ -4,6 +4,7 @@ using Fhir.Api.Configuration;
 using Fhir.Api.Models;
 using Hl7.Fhir.Model;
 using Hl7.Fhir.Rest;
+using Task = System.Threading.Tasks.Task;
 using Hl7.Fhir.Serialization;
 using Microsoft.Extensions.Options;
 using Polly.CircuitBreaker;
@@ -53,7 +54,7 @@ public sealed class FhirGateway : IFhirGateway
         catch (FhirOperationException ex) when (ex.Status is HttpStatusCode.NotFound or HttpStatusCode.Gone)
         {
             trace.Add(new UpstreamRequest("GET", Url(location), (int)ex.Status, watch.ElapsedMilliseconds, 0, 1), truncated: false);
-            throw new UpstreamNotFoundException(type, id);
+            throw new UpstreamNotFoundException(type, id, gone: ex.Status == HttpStatusCode.Gone);
         }
         catch (Exception ex) when (ex is not UpstreamNotFoundException)
         {
@@ -148,6 +149,82 @@ public sealed class FhirGateway : IFhirGateway
         }
     }
 
+    public async Task<WriteResult<T>> CreateAsync<T>(T resource, SearchParams ifNoneExist, TraceBuilder trace, CancellationToken cancellationToken) where T : Resource, new()
+    {
+        ArgumentNullException.ThrowIfNull(resource);
+        ArgumentNullException.ThrowIfNull(ifNoneExist);
+        ArgumentNullException.ThrowIfNull(trace);
+
+        var url = Url(typeof(T).Name);
+        using var client = CreateClient();
+        var watch = Stopwatch.StartNew();
+        try
+        {
+            var stored = await client.ConditionalCreateAsync(resource, ifNoneExist, cancellationToken)
+                ?? throw new UpstreamUnavailableException($"{Host} answered the create without the resource.");
+            var status = StatusOf(client);
+            trace.Add(new UpstreamRequest("POST", url, status, watch.ElapsedMilliseconds, 1, 1), truncated: false);
+            return new WriteResult<T>(stored, Created: status == (int)HttpStatusCode.Created);
+        }
+        catch (Exception ex) when (ex is not UpstreamUnavailableException)
+        {
+            throw Translate(ex, url, cancellationToken, "POST");
+        }
+    }
+
+    public async Task<T> UpdateAsync<T>(T resource, TraceBuilder trace, CancellationToken cancellationToken) where T : Resource, new()
+    {
+        ArgumentNullException.ThrowIfNull(resource);
+        ArgumentException.ThrowIfNullOrWhiteSpace(resource.Id);
+        ArgumentNullException.ThrowIfNull(trace);
+
+        var type = typeof(T).Name;
+        var url = Url($"{type}/{resource.Id}");
+        using var client = CreateClient();
+        var watch = Stopwatch.StartNew();
+        try
+        {
+            var stored = await client.UpdateAsync(resource, versionAware: false, cancellationToken)
+                ?? throw new UpstreamUnavailableException($"{Host} answered the update without the resource.");
+            trace.Add(new UpstreamRequest("PUT", url, StatusOf(client), watch.ElapsedMilliseconds, 1, 1), truncated: false);
+            return stored;
+        }
+        catch (FhirOperationException ex) when (ex.Status is HttpStatusCode.NotFound or HttpStatusCode.Gone)
+        {
+            trace.Add(new UpstreamRequest("PUT", url, (int)ex.Status, watch.ElapsedMilliseconds, 0, 1), truncated: false);
+            throw new UpstreamNotFoundException(type, resource.Id, gone: ex.Status == HttpStatusCode.Gone);
+        }
+        catch (Exception ex) when (ex is not UpstreamUnavailableException)
+        {
+            throw Translate(ex, url, cancellationToken, "PUT");
+        }
+    }
+
+    public async Task DeleteAsync<T>(string id, TraceBuilder trace, CancellationToken cancellationToken) where T : Resource, new()
+    {
+        ArgumentException.ThrowIfNullOrWhiteSpace(id);
+        ArgumentNullException.ThrowIfNull(trace);
+
+        var location = $"{typeof(T).Name}/{id}";
+        var url = Url(location);
+        using var client = CreateClient();
+        var watch = Stopwatch.StartNew();
+        try
+        {
+            await client.DeleteAsync(location, cancellationToken);
+            trace.Add(new UpstreamRequest("DELETE", url, StatusOf(client), watch.ElapsedMilliseconds, 0, 1), truncated: false);
+        }
+        catch (FhirOperationException ex) when (ex.Status is HttpStatusCode.NotFound or HttpStatusCode.Gone)
+        {
+            // Already gone is the state a delete asks for.
+            trace.Add(new UpstreamRequest("DELETE", url, (int)ex.Status, watch.ElapsedMilliseconds, 0, 1), truncated: false);
+        }
+        catch (Exception ex)
+        {
+            throw Translate(ex, url, cancellationToken, "DELETE");
+        }
+    }
+
     private string Host => _options.BaseUrl.Host;
 
     private string Url(string relative) => $"{_options.BaseUrl.ToString().TrimEnd('/')}/{relative}";
@@ -171,7 +248,7 @@ public sealed class FhirGateway : IFhirGateway
     private static int StatusOf(FhirClient client) =>
         int.TryParse(client.LastResult?.Status, out var status) ? status : 200;
 
-    private Exception Translate(Exception ex, string url, CancellationToken cancellationToken)
+    private Exception Translate(Exception ex, string url, CancellationToken cancellationToken, string method = "GET")
     {
         if (cancellationToken.IsCancellationRequested)
         {
@@ -183,19 +260,19 @@ public sealed class FhirGateway : IFhirGateway
             case UpstreamTimeoutException or UpstreamUnavailableException or UpstreamNotFoundException:
                 return ex;
             case TimeoutRejectedException or TaskCanceledException or OperationCanceledException:
-                _logger.LogWarning("Upstream timeout after {Budget} ms: GET {Url}", _options.TotalTimeoutMs, url);
+                _logger.LogWarning("Upstream timeout after {Budget} ms: {Method} {Url}", _options.TotalTimeoutMs, method, url);
                 return new UpstreamTimeoutException($"{Host} did not finish answering within {_options.TotalTimeoutMs / 1000} seconds.", ex);
             case FhirOperationException op:
-                _logger.LogWarning("Upstream {Status}: GET {Url}", (int)op.Status, url);
+                _logger.LogWarning("Upstream {Status}: {Method} {Url}", (int)op.Status, method, url);
                 return new UpstreamUnavailableException($"{Host} answered {(int)op.Status}.", ex);
             case BrokenCircuitException:
-                _logger.LogWarning("Upstream circuit open: GET {Url}", url);
+                _logger.LogWarning("Upstream circuit open: {Method} {Url}", method, url);
                 return new UpstreamUnavailableException($"{Host} has failed repeatedly; the circuit is open for a moment.", ex);
             case HttpRequestException http:
-                _logger.LogWarning("Upstream unreachable ({Reason}): GET {Url}", http.HttpRequestError, url);
+                _logger.LogWarning("Upstream unreachable ({Reason}): {Method} {Url}", http.HttpRequestError, method, url);
                 return new UpstreamUnavailableException($"{Host} could not be reached.", ex);
             case DeserializationFailedException or FormatException or System.Text.Json.JsonException:
-                _logger.LogWarning("Upstream body was not FHIR: GET {Url}", url);
+                _logger.LogWarning("Upstream body was not FHIR: {Method} {Url}", method, url);
                 return new UpstreamUnavailableException($"{Host} answered with something that is not a FHIR resource.", ex);
             default:
                 return ex;
