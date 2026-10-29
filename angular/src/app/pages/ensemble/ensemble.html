@@ -48,14 +48,41 @@
     </div>
 
     <h2 id="jd-cases">Three case studies</h2>
-    <p>Each one is a problem, the decision taken, and where to see it. Together they cover the JD's three themes: hands-on design, engineering practice, and judgment under constraints.</p>
-    <h3>1. The FHIR explorer epic: spec first, guard server-side, faults found live</h3>
-    <p>The problem was adding create, replace, patch, and delete to a public demo over a shared healthcare sandbox without letting a visitor touch anything but their own records. The decisions, recorded on <a href="https://github.com/mvcprogrammer/mvcprogrammer.com/issues/125" target="_blank" rel="noopener">epic #125</a> before any code: the OpenAPI contract changed first and the function answered 501 until the handlers existed; the guard lives in the function, not the browser (the seeded patient is read-only, every created patient carries the visitor's session token as a FHIR identifier, anything else answers 404 so nothing can be probed); creates are idempotent through a FHIR conditional create keyed on an <code>Idempotency-Key</code> header, so the sandbox enforces it and the function keeps no state; writes have their own rate budget. A general JSON Patch library was weighed against an eighty-line applier over five scalar fields and set aside, with the reasoning in <a href="https://github.com/mvcprogrammer/mvcprogrammer.com/pull/152" target="_blank" rel="noopener">PR #152</a>.</p>
-    <p>Going live surfaced three edge faults in one afternoon, each diagnosed with curl and fixed with a one-line cause written down: cloned CloudFront behaviors allowed only the read methods; a signed request to a Lambda function URL needs the body's SHA-256 in a header; and the single-page-app's 403-to-index mapping swallowed the API's own 403, replaced by a viewer-request function (<a href="https://github.com/mvcprogrammer/mvcprogrammer.com/pull/159" target="_blank" rel="noopener">PR #159</a>). All three are now rules in the runbook.</p>
-    <h3>2. The four-editions mirror rule: one content change, four stacks, one commit</h3>
-    <p>The site ships as vanilla JavaScript, Blazor WebAssembly, Angular, and React, served from one bucket behind four distributions, with the same stylesheet and the same content. The rule is written into the repository's instructions: a content, markup, or behavior change goes to all four in the same commit, and each edition's own colophon describes its own stack. <a href="https://github.com/mvcprogrammer/mvcprogrammer.com/pull/148" target="_blank" rel="noopener">PR #148</a> is the rule under load: the explorer left all four editions in one change (119 files removed, 48 changed), the kiosk-only dialog became a reusable demo dialog in each stack, and the four test suites stayed green. The payoff shows in the opposite direction too: the explorer itself was then built once, as its own Angular app, rather than four times.</p>
-    <h3>3. The engineering process: issue before code, groomed before Ready, reviewed before merge</h3>
-    <p>Every change in the repository starts as an issue on the <a href="https://github.com/users/mvcprogrammer/projects/1" target="_blank" rel="noopener">public board</a>, moves Backlog to Ready only with scope, acceptance criteria, priority, size, a Fibonacci estimate, and a sprint decision, and lands through a pull request that CI must pass; the definitions of Ready and Done are in <a href="https://github.com/mvcprogrammer/mvcprogrammer.com/blob/main/docs/BURNDOWN.md" target="_blank" rel="noopener">docs/BURNDOWN.md</a>. The coding standard is enforced by the build where a tool can enforce it: the root <a href="https://github.com/mvcprogrammer/mvcprogrammer.com/blob/main/.editorconfig" target="_blank" rel="noopener">.editorconfig</a> names the rule each setting implements, <code>EnforceCodeStyleInBuild</code> turns violations into build errors, and <code>dotnet format</code> runs on every PR. The standard also sets working rules for AI assistants (search public solutions before designing from scratch, compare two approaches, state the choice), which is how the JSON Patch decision above was made.</p>
+    <p>A problem, a decision, and where to see it. The bold text is the short version.</p>
+
+    <article class="jd-case" id="jd-case-1">
+      <h3>1. The FHIR explorer epic</h3>
+      <p class="jd-takeaway"><strong>Spec first, guard on the server, faults found by probing the live host.</strong> Visitors can create, change, and delete demo patients on a shared healthcare sandbox and can touch nothing else.</p>
+      <ul class="jd-points">
+        <li><strong>Decisions before code.</strong> Verbs, guard, budget, and idempotency were settled and written on <a href="https://github.com/mvcprogrammer/mvcprogrammer.com/issues/125" target="_blank" rel="noopener">epic #125</a> before the first slice.</li>
+        <li><strong>Contract first.</strong> The OpenAPI document changed first; the function answered 501 until the handlers existed.</li>
+        <li><strong>The guard holds no state.</strong> The seeded patient is read-only; every created patient carries the visitor's session token as a FHIR identifier; anything else answers 404, so nothing can be probed. <a href="https://github.com/mvcprogrammer/mvcprogrammer.com/blob/main/api/src/Fhir.Api/Services/PatientWriteService.cs" target="_blank" rel="noopener">PatientWriteService.cs</a></li>
+        <li><strong>The sandbox enforces idempotency.</strong> A create is a FHIR conditional create keyed on the <code>Idempotency-Key</code> header; a retry returns the same patient with 200.</li>
+        <li><strong>A library weighed and set aside.</strong> An eighty-line JSON Patch applier over five fields beat the general package; the reasoning is in <a href="https://github.com/mvcprogrammer/mvcprogrammer.com/pull/152" target="_blank" rel="noopener">PR #152</a>.</li>
+        <li><strong>Three edge faults, one afternoon, each with its cause written down.</strong> Cloned CloudFront behaviors allowed only the read methods; a signed request to a Lambda function URL needs the body's SHA-256 in a header; the single-page-app's 403-to-index mapping swallowed the API's own 403. All three are now runbook rules. <a href="https://github.com/mvcprogrammer/mvcprogrammer.com/pull/159" target="_blank" rel="noopener">PR #159</a></li>
+      </ul>
+    </article>
+
+    <article class="jd-case" id="jd-case-2">
+      <h3>2. The four-editions mirror rule</h3>
+      <p class="jd-takeaway"><strong>One content change, four stacks, one commit.</strong> The same site ships in vanilla JavaScript, Blazor WebAssembly, Angular, and React from one bucket behind four distributions.</p>
+      <ul class="jd-points">
+        <li><strong>The rule is written down.</strong> A content, markup, or behavior change goes to all four editions in the same commit; each edition's colophon describes its own stack.</li>
+        <li><strong>The rule under load.</strong> The explorer left all four editions in one change, 119 files removed and 48 changed, and the four test suites stayed green. <a href="https://github.com/mvcprogrammer/mvcprogrammer.com/pull/148" target="_blank" rel="noopener">PR #148</a></li>
+        <li><strong>The payoff.</strong> The explorer itself was then built once, as its own Angular app at <a href="https://fhir.mvcprogrammer.com/" target="_blank" rel="noopener">fhir.mvcprogrammer.com</a>, rather than four times.</li>
+      </ul>
+    </article>
+
+    <article class="jd-case" id="jd-case-3">
+      <h3>3. The engineering process</h3>
+      <p class="jd-takeaway"><strong>Issue before code, groomed before Ready, reviewed before merge, standard enforced by the build.</strong></p>
+      <ul class="jd-points">
+        <li><strong>Every change starts as an issue</strong> on the <a href="https://github.com/users/mvcprogrammer/projects/1" target="_blank" rel="noopener">public board</a> and lands through a pull request that CI must pass.</li>
+        <li><strong>Ready means groomed.</strong> Scope, acceptance criteria, priority, size, a Fibonacci estimate, and a sprint decision; the definitions of Ready and Done are in <a href="https://github.com/mvcprogrammer/mvcprogrammer.com/blob/main/docs/BURNDOWN.md" target="_blank" rel="noopener">docs/BURNDOWN.md</a>.</li>
+        <li><strong>The build enforces the standard.</strong> The root <a href="https://github.com/mvcprogrammer/mvcprogrammer.com/blob/main/.editorconfig" target="_blank" rel="noopener">.editorconfig</a> names the rule behind each setting, violations fail <code>dotnet build</code>, and <code>dotnet format</code> runs on every PR.</li>
+        <li><strong>AI assistants work under the same rules.</strong> Search public solutions before designing from scratch, compare two approaches, state the choice; the JSON Patch decision above came out of that rule.</li>
+      </ul>
+    </article>
 
     <h2 id="jd-gaps">Gaps stated plainly</h2>
     <p>The repository is an AWS build by one engineer, so the JD's Azure-shaped items are not in it. For each, the nearest thing here and where the rest comes from.</p>

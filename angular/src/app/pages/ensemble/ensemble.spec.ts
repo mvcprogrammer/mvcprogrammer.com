@@ -20,6 +20,9 @@ describe('Ensemble', () => {
     expect(host.querySelectorAll('.jd-grade.is-yes')).toHaveLength(9);
     expect(host.querySelectorAll('.jd-grade.is-near')).toHaveLength(7);
     expect(host.querySelectorAll('.jd-grade.is-no')).toHaveLength(3);
+    expect(host.querySelectorAll('.jd-case')).toHaveLength(3);
+    expect(host.querySelectorAll('.jd-case .jd-takeaway strong')).toHaveLength(3);
+    expect(host.querySelectorAll('.jd-points li > strong').length).toBeGreaterThanOrEqual(13);
     expect(document.querySelector('meta[name="robots"]')?.getAttribute('content')).toBe('noindex, nofollow');
 
     // Act: leaving the page restores the document
