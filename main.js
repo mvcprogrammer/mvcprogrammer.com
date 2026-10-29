@@ -567,78 +567,47 @@
     });
   }
 
-  /* ---------- Live kiosk demo ----------
-     The dialog is in the HTML; the iframe is not. It is created when the demo opens
-     and removed when it closes, so the kiosk and its Lambda only load on request. */
-  var kioskDialog = document.getElementById("kiosk-dialog");
-  var kioskButtons = document.querySelectorAll("[data-kiosk-demo]");
-  if (kioskDialog && kioskButtons.length && typeof kioskDialog.showModal === "function") {
-    var kioskSlot = kioskDialog.querySelector(".kiosk-frame-slot");
-    var kioskClose = kioskDialog.querySelector("[data-kiosk-close]");
+  /* ---------- Live demo dialogs ----------
+     The dialogs are in the HTML; the iframes are not. A button with data-demo-open names the
+     dialog it opens; the iframe is created then, from the dialog's data-src, and removed when the
+     dialog closes, so the kiosk, the patient explorer, and their Lambdas only load on request. */
+  if (typeof HTMLDialogElement === "function" && typeof HTMLDialogElement.prototype.showModal === "function") {
+    Array.prototype.forEach.call(document.querySelectorAll("dialog.demo-dialog[data-src]"), function (dialog) {
+      var slot = dialog.querySelector(".demo-frame-slot");
+      var closeButton = dialog.querySelector("[data-demo-close]");
+      var openButtons = document.querySelectorAll('[data-demo-open="' + dialog.id + '"]');
+      if (!slot || !openButtons.length) return;
 
-    var openKiosk = function () {
-      var frame = document.createElement("iframe");
-      frame.className = "kiosk-frame";
-      frame.src = kioskDialog.getAttribute("data-src");
-      frame.title = "Interactive Property Search Window Display, live";
-      frame.setAttribute("loading", "eager");
-      kioskSlot.textContent = "";
-      kioskSlot.appendChild(frame);
-      kioskDialog.showModal();
-    };
+      var open = function () {
+        var frame = document.createElement("iframe");
+        frame.className = "demo-frame";
+        frame.src = dialog.getAttribute("data-src");
+        frame.title = dialog.getAttribute("data-frame-title") || dialog.querySelector("h2").textContent;
+        frame.setAttribute("loading", "eager");
+        slot.textContent = "";
+        slot.appendChild(frame);
+        dialog.showModal();
+      };
 
-    Array.prototype.forEach.call(kioskButtons, function (button) {
-      button.addEventListener("click", openKiosk);
-    });
-
-    if (kioskClose) {
-      kioskClose.addEventListener("click", function () {
-        kioskDialog.close();
+      Array.prototype.forEach.call(openButtons, function (button) {
+        button.addEventListener("click", open);
       });
-    }
 
-    // A click on the backdrop lands on the dialog element itself, not its children.
-    kioskDialog.addEventListener("click", function (event) {
-      if (event.target === kioskDialog) kioskDialog.close();
+      if (closeButton) {
+        closeButton.addEventListener("click", function () {
+          dialog.close();
+        });
+      }
+
+      // A click on the backdrop lands on the dialog element itself, not its children.
+      dialog.addEventListener("click", function (event) {
+        if (event.target === dialog) dialog.close();
+      });
+
+      dialog.addEventListener("close", function () {
+        slot.textContent = "";
+      });
     });
-
-    kioskDialog.addEventListener("close", function () {
-      kioskSlot.textContent = "";
-    });
-  }
-
-  /* ---------- FHIR API card ----------
-     The explorer's markup is in the card; its script is not. fhir.js is appended the first
-     time the accordion opens, so the home page makes no FHIR request until a visitor asks.
-     "#fhir-api" in the URL opens the accordion, for the Healthcare chip and old /fhir links. */
-  var fhirCard = document.getElementById("fhir-api");
-  var fhirAccordion = fhirCard ? fhirCard.querySelector("[data-fhir-accordion]") : null;
-  if (fhirAccordion) {
-    var fhirLoaded = false;
-
-    var loadFhir = function () {
-      if (fhirLoaded) return;
-      fhirLoaded = true;
-      var script = document.createElement("script");
-      script.src = "fhir.js";
-      document.body.appendChild(script);
-    };
-
-    // Opening hides the card's image, so the body jumps up and the explorer unfolds below the
-    // fold; scrolling the card to the top of the viewport keeps the whole thing in view. The
-    // stylesheet's scroll-padding-top clears the header and prefers-reduced-motion drops the glide.
-    fhirAccordion.addEventListener("toggle", function () {
-      if (!fhirAccordion.open) return;
-      loadFhir();
-      fhirCard.scrollIntoView({ block: "start" });
-    });
-
-    // The browser scrolls to the card on its own; this only opens it, and the toggle above scrolls again.
-    var openFhirFromHash = function () {
-      if (location.hash === "#fhir-api") fhirAccordion.open = true;
-    };
-    openFhirFromHash();
-    window.addEventListener("hashchange", openFhirFromHash);
   }
 
   /* ---------- Portfolio image fallback ----------

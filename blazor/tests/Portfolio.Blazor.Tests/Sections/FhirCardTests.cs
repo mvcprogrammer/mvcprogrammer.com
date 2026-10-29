@@ -1,46 +1,45 @@
-using Microsoft.AspNetCore.Components;
 using Portfolio.Blazor.Sections;
 using Portfolio.Blazor.Tests.Helpers;
 
 namespace Portfolio.Blazor.Tests.Sections;
 
-/// <summary>Tests for the FHIR API card in <see cref="PortfolioSection"/>: the accordion, the deferred explorer, and the URL hash.</summary>
+/// <summary>Tests for the FHIR API card in <see cref="PortfolioSection"/>: the pitch and the button that opens the explorer's dialog.</summary>
 public sealed class FhirCardTests : BunitContext
 {
     #region Render Tests
 
-    /// <summary>The card is first after the featured card, closed, with its links and image, and the explorer is not rendered, so no FHIR request is made.</summary>
+    /// <summary>The card is first after the featured card with its heading, subtitle, image, button, and links, and nothing FHIR-related is requested.</summary>
     [Fact]
-    public void Render_ShouldShowClosedCardWithoutExplorer()
+    public void Render_ShouldShowPitchWithoutExplorer()
     {
         // Arrange
         this.AddSiteOptions();
-        var fhir = this.AddFhirClient();
         var module = this.SetupSiteModule();
 
         // Act
         var cut = Render<PortfolioSection>();
 
         // Assert
-        var cards = cut.FindAll(".portfolio-card");
-        var card = cards[1];
+        var card = cut.FindAll(".portfolio-card")[1];
         Assert.Equal("fhir-api", card.Id);
         Assert.Equal("FHIR API", card.QuerySelector("h3")?.TextContent);
-        Assert.Equal("assets/images/portfolio/fhir-api-blazor.jpg", card.QuerySelector(".card-media img")?.GetAttribute("src"));
+        Assert.Equal("FHIR R4 patient explorer, Angular in front of C# on Lambda with the Firely SDK", card.QuerySelector(".card-subtitle")?.TextContent);
+        Assert.Equal("assets/images/portfolio/fhir-explorer.jpg", card.QuerySelector(".card-media img")?.GetAttribute("src"));
+        Assert.Contains("fhir.mvcprogrammer.com", card.QuerySelector(".card-body p:not(.card-subtitle)")?.TextContent, StringComparison.Ordinal);
+        Assert.Equal("Angular 22", card.QuerySelectorAll(".card-tags .tag").Last().TextContent);
+        var button = card.QuerySelector(".card-actions button.button-primary");
+        Assert.Equal("Try the patient explorer", button?.TextContent.Trim());
+        Assert.Equal("#icon-data", button?.QuerySelector("use")?.GetAttribute("href"));
         var links = card.QuerySelectorAll(":scope > .card-body > .card-links > .card-link").Select(a => a.GetAttribute("href")).ToList();
         Assert.Equal(
         [
             "https://github.com/mvcprogrammer/mvcprogrammer.com/tree/main/api/src/Fhir.Api",
             "https://github.com/mvcprogrammer/mvcprogrammer.com/blob/main/api/openapi.yaml",
+            "https://github.com/mvcprogrammer/mvcprogrammer.com/tree/main/fhir",
         ], links);
-        Assert.True(Accordion(cut).NextElementSibling?.ClassList.Contains("card-links"), "the link row follows the explorer button");
-        Assert.False(Accordion(cut).HasAttribute("open"), "the accordion starts closed");
-        Assert.Contains("button-primary", Accordion(cut).QuerySelector("summary")?.ClassName, StringComparison.Ordinal);
-        Assert.Empty(cut.FindAll("#fhir-search"));
-        Assert.Equal(0, fhir.CapabilityCalls);
-        Assert.False(cut.Instance.FhirOpen, "state mirrors the closed accordion");
-        Assert.Single(module.Invocations, i => i.Identifier == "watchDetails");
-        Assert.Single(module.Invocations, i => i.Identifier == "watchHash" && Equals(i.Arguments[1], PortfolioSection.FHIR_HASH));
+        Assert.Empty(card.QuerySelectorAll("details"));
+        Assert.Empty(cut.FindAll("iframe"));
+        Assert.Empty(module.Invocations);
     }
 
     /// <summary>Each project card has one primary button and a single row of links after it.</summary>
@@ -49,7 +48,6 @@ public sealed class FhirCardTests : BunitContext
     {
         // Arrange
         this.AddSiteOptions();
-        this.AddFhirClient();
         this.SetupSiteModule();
 
         // Act
@@ -59,7 +57,7 @@ public sealed class FhirCardTests : BunitContext
         var cards = cut.FindAll(".portfolio-card:not(.portfolio-card-featured)");
         var actions = cards.Select(card =>
         {
-            var buttons = card.QuerySelectorAll(".card-actions .button-primary, .fhir-accordion > summary.button-primary");
+            var buttons = card.QuerySelectorAll(".card-actions .button-primary");
             var rows = card.QuerySelectorAll(":scope > .card-body > .card-links");
             var rowAfterButton = buttons.Length > 0 && rows.Length > 0 && buttons[0].CompareDocumentPosition(rows[0]).HasFlag(AngleSharp.Dom.DocumentPositions.Following);
             var links = string.Join("|", rows.SelectMany(r => r.QuerySelectorAll(".card-link")).Select(a => a.TextContent.Trim()));
@@ -67,7 +65,7 @@ public sealed class FhirCardTests : BunitContext
         }).ToList();
         Assert.Equal(
         [
-            "1 button, 1 row, after=True: API repo|OpenAPI spec",
+            "1 button, 1 row, after=True: API repo|OpenAPI spec|Explorer repo",
             "1 button, 1 row, after=True: Site repo",
             "1 button, 1 row, after=True: Screen repo|API repo",
         ], actions);
@@ -77,90 +75,48 @@ public sealed class FhirCardTests : BunitContext
         Assert.Equal("#icon-globe", visit?.QuerySelector("use")?.GetAttribute("href"));
     }
 
-    #endregion
-
-    #region OnToggled Tests
-
-    /// <summary>Opening renders the explorer, which checks the capability; closing keeps it, and nothing is requested again.</summary>
+    /// <summary>Both demo dialogs are rendered closed, each with its own id and heading.</summary>
     [Fact]
-    public async Task OnToggled_ShouldRenderExplorerOnOpenAndKeepItOnClose()
+    public void Render_ShouldRenderBothDemoDialogsClosed()
     {
         // Arrange
         this.AddSiteOptions();
-        var fhir = this.AddFhirClient();
         this.SetupSiteModule();
-        var cut = Render<PortfolioSection>();
 
         // Act
-        await cut.InvokeAsync(() => cut.Instance.OnToggled(true));
+        var cut = Render<PortfolioSection>();
 
         // Assert
-        Assert.True(Accordion(cut).HasAttribute("open"), "state opened the accordion");
-        Assert.NotNull(cut.Find("#fhir-search"));
-        await cut.WaitForAssertionAsync(() => Assert.Equal(1, fhir.CapabilityCalls));
-
-        // Act again
-        await cut.InvokeAsync(() => cut.Instance.OnToggled(false));
-
-        // Assert again
-        Assert.False(Accordion(cut).HasAttribute("open"), "state closed the accordion");
-        Assert.NotNull(cut.Find("#fhir-search"));
-        Assert.Equal(1, fhir.CapabilityCalls);
+        var dialogs = cut.FindAll("dialog.demo-dialog");
+        Assert.Equal(["kiosk-dialog", "fhir-dialog"], dialogs.Select(d => d.Id).ToList());
+        Assert.Equal("FHIR R4 Patient Explorer", cut.Find("#fhir-dialog-title").TextContent);
+        Assert.Equal("tall", cut.Find("#fhir-dialog").GetAttribute("data-frame"));
+        Assert.Empty(cut.FindAll("iframe"));
     }
 
-    /// <summary>Opening scrolls the card to the top of the viewport through site.js; closing does not scroll.</summary>
+    #endregion
+
+    #region Explorer Button Tests
+
+    /// <summary>The "Try the patient explorer" button opens the explorer dialog on the configured URL, and the kiosk stays closed.</summary>
     [Fact]
-    public async Task OnToggled_ShouldScrollCardIntoViewOnOpenOnly()
+    public async Task ExplorerButton_ShouldOpenExplorerDialog()
     {
         // Arrange
         this.AddSiteOptions();
-        this.AddFhirClient();
         var module = this.SetupSiteModule();
         var cut = Render<PortfolioSection>();
-        Assert.DoesNotContain(module.Invocations, i => i.Identifier == "scrollIntoView");
 
         // Act
-        await cut.InvokeAsync(() => cut.Instance.OnToggled(true));
+        await cut.Find("#fhir-api .card-actions button.button-primary").ClickAsync(new Microsoft.AspNetCore.Components.Web.MouseEventArgs());
 
         // Assert
-        var scroll = Assert.Single(module.Invocations, i => i.Identifier == "scrollIntoView");
-        Assert.IsType<ElementReference>(scroll.Arguments[0]);
-
-        // Act again
-        await cut.InvokeAsync(() => cut.Instance.OnToggled(false));
-
-        // Assert again
-        Assert.Single(module.Invocations, i => i.Identifier == "scrollIntoView");
+        var frame = Assert.Single(cut.FindAll("iframe"));
+        Assert.Equal("https://fhir.example.test/", frame.GetAttribute("src"));
+        Assert.Equal("FHIR R4 Patient Explorer, live", frame.GetAttribute("title"));
+        Assert.Equal("fhir-dialog", frame.Closest("dialog")?.Id);
+        await cut.WaitForAssertionAsync(() => Assert.Single(module.Invocations, i => i.Identifier == "showModal"));
     }
-
-    #endregion
-
-    #region OnHashMatched Tests
-
-    /// <summary>The URL hash opens the accordion and renders the explorer.</summary>
-    [Fact]
-    public async Task OnHashMatched_ShouldOpenAccordionAndRenderExplorer()
-    {
-        // Arrange
-        this.AddSiteOptions();
-        var fhir = this.AddFhirClient();
-        this.SetupSiteModule();
-        var cut = Render<PortfolioSection>();
-
-        // Act
-        await cut.InvokeAsync(() => cut.Instance.OnHashMatched());
-
-        // Assert
-        Assert.True(cut.Instance.FhirOpen, "the hash opened the card");
-        Assert.True(Accordion(cut).HasAttribute("open"), "the accordion follows the state");
-        await cut.WaitForAssertionAsync(() => Assert.Equal(1, fhir.CapabilityCalls));
-    }
-
-    #endregion
-
-    #region Helper Methods
-
-    private static AngleSharp.Dom.IElement Accordion(IRenderedComponent<PortfolioSection> cut) => cut.Find("details.fhir-accordion");
 
     #endregion
 }

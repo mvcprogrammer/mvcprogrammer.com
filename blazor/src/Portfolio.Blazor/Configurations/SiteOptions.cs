@@ -24,9 +24,10 @@ public sealed class SiteOptions
     [Required]
     public string ExperienceSeedPath { get; init; } = "data/positions.json";
 
-    /// <summary>Relative base of the FHIR API behind the patient explorer, served by CloudFront on the same origin.</summary>
+    /// <summary>The patient explorer, embedded in the portfolio demo dialog.</summary>
     [Required]
-    public string FhirApiBase { get; init; } = "api/fhir";
+    [Url]
+    public string FhirExplorerUrl { get; init; } = "https://fhir.mvcprogrammer.com/";
 
     /// <summary>The live kiosk, embedded in the portfolio demo dialog.</summary>
     [Required]

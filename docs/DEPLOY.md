@@ -6,7 +6,6 @@ The site follows the KISS principle. Plain HTML, CSS, and vanilla JavaScript. No
 
 ```
 index.html                  the single page
-fhir.js                     the FHIR R4 patient explorer inside the FHIR API card (loaded on first open; see FHIR API)
 404.html                    small not-found page, served by CloudFront for any missing path
 privacy.html, terms.html    privacy policy and SMS terms (required for the toll-free SMS registration)
 styles.css                  mobile-first styles shared by all four editions, light/dark via color-scheme and light-dark()
@@ -242,7 +241,6 @@ aws s3 sync . s3://mvcprogrammer.com/ --delete \
   --cache-control "public, max-age=300, s-maxage=31536000" \
   --exclude "*" \
   --include "index.html" --include "privacy.html" --include "terms.html" --include "404.html" \
-  --include "fhir.js" \
   --include "styles.css" --include "vanilla.css" --include "main.js" --include "theme.js" \
   --include "favicon.svg" --include "favicon.ico" --include "apple-touch-icon.png" --include "site.webmanifest" \
   --include "robots.txt" --include "sitemap.xml" --include "assets/*" \
@@ -260,11 +258,16 @@ The `--include "assets/*"` in the second sync keeps `--delete` from removing the
 
 ### 4c. Live kiosk demo (frame-src)
 
-The portfolio's "Try the live kiosk" button opens display.lightsplitters.com in an iframe inside a `<dialog>`.
-`default-src 'self'` would block that, so the CSP on the response headers policy carries one extra directive,
-`frame-src https://display.lightsplitters.com` (added 2026-10-08). The kiosk sends no `X-Frame-Options` or
-`frame-ancestors`, so it allows being framed. The iframe is created only when the dialog opens and removed when
-it closes (`main.js`), so the kiosk's Lambda is not hit by visitors who never press the button.
+The portfolio's "Try the live kiosk" button opens display.lightsplitters.com, and "Try the patient explorer"
+opens fhir.mvcprogrammer.com, each in an iframe inside a `<dialog>`. `default-src 'self'` would block that, so the
+CSP on the response headers policy carries one extra directive, `frame-src https://display.lightsplitters.com
+https://fhir.mvcprogrammer.com` (the kiosk added 2026-10-08, the explorer under #142). The kiosk sends no
+`X-Frame-Options` or `frame-ancestors`, so it allows being framed; the explorer's own distribution uses the
+`mvcprogrammer-fhir-headers` policy (see [FHIR explorer](#fhir-explorer-fhirmvcprogrammercom)), the site's policy with
+`frame-ancestors` naming the four edition hosts and no `X-Frame-Options`, so only this site can frame it. The
+iframes are created only when a dialog opens and removed when it closes (`main.js`), so neither Lambda is hit by
+visitors who never press a button. The Blazor edition's policy, `mvcprogrammer-blazor-security-headers`, carries
+the same `frame-src`.
 
 To change the directive, edit the policy in the console (CloudFront, Policies, Response headers, the
 `mvcprogrammer-security-headers` policy, Content-Security-Policy) and save; it applies on the next request, no
@@ -663,9 +666,9 @@ aws cloudformation describe-stacks --stack-name mvcprogrammer-fhir-api \
 
 Same shape as the Experience API: a third origin at the function URL and an `/api/fhir/*` behavior. The
 behavior must come **before** `/api/*` in `CacheBehaviors.Items`, because CloudFront takes the first pattern
-that matches in list order; appended after it, `/api/*` would swallow every FHIR request. Every edition carries
-the FHIR API card since 2026-10-21, so the Blazor, Angular, and React distributions need the same origin and
-behavior (copied from their own `/api/*` behavior, which keeps that edition's response headers policy), and
+that matches in list order; appended after it, `/api/*` would swallow every FHIR request. Every edition carried
+the explorer inside its FHIR API card from 2026-10-21 until #142 moved it to fhir.mvcprogrammer.com, so the Blazor,
+Angular, and React distributions got the same origin and behavior (kept; the editions' cards no longer call the API) (copied from their own `/api/*` behavior, which keeps that edition's response headers policy), and
 the function must accept calls from them. The stack's `DistributionArn` grants the main distribution only; the
 other three get a Lambda permission outside the template, as the Experience API does (issue #60, 2026-10-21):
 
@@ -900,7 +903,7 @@ origin list and the Experience API's permissions are untouched.
 | Piece | Value |
 | --- | --- |
 | CloudFront distribution | `E2IFX9QJTIW1A4` (dpnwjccnpnc2d.cloudfront.net), origin path `/fhir`, same S3 OAC `E2KEES7ZY0UA4S`, the `fhir-api` origin with its OAC `E3OMK0SCVK2C13` behind `/api/fhir/*`, 403 → `/index.html` 200, standard logging to the `fhir/` prefix |
-| Response headers policy | the static site's `mvcprogrammer-security-headers` (`28b549c3-c562-418c-a803-abe16efe78eb`), unchanged |
+| Response headers policy | `mvcprogrammer-fhir-headers` (`<FHIR_HEADERS_POLICY_ID>`): the site's policy with `frame-ancestors https://mvcprogrammer.com https://blazor.mvcprogrammer.com https://angular.mvcprogrammer.com https://react.mvcprogrammer.com` instead of `'none'`, no `X-Frame-Options`, and `connect-src 'self'` only, so the editions' demo dialog can frame the explorer and nothing else can (#142) |
 | ACM certificate | `arn:aws:acm:us-east-1:334383610383:certificate/1f36a56c-f631-4942-9ff1-54cf8b4dc7dd` (fhir.mvcprogrammer.com, DNS-validated) |
 | Route 53 | A and AAAA aliases for `fhir.mvcprogrammer.com` to the distribution |
 | Bucket policy | the `AWS:SourceArn` condition lists every distribution (six with this one) |
@@ -965,6 +968,28 @@ aws route53 change-resource-record-sets --hosted-zone-id Z02467662SJ3B6YDOZKEF -
 gh variable set FHIR_DISTRIBUTION_ID --body E2IFX9QJTIW1A4
 
 # 6. Once the first deploy has filled fhir/, publish the edge function so /fhir on the main site lands here (section 4b)
+```
+
+### Response headers policy (#142)
+
+The editions open the explorer in their demo dialog, so the explorer must allow being framed by the four edition
+hosts and nothing else, and the editions' policies must allow framing it. Created with the commands below.
+
+```bash
+# 1. The explorer's policy: the site's config with frame-ancestors naming the editions, no X-Frame-Options,
+#    connect-src 'self', and no frame-src. Then attach it to the default behavior of the explorer's distribution.
+aws cloudfront get-response-headers-policy --id 28b549c3-c562-418c-a803-abe16efe78eb \
+  --query 'ResponseHeadersPolicy.ResponseHeadersPolicyConfig' > /tmp/site-policy.json
+#    edit: Name mvcprogrammer-fhir-headers; delete SecurityHeadersConfig.FrameOptions; in the CSP replace
+#    "frame-ancestors 'none'" with "frame-ancestors https://mvcprogrammer.com https://blazor.mvcprogrammer.com
+#    https://angular.mvcprogrammer.com https://react.mvcprogrammer.com", "connect-src ..." with "connect-src 'self'",
+#    and drop the frame-src directive
+aws cloudfront create-response-headers-policy --response-headers-policy-config file:///tmp/site-policy.json \
+  --query ResponseHeadersPolicy.Id --output text
+#    then set DefaultCacheBehavior.ResponseHeadersPolicyId on E2IFX9QJTIW1A4 with update-distribution and the current ETag
+
+# 2. The editions' policies (the site's and the Blazor one) gain the host in frame-src
+#    "frame-src https://display.lightsplitters.com https://fhir.mvcprogrammer.com", via get-/update-response-headers-policy
 ```
 
 Manual deploy, the same two syncs the workflow runs:

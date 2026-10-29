@@ -19,7 +19,8 @@ react/
   src/app/pages/                Home (the sections in order; starts the engagement tracker) and NotFound.
   src/app/sections/             One component per section of the page, markup lifted from ../index.html as JSX.
   src/app/components/           Header (menu, scroll state, current section), footer, icon and sprite,
-                                social links, the experience timeline with its skill filter, the kiosk dialog.
+                                social links, the experience timeline with its skill filter, and DemoDialog,
+                                the native dialog the kiosk and the FHIR patient explorer demos open in.
   src/app/configurations/       SiteOptions.
   src/app/interfaces/           ExperienceClient, ContactClient, ContactTopicState, EngagementTracker.
   src/app/services/             The fetch implementations, the listener-backed topic state, and the
@@ -72,7 +73,7 @@ npm run typecheck                      # tsc -b over the app, the tests, and the
 
 The tests are Vitest with React Testing Library on jsdom. Components render under a `SiteProvider`
 holding fakes of the client interfaces, so the skill filter, the seed fallback, the contact form's
-validation and status messages, the mobile menu, and the kiosk dialog are all exercised without a
+validation and status messages, the mobile menu, and the demo dialogs are all exercised without a
 browser. The two fetch clients are tested against a stubbed `fetch`. The workflow runs the suite
 and the type check before every build.
 

@@ -16,19 +16,18 @@ blazor/src/Portfolio.Blazor/
                               the engagement beacon in site.js once the sections are rendered.
   Sections/                   One component per section of the page, markup lifted from ../index.html.
   Components/                 Header (menu, scroll state, current section), footer, icon sprite,
-                              experience timeline with skill filter, kiosk demo dialog, FHIR patient
-                              explorer (rendered once the FHIR API card's accordion opens).
+                              experience timeline with skill filter, and DemoDialog, the native dialog
+                              the portfolio opens twice: the live kiosk and the patient explorer at
+                              fhir.mvcprogrammer.com.
   Configurations/SiteOptions  Lambda URLs and API paths, bound from wwwroot/appsettings.json.
-  Interfaces/, Services/      IExperienceClient, IFhirClient, and IContactClient (typed HttpClients),
+  Interfaces/, Services/      IExperienceClient and IContactClient (typed HttpClients),
                               IContactTopicState (call-to-action buttons preselect the form topic).
-  Exceptions/                 FhirProblemException: a FHIR API failure with its status, title, and timing.
-  Extensions/                 Service registration and the display helpers for positions and FHIR labels.
+  Extensions/                 Service registration and the display helpers for positions.
   Models/, Requests/          Records matching api/openapi.yaml and the contact Lambda's body.
-  ViewModels/                 Mutable, data-annotated models bound to the contact and patient-search EditForms.
+  ViewModels/                 The mutable, data-annotated model bound to the contact EditForm.
   Serialization/              System.Text.Json source generator context (no reflection in the trimmed build).
   wwwroot/js/site.js          The only JavaScript: document events, IntersectionObserver, matchMedia,
-                              <dialog>, <details> toggles, the URL hash, log scrolling, and the engagement
-                              beacon (GET /ping, mirrored from ../main.js).
+                              <dialog>, and the engagement beacon (GET /ping, mirrored from ../main.js).
   wwwroot/blazor.css          This edition's palette (.NET violet, overriding the shared design tokens with
                               light-dark()), the boot screen, and the error bar; everything else is the shared styles.css.
 ```
@@ -64,7 +63,7 @@ options such as `--logger "console;verbosity=normal"` are not understood: the ru
 
 The tests are bUnit on xunit.v3. Components render against fakes of the two client interfaces
 and a bUnit JS module stub for `site.js`, so the skill filter, the seed fallback, the contact
-form's validation and status messages, the mobile menu, and the kiosk dialog are all exercised
+form's validation and status messages, the mobile menu, and the demo dialogs are all exercised
 without a browser. The clients are tested over a stubbed `HttpMessageHandler`. The workflow runs
 the suite before every publish.
 

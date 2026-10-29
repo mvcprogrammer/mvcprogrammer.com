@@ -1200,12 +1200,12 @@ img, svg {
   transition: opacity 0.2s var(--ease);
 }
 
-/* ---------- Live kiosk demo dialog ---------- */
+/* ---------- Live demo dialogs (the kiosk and the patient explorer) ---------- */
 .card-actions {
   margin-top: 1.25rem;
 }
 
-.kiosk-dialog {
+.demo-dialog {
   width: min(96vw, 100rem);
   max-width: none;
   max-height: 96vh;
@@ -1217,11 +1217,11 @@ img, svg {
   box-shadow: var(--shadow);
 }
 
-.kiosk-dialog::backdrop {
+.demo-dialog::backdrop {
   background: rgba(10, 11, 13, 0.72);
 }
 
-.kiosk-dialog-head {
+.demo-dialog-head {
   display: flex;
   align-items: flex-start;
   justify-content: space-between;
@@ -1229,18 +1229,18 @@ img, svg {
   padding: 1.25rem 1.5rem 1rem;
 }
 
-.kiosk-dialog-head h2 {
+.demo-dialog-head h2 {
   font-size: 1.25rem;
   margin-bottom: 0.35rem;
 }
 
-.kiosk-dialog-note {
+.demo-dialog-note {
   color: var(--text-muted);
   font-size: 0.9375rem;
   max-width: 60rem;
 }
 
-.kiosk-dialog-close {
+.demo-dialog-close {
   flex: none;
   width: 2.5rem;
   height: 2.5rem;
@@ -1255,7 +1255,7 @@ img, svg {
   transition: color 0.2s var(--ease), border-color 0.2s var(--ease), background-color 0.2s var(--ease);
 }
 
-.kiosk-dialog-close:hover {
+.demo-dialog-close:hover {
   color: var(--hover);
   border-color: var(--hover);
   background: var(--hover-soft);
@@ -1263,19 +1263,25 @@ img, svg {
 
 /* 16:9 when there is room, otherwise capped so the dialog fits the window. The kiosk scales
    itself to whatever box it gets and letterboxes the rest, so the shape does not need to be exact. */
-.kiosk-frame-slot {
+.demo-frame-slot {
   height: min(calc(min(96vw, 100rem) * 9 / 16), 68vh);
   background: #1d1d1d;
 }
 
-.kiosk-frame {
+/* A tall frame for a page that scrolls, such as the patient explorer: as much of the window as the head and foot leave. */
+.demo-dialog[data-frame="tall"] .demo-frame-slot {
+  height: 76vh;
+  background: var(--bg);
+}
+
+.demo-frame {
   display: block;
   width: 100%;
   height: 100%;
   border: 0;
 }
 
-.kiosk-dialog-foot {
+.demo-dialog-foot {
   padding: 0.75rem 1.5rem 1rem;
   font-family: var(--font-mono);
   font-size: 0.8125rem;
@@ -1539,10 +1545,10 @@ img, svg {
   overflow-wrap: anywhere;
 }
 
-/* ---------- FHIR explorer (the FHIR API card) ----------
-   The patient explorer inside the FHIR API card's accordion: search form, a two-column result area
-   that stacks on phones, the summary card with its avatar, tiles, pills, and vitals table, and the
-   terminal-style log. The accordion rules are at the end of this block. */
+/* ---------- FHIR explorer (fhir.mvcprogrammer.com; this file is copied into that app) ----------
+   The patient explorer page: search form, a two-column result area that stacks on phones, the
+   summary card with its avatar, tiles, pills, and vitals table, and the terminal-style log. The
+   editions' FHIR API card no longer holds it, only the demo dialog that frames it. */
 .fhir-head {
   display: flex;
   flex-wrap: wrap;
@@ -2064,54 +2070,11 @@ img, svg {
   max-height: 32rem;
 }
 
-/* ----- The accordion on the FHIR API card -----
-   The summary is the card's demo button, styled like the kiosk card's. Open, the card takes the
-   full grid row so the two-panel result area keeps its width, and the hover lift is switched off
-   because a lifting full-width panel reads as a glitch. */
-.fhir-accordion {
-  margin-top: 1.25rem;
-}
-
-.fhir-accordion > summary {
-  list-style: none;
-  cursor: pointer;
-}
-
-.fhir-accordion > summary::-webkit-details-marker {
-  display: none;
-}
-
-.fhir-accordion-close-label {
-  display: none;
-}
-
-.fhir-accordion[open] > summary .fhir-accordion-open-label {
-  display: none;
-}
-
-.fhir-accordion[open] > summary .fhir-accordion-close-label {
-  display: inline;
-}
-
+/* The explorer stands on its own page at fhir.mvcprogrammer.com; these rules travel there with the copy of this file. */
 .fhir-explorer {
   margin-top: 1.5rem;
   padding-top: 1.5rem;
   border-top: 1px solid var(--border);
-}
-
-.portfolio-card:has(.fhir-accordion[open]):hover {
-  transform: none;
-}
-
-/* The card image is a still of the explorer; the live one replaces it while the accordion is open. */
-.portfolio-card:has(.fhir-accordion[open]) .card-media {
-  display: none;
-}
-
-@media (min-width: 40em) {
-  .portfolio-card:has(.fhir-accordion[open]) {
-    grid-column: 1 / -1;
-  }
 }
 
 /* Phones: the vitals table has no room for a fixed date column, so dates and values may wrap. */

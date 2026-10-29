@@ -58,23 +58,22 @@ export function ColophonSection() {
           <div className="colophon-item">
             <dt>Healthcare demo</dt>
             <dd>
-              The <a href="#fhir-api">FHIR API card</a> in Selected Work holds a live FHIR R4 patient
-              explorer: a React component of its own, with a typed <code>FhirClient</code> over{' '}
-              <code>fetch</code> behind the same interface-and-fake pattern as the Experience client,
-              and its search form, patient list, summary card, and request log held in one{' '}
-              <code>useFhirExplorer()</code> hook. The component is loaded with{' '}
-              <code>React.lazy</code> the first time the card's accordion opens, so its chunk and its
-              first request to <code>/api/fhir</code> arrive only when a visitor asks. The C# Lambda
-              behind it reads a public sandbox of synthetic records through the Firely SDK, maps the
-              resources to small DTOs, and reports every upstream call so the card can show what
-              happened. Nothing is stored, and no real patient data is involved.
+              The <a href="#fhir-api">FHIR API card</a> in Selected Work opens the live FHIR R4
+              patient explorer at fhir.mvcprogrammer.com, an Angular app of its own, in the same
+              native <code>&lt;dialog&gt;</code> the kiosk demo uses: one <code>DemoDialog</code>{' '}
+              function component takes the title, note, and URL as props, owns the native dialog in
+              an effect, and renders the iframe only while it is open, so the explorer and the C#
+              Lambda behind it load only when a visitor asks. The function reads a public sandbox of
+              synthetic records through the Firely SDK, maps the resources to small DTOs, and reports
+              every upstream call so the explorer can show what happened. Nothing is stored, and no
+              real patient data is involved.
             </dd>
           </div>
           <div className="colophon-item">
             <dt>Configuration</dt>
             <dd>
               The Lambda URLs and API paths are one typed options object, validated at startup. The
-              three fetch clients, the contact topic state, and the engagement beacon are built in one{' '}
+              two fetch clients, the contact topic state, and the engagement beacon are built in one{' '}
               <code>createSiteServices()</code> function behind interfaces and handed to the tree
               through a context provider, so components depend on the contract and tests swap in
               fakes.

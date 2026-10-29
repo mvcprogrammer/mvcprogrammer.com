@@ -14,10 +14,6 @@ namespace Portfolio.Blazor.Serialization;
 [JsonSerializable(typeof(SkillList))]
 [JsonSerializable(typeof(IReadOnlyList<Position>))]
 [JsonSerializable(typeof(ContactRequest))]
-[JsonSerializable(typeof(PatientSearchResult))]
-[JsonSerializable(typeof(PatientSummary))]
-[JsonSerializable(typeof(CapabilitySubset))]
-[JsonSerializable(typeof(ProblemDetails))]
 internal sealed partial class PortfolioJsonContext : JsonSerializerContext
 {
 }

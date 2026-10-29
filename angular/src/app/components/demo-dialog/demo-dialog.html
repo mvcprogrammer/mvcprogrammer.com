@@ -1,0 +1,18 @@
+<!-- A live demo. The iframe is rendered only while the dialog is open, so the framed site and whatever
+     runs behind it load only for visitors who ask. The parent opens it through show(). -->
+<dialog class="demo-dialog" [id]="dialogId()" [attr.aria-labelledby]="titleId()" [attr.data-frame]="tall() ? 'tall' : null" #dialog (click)="onBackdropClick($event)" (close)="onClosed()">
+  <div class="demo-dialog-head">
+    <div>
+      <p class="eyebrow">Live demo</p>
+      <h2 [id]="titleId()">{{ heading() }}</h2>
+      <p class="demo-dialog-note">{{ note() }}</p>
+    </div>
+    <button type="button" class="demo-dialog-close" aria-label="Close the demo" (click)="hide()">&times;</button>
+  </div>
+  <div class="demo-frame-slot">
+    @if (open()) {
+      <iframe class="demo-frame" [src]="frameSrc()" [title]="frameTitle()" loading="eager"></iframe>
+    }
+  </div>
+  <p class="demo-dialog-foot"><a [href]="src()" target="_blank" rel="noopener">Open full size in a new tab</a></p>
+</dialog>
