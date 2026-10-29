@@ -907,13 +907,13 @@ origin list and the Experience API's permissions are untouched.
 
 | Piece | Value |
 | --- | --- |
-| CloudFront distribution | `E2IFX9QJTIW1A4` (dpnwjccnpnc2d.cloudfront.net), origin path `/fhir`, same S3 OAC `E2KEES7ZY0UA4S`, the `fhir-api` origin with its OAC `E3OMK0SCVK2C13` behind `/api/fhir/*` with all seven methods allowed and `GET`/`HEAD` cached (the explorer writes; set under #155), 403 → `/index.html` 200, standard logging to the `fhir/` prefix |
+| CloudFront distribution | `E2IFX9QJTIW1A4` (dpnwjccnpnc2d.cloudfront.net), origin path `/fhir`, same S3 OAC `E2KEES7ZY0UA4S`, the `fhir-api` origin with its OAC `E3OMK0SCVK2C13` behind `/api/fhir/*` with all seven methods allowed and `GET`/`HEAD` cached (the explorer writes; set under #155), no custom error responses, standard logging to the `fhir/` prefix |
 | Response headers policy | `mvcprogrammer-fhir-headers` (`337bb8ed-9a38-44c5-945f-78ef345a7c1f`): the site's policy with `frame-ancestors https://mvcprogrammer.com https://blazor.mvcprogrammer.com https://angular.mvcprogrammer.com https://react.mvcprogrammer.com` instead of `'none'`, no `X-Frame-Options`, and `connect-src 'self'` only, so the editions' demo dialog can frame the explorer and nothing else can (#142) |
 | ACM certificate | `arn:aws:acm:us-east-1:334383610383:certificate/1f36a56c-f631-4942-9ff1-54cf8b4dc7dd` (fhir.mvcprogrammer.com, DNS-validated) |
 | Route 53 | A and AAAA aliases for `fhir.mvcprogrammer.com` to the distribution |
 | Bucket policy | the `AWS:SourceArn` condition lists every distribution (six with this one) |
 | FHIR API | Lambda permission `fhir-cloudfront-invoke` on `mvcprogrammer-fhir-api` lets the distribution invoke the function URL, outside the SAM template like the editions' |
-| Edge function | `mvcprogrammer-www-redirect` on the default behavior for `/ping`; on the main distribution it also sends `/fhir` here (section 4b) |
+| Edge function | `mvcprogrammer-fhir-viewer-request` on the default behavior (viewer request): `/ping` answers 204, and any path without a file extension is rewritten to `/index.html` so the Angular router gets its deep links from S3; the code is [infra/cloudfront/fhir-viewer-request.js](../infra/cloudfront/fhir-viewer-request.js). The distribution carries **no** custom error response (#158): the FHIR function's own 403 must reach the client, and a 403 → `/index.html` mapping would replace it. The main distribution's `mvcprogrammer-www-redirect` sends `/fhir` here (section 4b) |
 | GitHub variable | `FHIR_DISTRIBUTION_ID` = `E2IFX9QJTIW1A4` |
 | IAM | `infra/iam/github-actions-deploy-role-policy.json` lists the distribution under `cloudfront:CreateInvalidation`; apply with the `put-role-policy` command in the Blazor section |
 
@@ -975,6 +975,32 @@ aws route53 change-resource-record-sets --hosted-zone-id Z02467662SJ3B6YDOZKEF -
 gh variable set FHIR_DISTRIBUTION_ID --body E2IFX9QJTIW1A4
 
 # 6. Once the first deploy has filled fhir/, publish the edge function so /fhir on the main site lands here (section 4b)
+```
+
+### Viewer-request function (#158)
+
+Deep links on a single-page app hosted on private S3 are usually served through a `403 → /index.html`
+custom error response. That mapping is distribution-wide, so it also replaced the FHIR function's 403 (the
+read-only answer for the seeded patient) with the index page. The explorer's distribution therefore uses a
+viewer-request function on its default behavior instead, which rewrites any extension-less path to
+`/index.html` before S3 sees it, and carries no custom error responses at all. The `/api/fhir/*` behavior has
+no function, so every API status passes through.
+
+```bash
+# 1. Create or update the function from the repository file, test it, publish it
+aws cloudfront create-function --name mvcprogrammer-fhir-viewer-request \
+  --function-config '{"Comment":"fhir.mvcprogrammer.com: /ping 204, extension-less paths to /index.html","Runtime":"cloudfront-js-2.0"}' \
+  --function-code fileb://infra/cloudfront/fhir-viewer-request.js
+#    (update-function with the DEVELOPMENT stage's ETag to change it later; test-function with a /no-such-page event; publish-function)
+
+# 2. Associate it with the default behavior (viewer-request) and set CustomErrorResponses to {"Quantity": 0}
+#    with update-distribution and the current ETag, wait for the deploy, invalidate /*
+
+# 3. Check
+curl -s -o /dev/null -w "%{http_code} %{content_type}\n" https://fhir.mvcprogrammer.com/no-such-page     # 200 text/html, the app's not-found page
+curl -s -o /dev/null -w "%{http_code}\n" https://fhir.mvcprogrammer.com/missing.js                      # 403: a missing asset is not a route
+curl -s -w " [%{http_code} %{content_type}]\n" -X DELETE -H "x-demo-session: <uuid>" \
+  https://fhir.mvcprogrammer.com/api/fhir/patients/mvc-programmer                                       # 403 application/problem+json
 ```
 
 ### Response headers policy (#142)
