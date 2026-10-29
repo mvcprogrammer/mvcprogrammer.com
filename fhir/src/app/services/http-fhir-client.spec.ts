@@ -13,6 +13,9 @@ describe('HttpFhirClient', () => {
   let client: HttpFhirClient;
   let http: HttpTestingController;
 
+  /** The writes hash their body before sending; this lets that settle so the request exists. */
+  const settle = (): Promise<void> => new Promise((resolve) => setTimeout(resolve, 50));
+
   beforeEach(() => {
     TestBed.configureTestingModule({
       providers: [provideHttpClient(), provideHttpClientTesting(), { provide: SITE_OPTIONS, useValue: TEST_SITE_OPTIONS }, { provide: DemoSession, useValue: new FakeDemoSession() }, HttpFhirClient],
@@ -174,6 +177,7 @@ describe('HttpFhirClient', () => {
 
       // Act
       const pending = client.createPatient(input, '0c9b8a7d-6e5f-4a3b-8c2d-1e0f9a8b7c6d');
+      await settle();
       const request = http.expectOne('api/fhir/patients');
       request.flush(result, { status: 201, statusText: 'Created', headers: { 'cache-control': 'no-store', location: '/api/fhir/patients/new-1/summary' } });
 
@@ -184,6 +188,8 @@ describe('HttpFhirClient', () => {
       expect(request.request.headers.get('Content-Type')).toBe('application/json');
       expect(request.request.headers.get('Accept')).toBe('application/json, application/problem+json');
       expect(request.request.body).toBe(JSON.stringify(input));
+      // CloudFront's signed request to the function URL needs the body's hash.
+      expect(request.request.headers.get('x-amz-content-sha256')).toBe('d3f29a4f103fb9d4762090810b208250c39680ae81ae54bee3d68c3410b14975');
       expect(request.request.timeout).toBe(HttpFhirClient.TIMEOUT_MS);
       const response = await pending;
       expect(response.status).toBe(201);
@@ -194,8 +200,10 @@ describe('HttpFhirClient', () => {
     it('should map a 200 for a repeated key and a 400 validation problem with its field errors', async () => {
       // Act
       const repeated = client.createPatient({ familyName: 'Dickens' }, '0c9b8a7d-6e5f-4a3b-8c2d-1e0f9a8b7c6d');
+      await settle();
       http.expectOne('api/fhir/patients').flush(createPatientWriteResult({ familyName: 'Dickens' }), { status: 200, statusText: 'OK' });
       const rejected = client.createPatient({ familyName: '' }, '0c9b8a7d-6e5f-4a3b-8c2d-1e0f9a8b7c6d');
+      await settle();
       http.expectOne('api/fhir/patients').flush(
         { type: 'https://mvcprogrammer.com/api/problems/validation-failed', title: 'Validation failed', status: 400, detail: 'One or more fields are invalid.', errors: { familyName: ['required'] } },
         { status: 400, statusText: 'Bad Request' },
@@ -214,6 +222,7 @@ describe('HttpFhirClient', () => {
     it('should PUT the input to the patient path with the session header', async () => {
       // Act
       const pending = client.replacePatient('new 1', { familyName: 'Dickens' });
+      await settle();
       const request = http.expectOne('api/fhir/patients/new%201');
       request.flush(createPatientWriteResult({ familyName: 'Dickens' }, 'new 1'));
 
@@ -231,6 +240,7 @@ describe('HttpFhirClient', () => {
 
       // Act
       const pending = client.patchPatient('new-1', operations);
+      await settle();
       const request = http.expectOne('api/fhir/patients/new-1');
       request.flush(createPatientWriteResult({ familyName: 'Dickens', givenName: 'Chuck' }));
 
@@ -238,12 +248,14 @@ describe('HttpFhirClient', () => {
       expect(request.request.method).toBe('PATCH');
       expect(request.request.headers.get('Content-Type')).toBe('application/json-patch+json');
       expect(request.request.body).toBe(JSON.stringify(operations));
+      expect(request.request.headers.get('x-amz-content-sha256')).toBe(await HttpFhirClient.sha256(JSON.stringify(operations)));
       expect((await pending).body.patient.givenName).toBe('Chuck');
     });
 
     it('should DELETE without a body and resolve a 204 with a null body', async () => {
       // Act
       const pending = client.deletePatient('new-1');
+      await settle();
       const request = http.expectOne('api/fhir/patients/new-1');
       request.flush(null, { status: 204, statusText: 'No Content' });
 
@@ -251,6 +263,7 @@ describe('HttpFhirClient', () => {
       expect(request.request.method).toBe('DELETE');
       expect(request.request.body).toBeNull();
       expect(request.request.headers.has('Content-Type')).toBe(false);
+      expect(request.request.headers.has('x-amz-content-sha256')).toBe(false);
       const response = await pending;
       expect(response.status).toBe(204);
       expect(response.body).toBeNull();
@@ -259,6 +272,7 @@ describe('HttpFhirClient', () => {
     it('should reject a write with the problem the function sent', async () => {
       // Act
       const pending = client.deletePatient('mvc-programmer');
+      await settle();
       http.expectOne('api/fhir/patients/mvc-programmer').flush(
         { type: 'https://mvcprogrammer.com/api/problems/read-only', title: 'Demo patient is read-only', status: 403, detail: 'Read-only.' },
         { status: 403, statusText: 'Forbidden' },
