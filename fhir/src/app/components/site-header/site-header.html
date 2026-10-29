@@ -1,0 +1,20 @@
+<!-- Sticky header with the brand (back to the main site), the theme toggle, and the link to the demo's card. -->
+<header class="site-header" [class.is-scrolled]="scrolled()">
+  <div class="container header-inner">
+    <div class="brand-group">
+      <a class="brand" [href]="siteUrl" aria-label="mvcprogrammer.com, the main site">
+        <span class="brand-mark" aria-hidden="true"></span>
+        <span class="brand-name">mvcprogrammer.com</span>
+      </a>
+    </div>
+
+    <div class="header-links">
+      <a class="nav-link" [href]="siteUrl + '#fhir-api'">About this demo</a>
+      <button class="theme-toggle" type="button" aria-label="Switch between light and dark theme"
+              title="Switch between light and dark theme" (click)="toggleTheme()">
+        <span class="theme-icon theme-icon-moon" aria-hidden="true"><app-icon name="moon" /></span>
+        <span class="theme-icon theme-icon-sun" aria-hidden="true"><app-icon name="sun" /></span>
+      </button>
+    </div>
+  </div>
+</header>

@@ -45,6 +45,32 @@ jobs:
       - name: Test
         run: npm test
 
+  fhir:
+    name: FHIR explorer
+    runs-on: ubuntu-24.04
+    defaults:
+      run:
+        working-directory: fhir
+    steps:
+      - name: Check out
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - name: Set up Node
+        uses: actions/setup-node@a0853c24544627f65ddf259abe73b1d18a591444 # v5.0.0
+        with:
+          node-version: 24
+          cache: npm
+          cache-dependency-path: fhir/package-lock.json
+
+      - name: Install
+        run: npm ci
+
+      - name: Test
+        run: npm test
+
+      - name: Build
+        run: npm run build
+
   react:
     name: React edition
     runs-on: ubuntu-24.04
@@ -158,7 +184,7 @@ jobs:
   # One check for the ruleset to require. It runs whatever happened above and fails when any suite did.
   ci:
     name: CI
-    needs: [angular, react, stats, tools, blazor, api]
+    needs: [angular, fhir, react, stats, tools, blazor, api]
     if: always()
     runs-on: ubuntu-24.04
     steps:
