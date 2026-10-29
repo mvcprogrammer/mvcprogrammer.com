@@ -19,7 +19,7 @@
       </div>
       <div class="colophon-item">
         <dt>Healthcare demo</dt>
-        <dd>The <a href="#fhir-api">FHIR API card</a> in Selected Work opens the live FHIR R4 patient explorer at fhir.mvcprogrammer.com, an Angular app of its own, in the same native <code>&lt;dialog&gt;</code> the kiosk demo uses: one <code>DemoDialog</code> Razor component takes the title, note, and URL as parameters, shows the dialog through a small site.js helper, and renders the iframe only while it is open, so the explorer and the C# Lambda behind it load only when a visitor asks. The function reads a public sandbox of synthetic records through the Firely SDK, maps the resources to small DTOs, and reports every upstream call so the explorer can show what happened. Nothing is stored, and no real patient data is involved.</dd>
+        <dd>The <a href="#fhir-api">FHIR API card</a> in Selected Work opens the live FHIR R4 patient explorer at fhir.mvcprogrammer.com, an Angular app of its own, in the same native <code>&lt;dialog&gt;</code> the kiosk demo uses: one <code>DemoDialog</code> Razor component takes the title, note, and URL as parameters, shows the dialog through a small site.js helper, and renders the iframe only while it is open, so the explorer and the C# Lambda behind it load only when a visitor asks. The function reads a public sandbox of synthetic records through the Firely SDK, maps the resources to small DTOs, and reports every upstream call so the explorer can show what happened; its write side creates, replaces, patches, and deletes demo patients under a guard tied to the visitor's session. Nothing is stored, and no real patient data is involved.</dd>
       </div>
       <div class="colophon-item">
         <dt>Configuration</dt>
