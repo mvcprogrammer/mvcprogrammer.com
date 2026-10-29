@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="color-scheme" content="light dark">
+  <meta name="theme-color" content="#f3f5fa" media="(prefers-color-scheme: light)">
+  <meta name="theme-color" content="#0f1b33" media="(prefers-color-scheme: dark)">
+
+  <title>FHIR R4 Patient Explorer | mvcprogrammer.com</title>
+  <meta name="description" content="A live FHIR R4 patient explorer over a public sandbox of synthetic records: search, summary, raw bundle, and the trace of every upstream call. Angular in the browser, C# on AWS Lambda behind it. A demo from mvcprogrammer.com.">
+  <meta name="author" content="Neal Thomas">
+  <link rel="canonical" href="https://fhir.mvcprogrammer.com/">
+  <base href="/">
+
+  <!-- Open Graph -->
+  <meta property="og:type" content="website">
+  <meta property="og:url" content="https://fhir.mvcprogrammer.com/">
+  <meta property="og:title" content="FHIR R4 Patient Explorer | mvcprogrammer.com">
+  <meta property="og:description" content="A live FHIR R4 patient explorer over a public sandbox of synthetic records. Angular in the browser, C# on AWS Lambda behind it.">
+  <meta property="og:site_name" content="fhir.mvcprogrammer.com">
+  <meta property="og:locale" content="en_US">
+  <meta property="og:image" content="https://mvcprogrammer.com/assets/images/og-image.jpg">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta property="og:image:alt" content="Neal Thomas, senior full-stack software engineer. .NET, Angular, React, SQL Server.">
+
+  <!-- Icons -->
+  <link rel="icon" href="favicon.svg" type="image/svg+xml">
+  <link rel="icon" href="favicon.ico" sizes="16x16 32x32 48x48">
+  <link rel="apple-touch-icon" href="apple-touch-icon.png">
+
+  <!-- Fonts are self-hosted (SIL Open Font License, see assets/fonts/). Preloaded so text renders in the right face on first paint. -->
+  <link rel="preload" href="assets/fonts/inter-latin.woff2" as="font" type="font/woff2" crossorigin>
+  <link rel="preload" href="assets/fonts/jetbrains-mono-latin.woff2" as="font" type="font/woff2" crossorigin>
+
+  <!-- styles.css is the static site's stylesheet, copied into this build unchanged; it carries the
+       explorer's own styles. The build appends its own link for fhir.css (the palette, the boot screen,
+       the component host elements, the page layout, and form validation), emitted under the bundle
+       name "fhir" so that ng serve does not name it styles.css and shadow the shared file. -->
+  <script src="theme.js"></script>
+  <link rel="stylesheet" href="styles.css">
+</head>
+
+<body id="top">
+  <app-root>
+    <div class="app-loading" role="status" aria-live="polite">
+      <span class="brand-mark" aria-hidden="true"></span>
+      <p class="app-loading-text">Loading</p>
+    </div>
+  </app-root>
+</body>
+</html>

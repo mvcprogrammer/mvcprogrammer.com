@@ -1,0 +1,101 @@
+/* fhir.mvcprogrammer.com — fhir.css
+   Additions to the shared styles.css for the patient explorer app: the Angular palette, the boot
+   screen shown until the app bootstraps, the component host elements, the page layout around the
+   explorer, and form validation state. Component styles are not used anywhere: Angular would inject
+   them as inline <style> elements, which the site's Content Security Policy forbids, so every rule
+   lives in this one file. The explorer's own styles (.fhir-*) are in styles.css, shared with the
+   four editions' FHIR API card. */
+
+/* ---------- Palette ----------
+   The Angular edition's navy and brass, so the explorer reads as part of that edition's family.
+   Only the design tokens from styles.css are overridden; light-dark() picks the value for the active
+   color scheme (styles.css declares color-scheme: light dark on :root), so one declaration covers
+   both themes and no rule is repeated. */
+:root {
+  --bg: light-dark(#f3f5fa, #0f1b33);
+  --bg-alt: light-dark(#e6ebf5, #0a1428);
+  --surface: light-dark(#ffffff, #182744);
+  --text: light-dark(#121c33, #e6ecf7);
+  --text-muted: light-dark(#4d5873, #a7b3cc);
+  --border: light-dark(#d3dbea, #2b3b5c);
+  --accent: light-dark(#1b365d, #e3b04b);
+  --accent-hover: light-dark(#122745, #ecc36c);
+  --accent-contrast: light-dark(#ffffff, #14213d);
+  --accent-soft: light-dark(rgba(27, 54, 93, 0.10), rgba(227, 176, 75, 0.16));
+  --hover: light-dark(#b7791f, #f2cd7a);
+  --hover-soft: light-dark(rgba(183, 121, 31, 0.12), rgba(242, 205, 122, 0.18));
+  --hover-contrast: light-dark(#ffffff, #14213d);
+}
+
+/* Angular wraps each component in its host element. With display: contents the wrappers leave the
+   box tree, so the sticky header and the flex rows see the same children the static markup gives them. */
+app-root,
+app-icon,
+app-icon-sprite,
+app-site-header,
+app-site-footer,
+app-social-links,
+app-fhir-explorer,
+app-explorer,
+app-not-found {
+  display: contents;
+}
+
+.app-loading {
+  min-height: 100vh;
+  display: grid;
+  place-content: center;
+  justify-items: center;
+  gap: 1rem;
+  text-align: center;
+  color: var(--text-muted);
+  font-family: var(--font-sans);
+}
+
+.app-loading .brand-mark {
+  width: 2.5rem;
+  height: 2.5rem;
+}
+
+.app-loading-text {
+  margin: 0;
+  font-size: 0.95rem;
+}
+
+/* ---------- Explorer page ----------
+   On the editions the explorer unfolds inside a card below its pitch, with a rule above it. Here it is
+   the page, so the rule and the gap go, and the "under the hood" log gets the room a full page allows. */
+.explorer-page .fhir-explorer {
+  margin-top: 0;
+  padding-top: 0;
+  border-top: 0;
+}
+
+.explorer-page .fhir-log {
+  max-height: 24rem;
+}
+
+/* The line below the explorer that says where it comes from. */
+.explorer-about {
+  margin: 2rem 0 0;
+  padding-top: 1.5rem;
+  border-top: 1px solid var(--border);
+  color: var(--text-muted);
+  font-size: 0.95rem;
+}
+
+/* The header has no section nav here: the brand on the left, the theme toggle and the link back on the right. */
+.site-header .header-inner {
+  justify-content: space-between;
+}
+
+.header-links {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+
+/* Reactive forms mark controls they have validated; only a failed field the visitor has touched needs a visible cue. */
+.fhir-search input.ng-invalid.ng-touched {
+  border-color: var(--hover);
+}

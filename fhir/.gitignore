@@ -1,0 +1,25 @@
+# Compiled output
+/dist
+/tmp
+/out-tsc
+
+# Node
+/node_modules
+npm-debug.log
+
+# IDEs and editors
+.idea/
+.vscode/
+*.swp
+
+# Angular
+/.angular/cache
+/coverage
+
+# public/ is generated: scripts/sync-shared.mjs copies the stylesheet, icons, images, and the
+# Experience seed from the repository root before every build and serve.
+/public
+
+# System files
+.DS_Store
+Thumbs.db
