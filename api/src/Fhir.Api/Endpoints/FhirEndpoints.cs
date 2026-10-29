@@ -22,6 +22,9 @@ public static partial class FhirEndpoints
     private const int MAX_FAMILY_LENGTH = 60;
     private const int MAX_IDENTIFIER_LENGTH = 120;
 
+    /// <summary>The detail every stubbed write answers with; the wording openapi.yaml promises.</summary>
+    private const string WRITES_NOT_IMPLEMENTED = "Patient writes are specified and arrive with the explorer's next release.";
+
     /// <summary>Firely's System.Text.Json serializer for R4 POCOs, pretty-printed for the raw-bundle toggle.</summary>
     private static readonly JsonSerializerOptions FHIR_JSON = new JsonSerializerOptions().ForFhir(ModelInfo.ModelInspector).Pretty();
 
@@ -37,6 +40,14 @@ public static partial class FhirEndpoints
         guarded.MapGet("/patients/{patientId}/summary", GetPatientSummary).WithName("getPatientSummary");
         guarded.MapGet("/patients/{patientId}/raw", GetPatientRawBundle).WithName("getPatientRawBundle");
         guarded.MapGet("/capability", GetCapability).WithName("getFhirCapability");
+
+        // Write side, stubbed. Each answers 501 until the write slice lands (#144); the routes and
+        // names already match openapi.yaml 1.2.0 so the contract is settled before the code. The
+        // bodies are not bound yet, so nothing is validated ahead of the 501.
+        group.MapPost("/patients", CreatePatient).WithName("createPatient");
+        group.MapPut("/patients/{patientId}", ReplacePatient).WithName("replacePatient");
+        group.MapPatch("/patients/{patientId}", PatchPatient).WithName("patchPatient");
+        group.MapDelete("/patients/{patientId}", DeletePatient).WithName("deletePatient");
 
         group.MapGet("/health", GetHealth).WithName("getFhirHealth").WithTags("Operations");
         return group;
@@ -97,6 +108,14 @@ public static partial class FhirEndpoints
         var subset = await capability.GetAsync(cancellationToken);
         return CacheableJson.Ok(context, subset, CAPABILITY_CACHE_CONTROL);
     }
+
+    private static IResult CreatePatient(HttpContext context) => Problems.NotImplemented(context, WRITES_NOT_IMPLEMENTED);
+
+    private static IResult ReplacePatient(HttpContext context, string patientId) => Problems.NotImplemented(context, WRITES_NOT_IMPLEMENTED);
+
+    private static IResult PatchPatient(HttpContext context, string patientId) => Problems.NotImplemented(context, WRITES_NOT_IMPLEMENTED);
+
+    private static IResult DeletePatient(HttpContext context, string patientId) => Problems.NotImplemented(context, WRITES_NOT_IMPLEMENTED);
 
     private static IResult GetHealth(HttpContext context, IConfiguration configuration)
     {

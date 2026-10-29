@@ -486,6 +486,37 @@ public sealed class ApiTests
 
     #endregion
 
+    #region Writes (stubbed)
+
+    /// <summary>The write operations openapi.yaml 1.2.0 specifies answer 501 with the promised problem until #144 ships them, and never reach the sandbox.</summary>
+    [Theory]
+    [InlineData("POST", "/api/fhir/patients")]
+    [InlineData("PUT", "/api/fhir/patients/1842")]
+    [InlineData("PATCH", "/api/fhir/patients/1842")]
+    [InlineData("DELETE", "/api/fhir/patients/1842")]
+    public async Task Patient_writes_are_501_problems_until_built(string method, string path)
+    {
+        // Arrange
+        using var factory = new FhirApiFactory();
+        using var client = factory.CreateClient();
+        using var request = new HttpRequestMessage(new HttpMethod(method), path);
+        if (method != "DELETE")
+        {
+            request.Content = new StringContent("{}", System.Text.Encoding.UTF8, method == "PATCH" ? "application/json-patch+json" : "application/json");
+        }
+
+        // Act
+        var response = await client.SendAsync(request, Ct);
+
+        // Assert
+        var problem = await AssertProblem(response, HttpStatusCode.NotImplemented, "not-implemented");
+        Assert.Equal("Patient writes are specified and arrive with the explorer's next release.", problem.GetProperty("detail").GetString());
+        Assert.Equal(path, problem.GetProperty("instance").GetString());
+        Assert.Empty(factory.Handler.Requests);
+    }
+
+    #endregion
+
     #region Helper Methods
 
     /// <summary>A patient with three conditions (two active, one resolved), vitals across two pages, and counts.</summary>

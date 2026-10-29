@@ -89,7 +89,8 @@ request is answered from the sandbox, mapped at the boundary into the small DTOs
 api/src/Fhir.Api/
   Program.cs                Minimal API host, same shape as the Experience one.
   Configuration/            FhirOptions: base URL, page cap, page sizes, timeouts, retry, rate limit, capability TTL.
-  Endpoints/                /api/fhir/patients, .../{id}/summary, .../{id}/raw, /api/fhir/capability, /api/fhir/health.
+  Endpoints/                /api/fhir/patients (GET, and POST stubbed), .../{id} (PUT, PATCH, DELETE stubbed), .../{id}/summary,
+                            .../{id}/raw, /api/fhir/capability, /api/fhir/health.
   Fhir/                     IFhirGateway over a Firely FhirClient: read, search with paging, _summary=count, metadata;
                             UpstreamNotFound / UpstreamUnavailable / UpstreamTimeout; CapabilityCache.
   Services/                 PatientExplorerService: the Patient first, then four bounded searches concurrently.
@@ -115,6 +116,12 @@ wiped or down. `FHIR_SOURCE_NAME` is the label the trace carries.
 
 ## Design notes
 
+- **Writes, spec first.** `openapi.yaml` 1.2.0 specifies `POST /fhir/patients` and `PUT`, `PATCH`
+  (JSON Patch), and `DELETE` on `/fhir/patients/{id}`, open to visitors of the explorer under a demo
+  guard the function enforces: the seeded patient is read-only, a session can only change what it
+  created (an identifier carries the `X-Demo-Session` token), creates are idempotent through a
+  conditional create on `Idempotency-Key`, and writes have their own budget. The routes exist and
+  answer `501` until the write slice (#144) lands.
 - **The function is the boundary.** The browser never talks to the sandbox. Resources are parsed
   by the Firely SDK (`Hl7.Fhir.R4`) into typed objects and mapped to DTOs; only the raw-bundle
   endpoint passes FHIR JSON through, as a `collection` Bundle of what the summary fetched.
