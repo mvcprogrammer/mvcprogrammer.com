@@ -72,9 +72,11 @@ chart is created; this script is how the board gets a burndown from day one and 
 
 ## Scheduled refresh
 
-`.github/workflows/board.yml` runs both scripts once a day (03:30 UTC, after the evening's merges in
-the Eastern time the board keeps) and on demand from the Actions page. It backfills the board,
-redraws the current sprint's chart, points the README's image at that sprint's file, writes the
+`.github/workflows/board.yml` runs the three board scripts once a day (03:30 UTC, after the evening's
+merges in the Eastern time the board keeps) and on demand from the Actions page. It assigns the
+owner to every item at Ready or later that has no assignee yet (`tools/board-assign.mjs`; GitHub
+Projects has no built-in workflow for a default assignee, and an item that already has one, whoever
+it is, is left alone), backfills the board, redraws the current sprint's chart, points the README's image at that sprint's file, writes the
 day-by-day table to the run's job summary, and, only when the chart changed, commits to the
 `chore/board-refresh` branch and opens a pull request that merges itself once the `CI` check passes.
 A run that changes nothing pushes nothing.
@@ -82,9 +84,10 @@ A run that changes nothing pushes nothing.
 - **Token.** `GITHUB_TOKEN` cannot read or write a user-owned project, so the workflow uses the
   `BOARD_TOKEN` repository secret: a fine-grained personal access token (Settings > Developer
   settings > Personal access tokens > Fine-grained) scoped to this repository with **Contents: read
-  and write**, **Pull requests: read and write**, **Metadata: read** (added automatically), and the
-  account permission **Projects: read and write**. Give it an expiry and put the date on the board.
-  Store it with `gh secret set BOARD_TOKEN`.
+  and write**, **Issues: read and write**, **Pull requests: read and write**, **Metadata: read**
+  (added automatically), and the account permission **Projects: read and write**. Give it an expiry
+  and put the date on the board. Store it with `gh secret set BOARD_TOKEN`. A token without Issues
+  write still runs the backfill and the chart; the run warns and skips the assignment step.
 - **Past the ruleset.** `protect-main` requires a pull request and the `CI` check, and the workflow
   honors both rather than bypassing them: the token opens the pull request and enables auto-merge
   (this needs the repository setting "Allow auto-merge" under Settings > General > Pull Requests; with
@@ -116,6 +119,8 @@ Backlog until someone grooms it.
   criteria** as checkboxes a reviewer can tick.
 - **Priority**, **Size**, and a Fibonacci **Estimate** are set, and the item is in a **Sprint**, or
   is deliberately left out of one with the reason in the body.
+- The item is assigned. The owner is the default: the nightly refresh assigns the owner to any item
+  at Ready or later that nobody holds, so leaving the field empty is never a hand-off to no one.
 - Anything the work depends on (a secret, a setting, another issue, something only the owner can
   do) is named, and who provides it is clear.
 - The body carries no IDs, email addresses, or private file names, because the board is public.

@@ -1,13 +1,15 @@
 name: Refresh the board and burndown
 
-# Once a day, fill the project board's Started, Completed, and Actual hours from git and redraw the
-# current sprint's burndown, then open (or update) a pull request with the chart when it changed.
+# Once a day, assign the owner to every board item at Ready or later that has no assignee, fill the
+# project board's Started, Completed, and Actual hours from git and redraw the current sprint's
+# burndown, then open (or update) a pull request with the chart when it changed.
 # The pull request runs the CI check like any other and merges itself through auto-merge, so the
 # protect-main ruleset stays exactly as it is for people. Nothing is pushed when nothing changed.
 #
-# GITHUB_TOKEN cannot read or write a user-owned project, so the two scripts, the push, and the
+# GITHUB_TOKEN cannot read or write a user-owned project, so the three scripts, the push, and the
 # pull request use the BOARD_TOKEN secret: a fine-grained personal access token with repository
-# Contents and Pull requests read and write, and account Projects read and write (docs/BURNDOWN.md).
+# Contents, Issues, and Pull requests read and write, and account Projects read and write
+# (docs/BURNDOWN.md). Without Issues write the assignment step is skipped with a warning, not failed.
 # The checkouts use the ordinary GITHUB_TOKEN; a preflight step checks the secret before anything runs.
 
 on:
@@ -57,6 +59,7 @@ jobs:
 
       # Fail here, with a plain message, rather than deep in a script or at the push.
       - name: Check the BOARD_TOKEN secret
+        id: token
         run: |
           if [ -z "$GH_TOKEN" ]; then echo "::error::The BOARD_TOKEN secret is not set."; exit 1; fi
           login=$(gh api user --jq .login) || { echo "::error::BOARD_TOKEN is not a valid token."; exit 1; }
@@ -66,6 +69,20 @@ jobs:
           case "$perms" in *push*) ;; *) echo "::error::BOARD_TOKEN cannot push to $GITHUB_REPOSITORY; it needs Contents: read and write."; exit 1;; esac
           gh project view 1 --owner mvcprogrammer --format json --jq .title >/dev/null || { echo "::error::BOARD_TOKEN cannot read project 1; it needs the account permission Projects: read and write."; exit 1; }
           echo "Project 1 is readable"
+          # Assigning needs Issues: read and write. The permissions object above does not name it, but the
+          # assignee list needs Issues: read, so a token with no Issues permission at all fails here and the
+          # assignment step is skipped; a token with Issues: read only fails in the script, with the same message.
+          if gh api "repos/$GITHUB_REPOSITORY/assignees" --jq 'length' >/dev/null 2>&1; then
+            echo "assign=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "::warning::BOARD_TOKEN cannot assign issues; give it Issues: read and write to set the default assignee."
+            echo "assign=false" >> "$GITHUB_OUTPUT"
+          fi
+
+      # The owner is the default assignee of anything groomed; GitHub Projects has no workflow for that.
+      - name: Assign the owner to unassigned items at Ready or later
+        if: steps.token.outputs.assign == 'true'
+        run: node tools/board-assign.mjs | tee assign.txt
 
       - name: Fill the board's dates and hours from git
         run: node tools/board-backfill.mjs --profile-repo profile | tee backfill.txt
