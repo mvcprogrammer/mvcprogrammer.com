@@ -2,7 +2,7 @@ openapi: 3.1.0
 
 info:
   title: mvcprogrammer.com API
-  version: 1.1.0
+  version: 1.2.0
   summary: "APIs behind mvcprogrammer.com: the Experience section and the FHIR R4 patient explorer."
   description: |
     Two small, public functions served same-origin under `/api`.
@@ -13,7 +13,8 @@ info:
     and re-renders the timeline from it.
 
     **FHIR** (`/fhir/*`) backs the patient explorer at
-    [mvcprogrammer.com/fhir](https://mvcprogrammer.com/fhir). It is a facade
+    [fhir.mvcprogrammer.com](https://fhir.mvcprogrammer.com/), which the FHIR API card on
+    every edition of the site opens in a dialog. It is a facade
     over a public FHIR R4 sandbox holding synthetic data only (HAPI by default, SMART
     Health IT as the configured fallback). The function parses FHIR resources with the
     Firely SDK, maps them to the small DTOs below, and returns a `trace` describing the
@@ -35,9 +36,26 @@ info:
       a short per-attempt upstream timeout with retries, and a hard cap on the pages it
       walks, because every call reaches a third-party server.
     - Errors use RFC 9457 Problem Details (`application/problem+json`).
-    - Reads need no authentication; the data is the public resume. Writes (create, update,
-      delete) are specified now and stubbed to `501 Not Implemented` until the admin API
-      ships; they will require an API key.
+    - Reads need no authentication; the data is the public resume. Experience writes
+      (create, update, delete) are specified now and stubbed to `501 Not Implemented` until
+      the admin API ships; they will require an API key.
+    - FHIR writes (`POST`, `PUT`, `PATCH`, `DELETE` on patients) are open to visitors of the
+      explorer, because the sandbox holds synthetic data only, under a demo guard enforced in
+      the function (specified in 1.2.0, stubbed to `501` until the write slice ships):
+      - The seeded demo patient is read-only.
+      - A visitor can only change or delete a patient the explorer created in the same
+        session. The explorer mints a session token, sends it as `X-Demo-Session`, and every
+        patient it creates carries that token as an identifier in the system
+        `https://mvcprogrammer.com/fhir/demo-session`. A write whose token does not match
+        answers `404`, so the explorer can neither touch nor confirm any other record.
+      - Creates are idempotent through `Idempotency-Key`: the function turns the key into a
+        FHIR conditional create (`If-None-Exist` on the identifier system
+        `https://mvcprogrammer.com/fhir/idempotency`) and stores the key as a second
+        identifier, so a retried create returns the patient it already made with `200`.
+      - Writes have their own per-IP budget (10 per 10 minutes) on top of the read budget, and
+        a session may create at most 5 patients. Both answer `429` with `Retry-After`.
+      - Nothing is cleaned up by the function; created patients are the visitor's to delete
+        and go with the next sandbox wipe.
   contact:
     name: Neal Thomas
     url: https://mvcprogrammer.com/#contact
@@ -359,6 +377,207 @@ paths:
         '504':
           $ref: '#/components/responses/UpstreamTimeout'
 
+    post:
+      tags: [FHIR]
+      operationId: createPatient
+      summary: Create a demo patient (stub)
+      description: |
+        Creates a `Patient` on the sandbox from the body, tagged with the visitor's session
+        token and the idempotency key as identifiers, and returns the demographics the summary
+        would show plus the upstream trace. The create is conditional on the idempotency key,
+        so repeating the request returns the patient already made with `200` instead of `201`.
+        Currently answers `501`.
+      parameters:
+        - $ref: '#/components/parameters/DemoSession'
+        - $ref: '#/components/parameters/IdempotencyKey'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PatientInput'
+            examples:
+              default:
+                $ref: '#/components/examples/PatientInputExample'
+      responses:
+        '201':
+          description: Created. The body is the new patient as the summary would show it.
+          headers:
+            Location:
+              $ref: '#/components/headers/PatientLocation'
+            Cache-Control:
+              $ref: '#/components/headers/NoStore'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PatientWriteResult'
+              examples:
+                default:
+                  $ref: '#/components/examples/PatientWriteResultExample'
+        '200':
+          description: The same `Idempotency-Key` was used before and the patient it created still exists; that patient is returned and nothing is created.
+          headers:
+            Location:
+              $ref: '#/components/headers/PatientLocation'
+            Cache-Control:
+              $ref: '#/components/headers/NoStore'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PatientWriteResult'
+        '400':
+          $ref: '#/components/responses/ValidationFailed'
+        '429':
+          $ref: '#/components/responses/WriteRateLimited'
+        '500':
+          $ref: '#/components/responses/InternalError'
+        '501':
+          $ref: '#/components/responses/FhirNotImplemented'
+        '502':
+          $ref: '#/components/responses/UpstreamUnavailable'
+        '504':
+          $ref: '#/components/responses/UpstreamTimeout'
+
+  /fhir/patients/{patientId}:
+    put:
+      tags: [FHIR]
+      operationId: replacePatient
+      summary: Replace a demo patient (stub)
+      description: |
+        Full replacement of the patient's demographics: every field of `PatientInput` is
+        written and anything omitted is cleared. The session-token and idempotency
+        identifiers are kept by the function, never by the caller. Only a patient created by
+        the same session can be replaced; the seeded demo patient answers `403`, and any
+        other id answers `404`. Idempotent: repeating the request leaves the same resource.
+        Currently answers `501`.
+      parameters:
+        - $ref: '#/components/parameters/PatientId'
+        - $ref: '#/components/parameters/DemoSession'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PatientInput'
+            examples:
+              default:
+                $ref: '#/components/examples/PatientInputExample'
+      responses:
+        '200':
+          description: Replaced. The body is the patient as the summary would now show it.
+          headers:
+            Cache-Control:
+              $ref: '#/components/headers/NoStore'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PatientWriteResult'
+        '400':
+          $ref: '#/components/responses/ValidationFailed'
+        '403':
+          $ref: '#/components/responses/DemoPatientReadOnly'
+        '404':
+          $ref: '#/components/responses/WritablePatientNotFound'
+        '429':
+          $ref: '#/components/responses/WriteRateLimited'
+        '500':
+          $ref: '#/components/responses/InternalError'
+        '501':
+          $ref: '#/components/responses/FhirNotImplemented'
+        '502':
+          $ref: '#/components/responses/UpstreamUnavailable'
+        '504':
+          $ref: '#/components/responses/UpstreamTimeout'
+
+    patch:
+      tags: [FHIR]
+      operationId: patchPatient
+      summary: Change part of a demo patient (stub)
+      description: |
+        Applies a JSON Patch (RFC 6902) to the patient's `PatientInput` view and writes the
+        result back, so a caller can change one field without resending the rest. Paths are
+        the properties of `PatientInput` (`/familyName`, `/givenName`, `/sex`, `/birthDate`,
+        `/mrn`); any other path, or a `test` operation that fails, answers `409`. The same
+        guard as `PUT` applies. Not idempotent in general (`add` to a missing field then
+        `remove` is), so the explorer disables the button while a patch is in flight.
+        Currently answers `501`.
+      parameters:
+        - $ref: '#/components/parameters/PatientId'
+        - $ref: '#/components/parameters/DemoSession'
+      requestBody:
+        required: true
+        content:
+          application/json-patch+json:
+            schema:
+              $ref: '#/components/schemas/PatientPatch'
+            examples:
+              default:
+                $ref: '#/components/examples/PatientPatchExample'
+      responses:
+        '200':
+          description: Patched. The body is the patient as the summary would now show it.
+          headers:
+            Cache-Control:
+              $ref: '#/components/headers/NoStore'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PatientWriteResult'
+        '400':
+          $ref: '#/components/responses/ValidationFailed'
+        '403':
+          $ref: '#/components/responses/DemoPatientReadOnly'
+        '404':
+          $ref: '#/components/responses/WritablePatientNotFound'
+        '409':
+          $ref: '#/components/responses/PatchConflict'
+        '415':
+          $ref: '#/components/responses/PatchMediaType'
+        '429':
+          $ref: '#/components/responses/WriteRateLimited'
+        '500':
+          $ref: '#/components/responses/InternalError'
+        '501':
+          $ref: '#/components/responses/FhirNotImplemented'
+        '502':
+          $ref: '#/components/responses/UpstreamUnavailable'
+        '504':
+          $ref: '#/components/responses/UpstreamTimeout'
+
+    delete:
+      tags: [FHIR]
+      operationId: deletePatient
+      summary: Delete a demo patient (stub)
+      description: |
+        Deletes the patient on the sandbox. The same guard as `PUT` applies. Idempotent:
+        deleting a patient this session already deleted answers `204` again, as the sandbox
+        reports the resource gone rather than missing. Currently answers `501`.
+      parameters:
+        - $ref: '#/components/parameters/PatientId'
+        - $ref: '#/components/parameters/DemoSession'
+      responses:
+        '204':
+          description: Deleted, or already deleted by this session. No body.
+          headers:
+            Cache-Control:
+              $ref: '#/components/headers/NoStore'
+        '400':
+          $ref: '#/components/responses/FhirBadRequest'
+        '403':
+          $ref: '#/components/responses/DemoPatientReadOnly'
+        '404':
+          $ref: '#/components/responses/WritablePatientNotFound'
+        '429':
+          $ref: '#/components/responses/WriteRateLimited'
+        '500':
+          $ref: '#/components/responses/InternalError'
+        '501':
+          $ref: '#/components/responses/FhirNotImplemented'
+        '502':
+          $ref: '#/components/responses/UpstreamUnavailable'
+        '504':
+          $ref: '#/components/responses/UpstreamTimeout'
+
   /fhir/patients/{patientId}/summary:
     get:
       tags: [FHIR]
@@ -539,6 +758,31 @@ components:
         $ref: '#/components/schemas/FhirId'
       example: '1842'
 
+    DemoSession:
+      name: X-Demo-Session
+      in: header
+      required: true
+      description: |
+        The visitor's session token, minted by the explorer once per browser session (a
+        UUID kept in `sessionStorage`). Every patient the explorer creates carries it as an
+        identifier; later writes must present the same token. Missing or malformed answers
+        `400`; a token that does not match the patient answers `404`.
+      schema:
+        $ref: '#/components/schemas/DemoToken'
+      example: 6f1d2c3b-9a8e-4b7c-9d6e-5f4a3b2c1d0e
+
+    IdempotencyKey:
+      name: Idempotency-Key
+      in: header
+      required: true
+      description: |
+        A UUID the explorer mints per create attempt and reuses when it retries. The function
+        makes the sandbox create conditional on it, so the same key can only ever produce one
+        patient. Missing or malformed answers `400`.
+      schema:
+        $ref: '#/components/schemas/DemoToken'
+      example: 0c9b8a7d-6e5f-4a3b-8c2d-1e0f9a8b7c6d
+
   headers:
     ETag:
       description: Strong validator for the response body. Changes whenever the data changes.
@@ -566,6 +810,17 @@ components:
         type: integer
         minimum: 1
       example: 120
+    NoStore:
+      description: Always `no-store`; a write's answer is never cached.
+      schema:
+        type: string
+        const: no-store
+    PatientLocation:
+      description: URL of the created patient's summary.
+      schema:
+        type: string
+        format: uri-reference
+      example: /api/fhir/patients/1842/summary
 
   responses:
     NotModified:
@@ -711,6 +966,104 @@ components:
             status: 501
             detail: Write operations are part of the admin API, which has not shipped yet.
             instance: /api/experience
+    FhirNotImplemented:
+      description: The operation is specified but not built yet.
+      content:
+        application/problem+json:
+          schema:
+            $ref: '#/components/schemas/Problem'
+          example:
+            type: https://mvcprogrammer.com/api/problems/not-implemented
+            title: Not implemented
+            status: 501
+            detail: Patient writes are specified and arrive with the explorer's next release.
+            instance: /api/fhir/patients
+    ValidationFailed:
+      description: A header is missing or malformed, or the body fails validation. `errors` names each field.
+      content:
+        application/problem+json:
+          schema:
+            $ref: '#/components/schemas/ValidationProblem'
+          example:
+            type: https://mvcprogrammer.com/api/problems/validation-failed
+            title: Validation failed
+            status: 400
+            detail: One or more fields are invalid.
+            instance: /api/fhir/patients
+            errors:
+              familyName: ["'familyName' is required and must be between 1 and 60 characters."]
+              birthDate: ["'birthDate' must be a date in YYYY-MM-DD form, not in the future."]
+    DemoPatientReadOnly:
+      description: The seeded demo patient cannot be changed or deleted; it is the one every visitor searches for first.
+      content:
+        application/problem+json:
+          schema:
+            $ref: '#/components/schemas/Problem'
+          example:
+            type: https://mvcprogrammer.com/api/problems/read-only
+            title: Demo patient is read-only
+            status: 403
+            detail: Patient 'mvc-programmer' is the seeded demo patient and cannot be changed. Create a patient of your own and change that.
+            instance: /api/fhir/patients/mvc-programmer
+    WritablePatientNotFound:
+      description: |
+        No patient with that id was created by this session. The sandbox may have no such
+        patient, it may have been wiped, or it may belong to someone else; the answer is the
+        same in every case so the explorer cannot probe records it did not create.
+      content:
+        application/problem+json:
+          schema:
+            $ref: '#/components/schemas/Problem'
+          example:
+            type: https://mvcprogrammer.com/api/problems/not-found
+            title: Patient not found
+            status: 404
+            detail: This session created no Patient with id '1842'. It may have been wiped; create another.
+            instance: /api/fhir/patients/1842
+    PatchConflict:
+      description: |
+        A patch operation could not be applied: a `test` failed, a path is not a `PatientInput`
+        property, or the sandbox reported a version conflict. Nothing was written.
+      content:
+        application/problem+json:
+          schema:
+            $ref: '#/components/schemas/Problem'
+          example:
+            type: https://mvcprogrammer.com/api/problems/conflict
+            title: Patch not applied
+            status: 409
+            detail: "Operation 2 ('test' on /givenName) failed; the patient was not changed."
+            instance: /api/fhir/patients/1842
+    PatchMediaType:
+      description: A `PATCH` body must be `application/json-patch+json`.
+      content:
+        application/problem+json:
+          schema:
+            $ref: '#/components/schemas/Problem'
+          example:
+            type: https://mvcprogrammer.com/api/problems/unsupported-media-type
+            title: Unsupported media type
+            status: 415
+            detail: Send the patch as application/json-patch+json.
+            instance: /api/fhir/patients/1842
+    WriteRateLimited:
+      description: |
+        The caller's IP has used its write budget (10 writes per 10 minutes per function
+        instance), or this session has created its 5 patients. Nothing is stored beyond the
+        warm instance's memory; the session cap is counted on the sandbox.
+      headers:
+        Retry-After:
+          $ref: '#/components/headers/RetryAfter'
+      content:
+        application/problem+json:
+          schema:
+            $ref: '#/components/schemas/Problem'
+          example:
+            type: https://mvcprogrammer.com/api/problems/rate-limited
+            title: Too many requests
+            status: 429
+            detail: This address has made 10 writes in the last 10 minutes. Try again in 240 seconds.
+            instance: /api/fhir/patients
 
   schemas:
     PositionId:
@@ -898,6 +1251,97 @@ components:
       type: string
       description: FHIR `Patient.gender` (AdministrativeGender), passed through unchanged.
       enum: [male, female, other, unknown]
+
+    DemoToken:
+      type: string
+      description: A UUID in its canonical lowercase form, as the explorer mints session tokens and idempotency keys.
+      format: uuid
+      pattern: '^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$'
+      examples: ['6f1d2c3b-9a8e-4b7c-9d6e-5f4a3b2c1d0e']
+
+    PatientInput:
+      type: object
+      description: |
+        What a visitor can write about a demo patient: the fields the summary card shows. The
+        function maps them to `Patient.name`, `Patient.gender`, `Patient.birthDate`, and an
+        `MR` identifier, adds the session-token and idempotency identifiers, and never
+        accepts raw FHIR, so nothing but these fields can reach the sandbox.
+      required: [familyName]
+      additionalProperties: false
+      properties:
+        familyName:
+          type: string
+          minLength: 1
+          maxLength: 60
+        givenName:
+          type: string
+          maxLength: 60
+          description: Omit or send empty for a patient known by family name only.
+        sex:
+          $ref: '#/components/schemas/Sex'
+        birthDate:
+          $ref: '#/components/schemas/IsoDate'
+          description: Must not be in the future.
+        mrn:
+          type: string
+          maxLength: 40
+          pattern: '^[A-Za-z0-9\-\.]+$'
+          description: Written as an identifier of type `MR` in the system `https://mvcprogrammer.com/fhir/mrn`.
+
+    PatientPatch:
+      type: array
+      description: |
+        A JSON Patch (RFC 6902) against the patient's `PatientInput` view. Paths are the
+        properties of `PatientInput`; `op` is one of the six RFC 6902 operations. At most 20
+        operations.
+      minItems: 1
+      maxItems: 20
+      items:
+        type: object
+        required: [op, path]
+        additionalProperties: false
+        properties:
+          op:
+            type: string
+            enum: [add, remove, replace, move, copy, test]
+          path:
+            type: string
+            enum: ['/familyName', '/givenName', '/sex', '/birthDate', '/mrn']
+          from:
+            type: string
+            enum: ['/familyName', '/givenName', '/sex', '/birthDate', '/mrn']
+            description: Required by `move` and `copy`.
+          value:
+            description: Required by `add`, `replace`, and `test`. A string of the field's form.
+            type: string
+
+    PatientWriteResult:
+      type: object
+      description: |
+        What a write returns: the patient as the summary would now show it, and the trace of
+        the upstream calls the write made.
+      required: [patient, trace]
+      additionalProperties: false
+      properties:
+        patient:
+          $ref: '#/components/schemas/PatientDemographics'
+        trace:
+          $ref: '#/components/schemas/Trace'
+
+    ValidationProblem:
+      description: RFC 9457 Problem Details with one entry per invalid field, the shape ASP.NET's `ValidationProblemDetails` produces.
+      allOf:
+        - $ref: '#/components/schemas/Problem'
+        - type: object
+          required: [errors]
+          properties:
+            errors:
+              type: object
+              description: Field name to the messages for that field.
+              additionalProperties:
+                type: array
+                items:
+                  type: string
 
     SearchQuery:
       type: object
@@ -1132,7 +1576,8 @@ components:
       properties:
         method:
           type: string
-          const: GET
+          description: Reads are `GET`; the write operations add `POST`, `PUT`, `PATCH`, and `DELETE`.
+          enum: [GET, POST, PUT, PATCH, DELETE]
         url:
           type: string
           format: uri
@@ -1587,6 +2032,61 @@ components:
                 reference: Patient/1842
               onsetDateTime: '2019-02-11'
 
+    PatientInputExample:
+      summary: A demo patient
+      value:
+        familyName: Dickens
+        givenName: Charles
+        sex: male
+        birthDate: '1979-04-12'
+        mrn: MVC-0042
+    PatientPatchExample:
+      summary: Change a given name after checking the current one
+      value:
+        - op: test
+          path: /givenName
+          value: Charles
+        - op: replace
+          path: /givenName
+          value: Chuck
+    PatientWriteResultExample:
+      summary: The patient a create returned
+      value:
+        patient:
+          id: '1842'
+          name: Dickens, Charles
+          familyName: Dickens
+          givenName: Charles
+          initials: CD
+          sex: male
+          birthDate: '1979-04-12'
+          age: 47
+          mrn: MVC-0042
+          identifiers:
+            - system: https://mvcprogrammer.com/fhir/mrn
+              value: MVC-0042
+              type: MR
+            - system: https://mvcprogrammer.com/fhir/demo-session
+              value: 6f1d2c3b-9a8e-4b7c-9d6e-5f4a3b2c1d0e
+            - system: https://mvcprogrammer.com/fhir/idempotency
+              value: 0c9b8a7d-6e5f-4a3b-8c2d-1e0f9a8b7c6d
+        trace:
+          dataSource:
+            name: HAPI FHIR R4 public test server
+            baseUrl: https://hapi.fhir.org/baseR4
+          requests:
+            - method: POST
+              url: https://hapi.fhir.org/baseR4/Patient
+              status: 201
+              durationMs: 180
+              entries: 1
+              pages: 1
+          totalDurationMs: 180
+          bundleEntries: 1
+          pagesWalked: 1
+          pageCap: 5
+          truncated: false
+          generatedAt: '2026-10-29T20:00:00Z'
     CapabilitySubsetExample:
       summary: HAPI supports everything the explorer needs
       value:

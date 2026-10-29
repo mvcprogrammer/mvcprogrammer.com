@@ -24,11 +24,15 @@ public static class Problems
             instance: context.Request.Path + context.Request.QueryString);
 
     public static IResult NotImplemented(HttpContext context) =>
+        NotImplemented(context, "Write operations are part of the admin API, which has not shipped yet.");
+
+    /// <summary>501 for an operation the spec promises and the code does not yet keep, with the caller's own wording.</summary>
+    public static IResult NotImplemented(HttpContext context, string detail) =>
         Results.Problem(
             type: TYPE_BASE + "not-implemented",
             title: "Not implemented",
             statusCode: StatusCodes.Status501NotImplemented,
-            detail: "Write operations are part of the admin API, which has not shipped yet.",
+            detail: detail,
             instance: context.Request.Path);
 
     /// <summary>429 with Retry-After. Never cached.</summary>
