@@ -144,6 +144,11 @@ jobs:
         with:
           dotnet-version: 10.0.x
 
+      # The root .editorconfig encodes the coding standard; this fails on any formatting or
+      # naming violation in the .NET projects, the same way a failing suite does.
+      - name: Check formatting and naming
+        run: dotnet format mvcprogrammer.com.sln --verify-no-changes
+
       - name: Test the Experience API
         run: dotnet test --project api/tests/Experience.Api.Tests -c Release
 

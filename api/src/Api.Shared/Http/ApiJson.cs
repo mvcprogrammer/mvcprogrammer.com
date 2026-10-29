@@ -6,7 +6,7 @@ namespace Api.Shared.Http;
 /// <summary>The one JSON configuration used by the endpoints, the seed tool, and the tests.</summary>
 public static class ApiJson
 {
-    public static readonly JsonSerializerOptions Options = Apply(new JsonSerializerOptions(JsonSerializerDefaults.Web));
+    public static readonly JsonSerializerOptions OPTIONS = Apply(new JsonSerializerOptions(JsonSerializerDefaults.Web));
 
     public static JsonSerializerOptions Apply(JsonSerializerOptions options)
     {

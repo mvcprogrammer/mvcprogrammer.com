@@ -39,6 +39,8 @@ The site follows the **KISS principle**: keep it simple, and add nothing that is
 
 Every npm workspace (`angular/`, `react/`, `stats/`, and `infra/lambda/stats-auth/`) carries a `.npmrc` that pins `legacy-peer-deps=false`. A project-level file wins over a developer's `~/.npmrc`, so a lockfile refreshed on any machine resolves the same tree the GitHub Actions runner computes with npm's defaults, and `npm ci` there accepts it. A new workspace gets the same file.
 
+The .NET projects (`api/` and `blazor/`) share the root `.editorconfig`, which encodes the formatting and naming rules of the coding standard and says next to each setting which rule it enforces. `Directory.Build.props` turns on `EnforceCodeStyleInBuild`, so a violation fails `dotnet build`, and `ci.yml` runs `dotnet format --verify-no-changes` on every pull request. The Angular and React workspaces keep their own `.editorconfig` files.
+
 ## How it is served
 
 - **Hosting.** A private S3 bucket that only CloudFront can read, through Origin Access Control. CloudFront serves over HTTP/2 and HTTP/3 with an ACM certificate, Route 53 aliases the domain, and a CloudFront Function redirects `www` to the apex.

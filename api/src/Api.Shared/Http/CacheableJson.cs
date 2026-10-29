@@ -19,7 +19,7 @@ public static class CacheableJson
 
     public static IResult Ok<T>(HttpContext context, T value, string cacheControl)
     {
-        var body = JsonSerializer.SerializeToUtf8Bytes(value, ApiJson.Options);
+        var body = JsonSerializer.SerializeToUtf8Bytes(value, ApiJson.OPTIONS);
         return Bytes(context, body, "application/json; charset=utf-8", cacheControl);
     }
 
