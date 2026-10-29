@@ -48,6 +48,7 @@ app-resume-section,
 app-contact-section,
 app-colophon-section,
 app-home,
+app-ensemble,
 app-not-found {
   display: contents;
 }
@@ -78,4 +79,103 @@ app-not-found {
 .contact-form select.ng-invalid.ng-touched,
 .contact-form textarea.ng-invalid.ng-touched {
   border-color: var(--hover);
+}
+
+/* ---------- The unlisted /ensemble page ----------
+   A document rendered with the site's type: a collapsible reading path, two tables, and graded chips. */
+.jd .section-intro {
+  max-width: 60rem;
+}
+
+.jd h2 {
+  margin-top: 2.5rem;
+}
+
+.jd h3 {
+  margin-top: 1.5rem;
+  font-size: 1.125rem;
+}
+
+.jd p {
+  max-width: 60rem;
+}
+
+.jd-details {
+  margin: 1.5rem 0;
+  padding: 0 1.25rem;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--surface);
+}
+
+.jd-summary {
+  padding: 1rem 0;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.jd-details[open] .jd-summary {
+  border-bottom: 1px solid var(--border);
+  margin-bottom: 1rem;
+}
+
+.jd-list li {
+  margin-bottom: 0.75rem;
+}
+
+.jd-table-wrap {
+  overflow-x: auto;
+  margin: 1rem 0 1.5rem;
+}
+
+.jd-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.9375rem;
+}
+
+.jd-table th,
+.jd-table td {
+  padding: 0.6rem 0.75rem;
+  border-top: 1px solid var(--border);
+  text-align: left;
+  vertical-align: top;
+}
+
+.jd-table th {
+  font-family: var(--font-mono);
+  font-size: 0.75rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+}
+
+.jd-table td:first-child {
+  font-weight: 600;
+  min-width: 11rem;
+}
+
+.jd-grade {
+  display: inline-block;
+  padding: 0.15rem 0.6rem;
+  border-radius: 999px;
+  font-family: var(--font-mono);
+  font-size: 0.75rem;
+  white-space: nowrap;
+  border: 1px solid var(--border);
+}
+
+.jd-grade.is-yes {
+  color: var(--accent-contrast);
+  background: var(--accent);
+  border-color: var(--accent);
+}
+
+.jd-grade.is-near {
+  color: var(--text);
+  background: var(--accent-soft);
+}
+
+.jd-grade.is-no {
+  color: var(--text-muted);
 }
