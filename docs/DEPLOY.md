@@ -670,7 +670,10 @@ that matches in list order; appended after it, `/api/*` would swallow every FHIR
 the explorer inside its FHIR API card from 2026-10-21 until #142 moved it to fhir.mvcprogrammer.com, so the Blazor,
 Angular, and React distributions got the same origin and behavior (kept; the editions' cards no longer call the API).
 Those behaviors allow `GET`, `HEAD`, and `OPTIONS` only; the explorer's own distribution is the one that forwards the
-write methods (see [FHIR explorer](#fhir-explorer-fhirmvcprogrammercom)) (copied from their own `/api/*` behavior, which keeps that edition's response headers policy), and
+write methods (see [FHIR explorer](#fhir-explorer-fhirmvcprogrammercom)). One more rule for writes through OAC:
+CloudFront signs its request to the function URL, and for a request with a body Lambda requires the body's SHA-256
+in `x-amz-content-sha256`, or the signature fails and CloudFront serves its error page. The explorer's HTTP client
+sends it on every `POST`, `PUT`, and `PATCH`; a `curl` must too (copied from their own `/api/*` behavior, which keeps that edition's response headers policy), and
 the function must accept calls from them. The stack's `DistributionArn` grants the main distribution only; the
 other three get a Lambda permission outside the template, as the Experience API does (issue #60, 2026-10-21):
 
@@ -1015,6 +1018,7 @@ Verify:
 curl -si https://fhir.mvcprogrammer.com/ | grep -i "HTTP/\|content-security-policy"
 curl -si https://fhir.mvcprogrammer.com/api/fhir/capability | grep -i "HTTP/\|x-cache"
 curl -s -o /dev/null -w "%{http_code}\n" -X POST -H "content-type: application/json" -d '{}' \
+  -H "x-amz-content-sha256: $(printf '{}' | shasum -a 256 | cut -d' ' -f1)" \
   https://fhir.mvcprogrammer.com/api/fhir/patients                                           # 400 from the function, not the S3 page
 curl -s -o /dev/null -w "%{http_code} %{redirect_url}\n" https://mvcprogrammer.com/fhir      # 301 https://fhir.mvcprogrammer.com/
 ```

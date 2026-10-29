@@ -31,6 +31,13 @@ export class HttpFhirClient extends FhirClient {
 
   private static readonly JSON_PATCH = 'application/json-patch+json';
 
+  /**
+   * CloudFront reaches the function URL through Origin Access Control and signs each request; for a
+   * request with a body, Lambda requires the body's SHA-256 in this header or the signature fails
+   * and the write never reaches the function.
+   */
+  static readonly PAYLOAD_HASH_HEADER = 'x-amz-content-sha256';
+
   private readonly http = inject(HttpClient);
   private readonly options = inject(SITE_OPTIONS);
   private readonly session = inject(DemoSession);
@@ -112,14 +119,16 @@ export class HttpFhirClient extends FhirClient {
       [HttpFhirClient.SESSION_HEADER]: this.session.token,
       ...extraHeaders,
     };
-    if (contentType !== null) {
+    const payload = body === null ? undefined : JSON.stringify(body);
+    if (contentType !== null && payload !== undefined) {
       headers['Content-Type'] = contentType;
+      headers[HttpFhirClient.PAYLOAD_HASH_HEADER] = await HttpFhirClient.sha256(payload);
     }
 
     try {
       const response = await firstValueFrom(
         this.http.request<T>(method, path, {
-          body: body === null ? undefined : JSON.stringify(body),
+          body: payload,
           observe: 'response',
           headers,
           timeout: HttpFhirClient.TIMEOUT_MS,
@@ -164,6 +173,12 @@ export class HttpFhirClient extends FhirClient {
       etag: response.headers.get('etag'),
       contentType: response.headers.get('content-type'),
     };
+  }
+
+  /** Lower-case hex SHA-256 of the UTF-8 text, through Web Crypto. */
+  static async sha256(text: string): Promise<string> {
+    const digest = await globalThis.crypto.subtle.digest('SHA-256', new TextEncoder().encode(text));
+    return Array.from(new Uint8Array(digest), (b) => b.toString(16).padStart(2, '0')).join('');
   }
 
   private static elapsed(started: number): number {
