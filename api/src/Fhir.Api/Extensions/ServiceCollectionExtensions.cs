@@ -20,7 +20,7 @@ public static class ServiceCollectionExtensions
         ArgumentNullException.ThrowIfNull(configuration);
 
         services.AddOptions<FhirOptions>()
-            .Bind(configuration.GetSection(FhirOptions.SectionName))
+            .Bind(configuration.GetSection(FhirOptions.SECTION))
             .Configure(options =>
             {
                 if (Uri.TryCreate(configuration["FHIR_BASE_URL"], UriKind.Absolute, out var baseUrl))

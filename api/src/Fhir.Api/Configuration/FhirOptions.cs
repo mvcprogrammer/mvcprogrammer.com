@@ -7,7 +7,7 @@ namespace Fhir.Api.Configuration;
 /// </summary>
 public sealed class FhirOptions
 {
-    public const string SectionName = "Fhir";
+    public const string SECTION = "Fhir";
 
     /// <summary>The FHIR R4 base, HAPI by default. SMART Health IT (https://r4.smarthealthit.org) is the documented fallback.</summary>
     public Uri BaseUrl { get; set; } = new("https://hapi.fhir.org/baseR4");

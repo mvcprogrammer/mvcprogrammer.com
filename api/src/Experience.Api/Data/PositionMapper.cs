@@ -10,13 +10,13 @@ namespace Experience.Api.Data;
 /// </summary>
 public static class PositionMapper
 {
-    public const string PartitionKey = "RESUME";
-    public const string SortKeyPrefix = "POSITION#";
+    public const string PARTITION_KEY = "RESUME";
+    public const string SORT_KEY_PREFIX = "POSITION#";
 
     public static Dictionary<string, AttributeValue> Key(string id) => new()
     {
-        ["PK"] = new AttributeValue(PartitionKey),
-        ["SK"] = new AttributeValue(SortKeyPrefix + id),
+        ["PK"] = new AttributeValue(PARTITION_KEY),
+        ["SK"] = new AttributeValue(SORT_KEY_PREFIX + id),
     };
 
     public static Dictionary<string, AttributeValue> ToItem(Position p)

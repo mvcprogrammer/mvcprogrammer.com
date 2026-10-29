@@ -15,8 +15,8 @@ public sealed class DynamoDbExperienceRepository(IAmazonDynamoDB dynamo, string 
             KeyConditionExpression = "PK = :pk AND begins_with(SK, :prefix)",
             ExpressionAttributeValues = new Dictionary<string, AttributeValue>
             {
-                [":pk"] = new AttributeValue(PositionMapper.PartitionKey),
-                [":prefix"] = new AttributeValue(PositionMapper.SortKeyPrefix),
+                [":pk"] = new AttributeValue(PositionMapper.PARTITION_KEY),
+                [":prefix"] = new AttributeValue(PositionMapper.SORT_KEY_PREFIX),
             },
         };
 

@@ -6,7 +6,7 @@ namespace Experience.Api.Endpoints;
 
 public static class ExperienceEndpoints
 {
-    private const int MaxSkillLength = 60;
+    private const int MAX_SKILL_LENGTH = 60;
 
     public static RouteGroupBuilder MapExperience(this RouteGroupBuilder api)
     {
@@ -26,9 +26,9 @@ public static class ExperienceEndpoints
 
     private static async Task<IResult> ListPositions(HttpContext context, IExperienceService service, string? skill, CancellationToken cancellationToken)
     {
-        if (skill is not null && (skill.Length == 0 || skill.Length > MaxSkillLength))
+        if (skill is not null && (skill.Length == 0 || skill.Length > MAX_SKILL_LENGTH))
         {
-            return Problems.InvalidParameter(context, $"'skill' must be between 1 and {MaxSkillLength} characters.");
+            return Problems.InvalidParameter(context, $"'skill' must be between 1 and {MAX_SKILL_LENGTH} characters.");
         }
 
         var list = await service.ListPositionsAsync(skill, cancellationToken);

@@ -13,9 +13,9 @@ namespace Api.Shared.Http;
 public static class CacheableJson
 {
     /// <summary>The Experience API's policy: browsers revalidate after five minutes, shared caches hold an hour.</summary>
-    public const string CacheControl = "public, max-age=300, s-maxage=3600";
+    public const string CACHE_CONTROL = "public, max-age=300, s-maxage=3600";
 
-    public static IResult Ok<T>(HttpContext context, T value) => Ok(context, value, CacheControl);
+    public static IResult Ok<T>(HttpContext context, T value) => Ok(context, value, CACHE_CONTROL);
 
     public static IResult Ok<T>(HttpContext context, T value, string cacheControl)
     {

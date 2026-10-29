@@ -5,11 +5,11 @@ namespace Api.Shared.Http;
 /// <summary>RFC 9457 problem responses with the `type` URIs promised in openapi.yaml.</summary>
 public static class Problems
 {
-    private const string TypeBase = "https://mvcprogrammer.com/api/problems/";
+    private const string TYPE_BASE = "https://mvcprogrammer.com/api/problems/";
 
     public static IResult NotFound(HttpContext context, string title, string detail) =>
         Results.Problem(
-            type: TypeBase + "not-found",
+            type: TYPE_BASE + "not-found",
             title: title,
             statusCode: StatusCodes.Status404NotFound,
             detail: detail,
@@ -17,7 +17,7 @@ public static class Problems
 
     public static IResult InvalidParameter(HttpContext context, string detail) =>
         Results.Problem(
-            type: TypeBase + "invalid-parameter",
+            type: TYPE_BASE + "invalid-parameter",
             title: "Invalid parameter",
             statusCode: StatusCodes.Status400BadRequest,
             detail: detail,
@@ -25,7 +25,7 @@ public static class Problems
 
     public static IResult NotImplemented(HttpContext context) =>
         Results.Problem(
-            type: TypeBase + "not-implemented",
+            type: TYPE_BASE + "not-implemented",
             title: "Not implemented",
             statusCode: StatusCodes.Status501NotImplemented,
             detail: "Write operations are part of the admin API, which has not shipped yet.",
@@ -37,7 +37,7 @@ public static class Problems
         context.Response.Headers.RetryAfter = retryAfterSeconds.ToString();
         context.Response.Headers.CacheControl = "no-store";
         return Results.Problem(
-            type: TypeBase + "rate-limited",
+            type: TYPE_BASE + "rate-limited",
             title: "Too many requests",
             statusCode: StatusCodes.Status429TooManyRequests,
             detail: detail,
@@ -49,7 +49,7 @@ public static class Problems
     {
         context.Response.Headers.CacheControl = "no-store";
         return Results.Problem(
-            type: TypeBase + "upstream-unavailable",
+            type: TYPE_BASE + "upstream-unavailable",
             title: title,
             statusCode: StatusCodes.Status502BadGateway,
             detail: detail,
@@ -61,7 +61,7 @@ public static class Problems
     {
         context.Response.Headers.CacheControl = "no-store";
         return Results.Problem(
-            type: TypeBase + "upstream-timeout",
+            type: TYPE_BASE + "upstream-timeout",
             title: title,
             statusCode: StatusCodes.Status504GatewayTimeout,
             detail: detail,
