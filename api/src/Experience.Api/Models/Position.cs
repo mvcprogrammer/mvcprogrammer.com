@@ -11,13 +11,13 @@ public enum WorkMode
 }
 
 /// <summary>One role at one organisation. Mirrors the Position schema in openapi.yaml.</summary>
+/// <param name="StartDate">ISO 8601 year-month, e.g. 2023-12.</param>
+/// <param name="EndDate">Year-month, or null while current.</param>
 public sealed record Position(
     string Id,
     string Title,
     string Organization,
-    /// <summary>ISO 8601 year-month, e.g. 2023-12.</summary>
     string StartDate,
-    /// <summary>Year-month, or null while current.</summary>
     string? EndDate,
     WorkMode WorkMode,
     string Location,
@@ -45,6 +45,7 @@ public sealed record PositionList(int Count, IReadOnlyList<Position> Items)
 {
     /// <summary>Present only when a filter was applied.</summary>
     [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+    // ReSharper disable once UnusedAutoPropertyAccessor.Global
     public PositionFilter? Filter { get; init; }
 }
 

@@ -170,6 +170,11 @@ dotnet_diagnostic.CA2007.severity = none
 # Part 5, Stored Procedures and Manual Mapping: the application contains no inline SQL text.
 dotnet_diagnostic.CA2100.severity = error
 
+# ReSharper (Rider and InspectCode) cannot see the System.Text.Json source generator or the
+# browser reading the response records, so it reports every positional property of every
+# request and response model as never accessed. Those records exist to be serialized.
+resharper_not_accessed_positional_property_global_highlighting = none
+
 # Part 8, Unit Tests: test method names use underscore-delimited patterns such as
 # Method_ShouldReturnValue and Arrange_ScenarioName, so the PascalCase method rule is relaxed
 # in test classes, and only there.

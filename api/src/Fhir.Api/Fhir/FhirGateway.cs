@@ -71,7 +71,6 @@ public sealed class FhirGateway : IFhirGateway
         using var client = CreateClient();
         var watch = Stopwatch.StartNew();
         var resources = new List<T>();
-        var bundles = new List<Bundle>();
         try
         {
             var bundle = await client.SearchAsync<T>(query, ct: cancellationToken)
@@ -82,7 +81,6 @@ public sealed class FhirGateway : IFhirGateway
             while (bundle is not null)
             {
                 pages++;
-                bundles.Add(bundle);
                 resources.AddRange(bundle.Entry.Select(e => e.Resource).OfType<T>());
                 if (bundle.NextLink is null)
                 {
@@ -99,7 +97,7 @@ public sealed class FhirGateway : IFhirGateway
             }
 
             trace.Add(new UpstreamRequest("GET", url, StatusOf(client), watch.ElapsedMilliseconds, resources.Count, pages), truncated);
-            return new SearchResult<T>(resources, total, pages, truncated, bundles);
+            return new SearchResult<T>(resources, total, pages);
         }
         catch (Exception ex) when (ex is not UpstreamUnavailableException)
         {
