@@ -1,0 +1,173 @@
+# Root editor configuration for the .NET parts of this repository: the Experience and FHIR
+# APIs under api/ and the Blazor edition under blazor/. Each setting names the rule of the
+# C# and WebAPI coding standard it enforces, so the two cannot drift silently.
+#
+# angular/ and react/ carry their own root = true files and are not affected by this one.
+#
+# Enforcement: Directory.Build.props sets EnforceCodeStyleInBuild, so the formatting (IDE0055)
+# and naming (IDE1006) rules marked error below fail `dotnet build`, and ci.yml runs
+# `dotnet format --verify-no-changes` on every pull request for the rest.
+root = true
+
+[*]
+charset = utf-8
+insert_final_newline = true
+trim_trailing_whitespace = true
+end_of_line = lf
+
+[*.{csproj,props,targets,json,yml,yaml}]
+indent_style = space
+indent_size = 2
+
+[*.md]
+trim_trailing_whitespace = false
+
+# Part 1, Project and Solution Layout: the formatting of .sql files is encoded here too.
+[*.sql]
+indent_style = space
+indent_size = 4
+
+[*.cs]
+# Part 9, Indentation: soft tabs of four spaces, never tab characters.
+indent_style = space
+indent_size = 4
+tab_width = 4
+
+# Part 9 formatting violations are build errors, not just dotnet format output.
+dotnet_diagnostic.IDE0055.severity = error
+# Part 8 naming violations are build errors as well.
+dotnet_diagnostic.IDE1006.severity = error
+
+# Part 9, Braces: Allman style, braces always used.
+csharp_new_line_before_open_brace = all
+csharp_prefer_braces = true:error
+
+# Part 9, New Lines.
+csharp_new_line_before_else = true
+csharp_new_line_before_catch = true
+csharp_new_line_before_finally = true
+csharp_new_line_before_members_in_object_initializers = true
+csharp_new_line_before_members_in_anonymous_types = true
+csharp_new_line_between_query_expression_clauses = true
+
+# Part 9, Indentation. The continuation-line rule has no editorconfig option and is reviewed
+# by hand.
+csharp_indent_block_contents = true
+csharp_indent_braces = false
+csharp_indent_case_contents = true
+csharp_indent_case_contents_when_block = false
+csharp_indent_switch_labels = true
+csharp_indent_labels = one_less_than_current
+
+# Part 9, Whitespace.
+csharp_space_around_binary_operators = before_and_after
+csharp_space_after_comma = true
+csharp_space_before_comma = false
+csharp_space_after_keywords_in_control_flow_statements = true
+csharp_space_after_semicolon_in_for_statement = true
+csharp_space_before_semicolon_in_for_statement = false
+csharp_space_before_colon_in_inheritance_clause = true
+csharp_space_after_colon_in_inheritance_clause = true
+csharp_space_after_cast = false
+csharp_space_after_dot = false
+csharp_space_before_dot = false
+csharp_space_before_open_square_brackets = false
+csharp_space_between_empty_square_brackets = false
+csharp_space_between_square_brackets = false
+csharp_space_between_method_declaration_name_and_open_parenthesis = false
+csharp_space_between_method_call_name_and_opening_parenthesis = false
+csharp_space_around_declaration_statements = do_not_ignore
+csharp_space_between_parentheses = false
+csharp_space_between_method_declaration_parameter_list_parentheses = false
+csharp_space_between_method_declaration_empty_parameter_list_parentheses = false
+csharp_space_between_method_call_parameter_list_parentheses = false
+csharp_space_between_method_call_empty_parameter_list_parentheses = false
+
+# Part 1, Namespaces: file-scoped namespace declarations.
+csharp_style_namespace_declarations = file_scoped:error
+
+# Part 2, Variables: var when the type is clear from the right-hand side.
+csharp_style_var_when_type_is_apparent = true:suggestion
+csharp_style_var_for_built_in_types = false:suggestion
+csharp_style_var_elsewhere = false:suggestion
+
+# Part 8, Casing. Naming rules are first-match-wins in file order, so the most specific rule
+# comes first.
+
+# Constants: SCREAMING_SNAKE_CASE. This departs from the .NET default, so CA1707 (identifiers
+# should not contain underscores) is set to none below. Listed before the private-field rule,
+# which would otherwise match private const fields.
+dotnet_naming_rule.constants_screaming.symbols = constants
+dotnet_naming_rule.constants_screaming.style = screaming_snake
+dotnet_naming_rule.constants_screaming.severity = error
+dotnet_naming_symbols.constants.applicable_kinds = field
+dotnet_naming_symbols.constants.applicable_accessibilities = *
+dotnet_naming_symbols.constants.required_modifiers = const
+dotnet_naming_style.screaming_snake.capitalization = all_upper
+dotnet_naming_style.screaming_snake.word_separator = _
+
+# Static readonly fields: SCREAMING_SNAKE_CASE as well. They are immutable values fixed at
+# startup (lookup tables, serializer options, pinned lists), and the solution has always named
+# them like constants. Listed before the private-field rule for the same reason as above.
+dotnet_naming_rule.static_readonly_screaming.symbols = static_readonly_fields
+dotnet_naming_rule.static_readonly_screaming.style = screaming_snake
+dotnet_naming_rule.static_readonly_screaming.severity = error
+dotnet_naming_symbols.static_readonly_fields.applicable_kinds = field
+dotnet_naming_symbols.static_readonly_fields.applicable_accessibilities = *
+dotnet_naming_symbols.static_readonly_fields.required_modifiers = static, readonly
+
+# Private and internal fields: _camelCase. Public fields are not used; expose a property.
+dotnet_naming_rule.private_fields_underscore.symbols = private_fields
+dotnet_naming_rule.private_fields_underscore.style = underscore_camel
+dotnet_naming_rule.private_fields_underscore.severity = error
+dotnet_naming_symbols.private_fields.applicable_kinds = field
+dotnet_naming_symbols.private_fields.applicable_accessibilities = private, internal
+dotnet_naming_style.underscore_camel.required_prefix = _
+dotnet_naming_style.underscore_camel.capitalization = camel_case
+
+# Interfaces: I prefix, PascalCase (Part 1, Folder Structure).
+dotnet_naming_rule.interfaces_prefixed.symbols = interfaces
+dotnet_naming_rule.interfaces_prefixed.style = i_pascal
+dotnet_naming_rule.interfaces_prefixed.severity = error
+dotnet_naming_symbols.interfaces.applicable_kinds = interface
+dotnet_naming_symbols.interfaces.applicable_accessibilities = *
+dotnet_naming_style.i_pascal.required_prefix = I
+dotnet_naming_style.i_pascal.capitalization = pascal_case
+
+# Namespaces, types, methods, properties, events, enums, and enum members: PascalCase.
+dotnet_naming_rule.members_pascal.symbols = pascal_members
+dotnet_naming_rule.members_pascal.style = pascal
+dotnet_naming_rule.members_pascal.severity = error
+dotnet_naming_symbols.pascal_members.applicable_kinds = namespace, class, struct, interface, enum, delegate, method, property, event
+dotnet_naming_symbols.pascal_members.applicable_accessibilities = *
+dotnet_naming_style.pascal.capitalization = pascal_case
+
+# Parameters and locals: camelCase.
+dotnet_naming_rule.locals_camel.symbols = locals_and_parameters
+dotnet_naming_rule.locals_camel.style = camel
+dotnet_naming_rule.locals_camel.severity = error
+dotnet_naming_symbols.locals_and_parameters.applicable_kinds = parameter, local
+dotnet_naming_symbols.locals_and_parameters.applicable_accessibilities = *
+dotnet_naming_style.camel.capitalization = camel_case
+
+# Part 8, Casing: SCREAMING_SNAKE_CASE constants and underscore-delimited test method names
+# both contain underscores, so CA1707 is off for the whole repository.
+dotnet_diagnostic.CA1707.severity = none
+
+# Part 2, Async and Cancellation, and Part 5, Database Principles: every I/O method forwards
+# its CancellationToken (CA2016). CA1849 (call async methods when in an async method) stays a
+# suggestion: it also fires on bUnit's synchronous Click and Change helpers, on Console output
+# in the Seed tool, and on reading Task.Result after Task.WhenAll, none of which block.
+dotnet_diagnostic.CA2016.severity = error
+dotnet_diagnostic.CA1849.severity = suggestion
+# Part 2, Async and Cancellation: ConfigureAwait(false) is unnecessary in ASP.NET Core
+# application code, which is all this repository contains.
+dotnet_diagnostic.CA2007.severity = none
+# Part 5, Stored Procedures and Manual Mapping: the application contains no inline SQL text.
+dotnet_diagnostic.CA2100.severity = error
+
+# Part 8, Unit Tests: test method names use underscore-delimited patterns such as
+# Method_ShouldReturnValue and Arrange_ScenarioName, so the PascalCase method rule is relaxed
+# in test classes, and only there.
+[*Tests.cs]
+dotnet_naming_rule.members_pascal.severity = none

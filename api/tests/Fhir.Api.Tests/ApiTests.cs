@@ -34,7 +34,7 @@ public sealed class ApiTests
         Assert.NotNull(response.Headers.ETag);
         Assert.Equal(FhirEndpoints.CACHE_CONTROL, response.Headers.CacheControl?.ToString());
 
-        var result = await response.Content.ReadFromJsonAsync<PatientSearchResult>(ApiJson.Options, Ct);
+        var result = await response.Content.ReadFromJsonAsync<PatientSearchResult>(ApiJson.OPTIONS, Ct);
         Assert.NotNull(result);
         Assert.Equal(2, result.Count);
         Assert.Equal(2, result.Total);
@@ -77,7 +77,7 @@ public sealed class ApiTests
         using var client = factory.CreateClient();
 
         var result = await client.GetFromJsonAsync<PatientSearchResult>(
-            "/api/fhir/patients?family=Dickens&birthdate=1979-04-12&identifier=urn:oid:1.2.36.146.595.217.0.1|12345", ApiJson.Options, Ct);
+            "/api/fhir/patients?family=Dickens&birthdate=1979-04-12&identifier=urn:oid:1.2.36.146.595.217.0.1|12345", ApiJson.OPTIONS, Ct);
 
         Assert.NotNull(result);
         var sent = Assert.Single(factory.Handler.Requests).PathAndQuery;
@@ -94,7 +94,7 @@ public sealed class ApiTests
         factory.Handler.On("/Patient?", Fixtures.Searchset([], total: 0));
         using var client = factory.CreateClient();
 
-        var result = await client.GetFromJsonAsync<PatientSearchResult>("/api/fhir/patients?family=Nobody", ApiJson.Options, Ct);
+        var result = await client.GetFromJsonAsync<PatientSearchResult>("/api/fhir/patients?family=Nobody", ApiJson.OPTIONS, Ct);
 
         Assert.NotNull(result);
         Assert.Equal(0, result.Count);
@@ -164,8 +164,8 @@ public sealed class ApiTests
 
         Assert.NotNull(first.Headers.ETag);
         Assert.NotNull(second.Headers.ETag);
-        var a = await first.Content.ReadFromJsonAsync<PatientSearchResult>(ApiJson.Options, Ct);
-        var b = await second.Content.ReadFromJsonAsync<PatientSearchResult>(ApiJson.Options, Ct);
+        var a = await first.Content.ReadFromJsonAsync<PatientSearchResult>(ApiJson.OPTIONS, Ct);
+        var b = await second.Content.ReadFromJsonAsync<PatientSearchResult>(ApiJson.OPTIONS, Ct);
         Assert.Equal(a!.Items, b!.Items);
         Assert.NotEqual(a.Trace.GeneratedAt, b.Trace.GeneratedAt);
     }
@@ -185,7 +185,7 @@ public sealed class ApiTests
 
         Assert.Equal(HttpStatusCode.OK, response.StatusCode);
         Assert.Equal(FhirEndpoints.CACHE_CONTROL, response.Headers.CacheControl?.ToString());
-        var summary = await response.Content.ReadFromJsonAsync<PatientSummary>(ApiJson.Options, Ct);
+        var summary = await response.Content.ReadFromJsonAsync<PatientSummary>(ApiJson.OPTIONS, Ct);
         Assert.NotNull(summary);
 
         Assert.Equal("Dickens, Charles", summary.Patient.Name);
@@ -248,7 +248,7 @@ public sealed class ApiTests
         handler.On("/Observation?", Fixtures.CountOnly(0));
         using var client = factory.CreateClient();
 
-        var summary = await client.GetFromJsonAsync<PatientSummary>("/api/fhir/patients/1842/summary", ApiJson.Options, Ct);
+        var summary = await client.GetFromJsonAsync<PatientSummary>("/api/fhir/patients/1842/summary", ApiJson.OPTIONS, Ct);
 
         Assert.NotNull(summary);
         Assert.Equal(2, summary.Conditions.Active.Count);
@@ -396,7 +396,7 @@ public sealed class ApiTests
         using var client = factory.CreateClient();
 
         var first = await client.GetAsync("/api/fhir/capability", Ct);
-        var second = await client.GetFromJsonAsync<CapabilitySubset>("/api/fhir/capability", ApiJson.Options, Ct);
+        var second = await client.GetFromJsonAsync<CapabilitySubset>("/api/fhir/capability", ApiJson.OPTIONS, Ct);
 
         Assert.Equal(HttpStatusCode.OK, first.StatusCode);
         Assert.Equal(FhirEndpoints.CAPABILITY_CACHE_CONTROL, first.Headers.CacheControl?.ToString());
@@ -417,7 +417,7 @@ public sealed class ApiTests
         factory.Handler.On("/metadata", Fixtures.Capability("Patient", "Condition", "Observation"));
         using var client = factory.CreateClient();
 
-        var subset = await client.GetFromJsonAsync<CapabilitySubset>("/api/fhir/capability", ApiJson.Options, Ct);
+        var subset = await client.GetFromJsonAsync<CapabilitySubset>("/api/fhir/capability", ApiJson.OPTIONS, Ct);
 
         Assert.NotNull(subset);
         Assert.False(subset.Ok, "Encounter is not declared");
@@ -437,7 +437,7 @@ public sealed class ApiTests
 
         Assert.Equal(HttpStatusCode.OK, response.StatusCode);
         Assert.Equal("no-store", response.Headers.CacheControl?.ToString());
-        var health = await response.Content.ReadFromJsonAsync<Health>(ApiJson.Options, Ct);
+        var health = await response.Content.ReadFromJsonAsync<Health>(ApiJson.OPTIONS, Ct);
         Assert.Equal(("ok", "1.1.0-test"), (health!.Status, health.Version));
         Assert.Empty(factory.Handler.Requests);
     }

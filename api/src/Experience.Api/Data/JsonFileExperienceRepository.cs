@@ -20,7 +20,7 @@ public sealed class JsonFileExperienceRepository : IExperienceRepository
     public static IReadOnlyList<Position> Load(string path)
     {
         using var stream = File.OpenRead(path);
-        return JsonSerializer.Deserialize<List<Position>>(stream, ApiJson.Options)
+        return JsonSerializer.Deserialize<List<Position>>(stream, ApiJson.OPTIONS)
                ?? throw new InvalidDataException($"'{path}' did not contain a JSON array of positions.");
     }
 

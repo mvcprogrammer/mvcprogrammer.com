@@ -5,4 +5,10 @@
     <Copyright>Copyright (c) 2026 Neal Thomas</Copyright>
     <PackageLicenseExpression>AGPL-3.0-only</PackageLicenseExpression>
   </PropertyGroup>
+
+  <!-- The root .editorconfig encodes the coding standard's formatting and naming rules. With this
+       on, the rules it marks as errors fail the build instead of only showing in the IDE. -->
+  <PropertyGroup>
+    <EnforceCodeStyleInBuild>true</EnforceCodeStyleInBuild>
+  </PropertyGroup>
 </Project>
