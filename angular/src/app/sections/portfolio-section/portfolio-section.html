@@ -1,4 +1,4 @@
-<!-- Selected work. The kiosk card opens the live demo dialog; the FHIR API card unfolds the patient explorer. -->
+<!-- Selected work. The kiosk card and the FHIR API card each open a live demo in a dialog after the grid. -->
 <section class="section section-alt" id="portfolio" aria-labelledby="portfolio-title">
   <div class="container">
     <p class="eyebrow">03 / Portfolio</p>
@@ -36,17 +36,16 @@
         </div>
       </article>
 
-      <!-- FHIR API card. The explorer component is in a deferred block keyed to the accordion, so its
-           code and its first request to /api/fhir load only when a visitor opens it. Open, the card
-           spans the grid row (styles.css) so the two-panel results keep their width. -->
-      <article class="card portfolio-card" id="fhir-api" #fhirCard>
+      <!-- FHIR API card. The explorer lives at fhir.mvcprogrammer.com (the fhir/ workspace); the button
+           opens it in the demo dialog, so nothing FHIR-related loads until a visitor asks. -->
+      <article class="card portfolio-card" id="fhir-api">
         <div class="card-media">
-          <img src="assets/images/portfolio/fhir-api-angular.jpg" alt="The Angular edition's FHIR R4 patient explorer in dark mode, showing a synthetic patient's summary: counts and active conditions with SNOMED codes" width="1200" height="750" loading="lazy" decoding="async">
+          <img src="assets/images/portfolio/fhir-explorer.jpg" alt="The FHIR R4 patient explorer at fhir.mvcprogrammer.com in dark mode, showing a synthetic patient's summary: counts and active conditions with SNOMED codes" width="1200" height="750" loading="lazy" decoding="async">
         </div>
         <div class="card-body">
           <h3>FHIR API</h3>
-          <p class="card-subtitle">FHIR R4 patient explorer, C# on Lambda with the Firely SDK</p>
-          <p>A window onto a public FHIR R4 test server seeded with synthetic records. Five endpoints under <code>/api/fhir</code> (patient search, summary, raw bundle, capability, and health) run as C# on .NET 10 on AWS Lambda behind this distribution, specified in the same OpenAPI document as the Experience API. The browser never talks to the sandbox; the function is the boundary, parsing every resource with the Firely SDK and mapping only the US Core fields to small DTOs.</p>
+          <p class="card-subtitle">FHIR R4 patient explorer, Angular in front of C# on Lambda with the Firely SDK</p>
+          <p>A window onto a public FHIR R4 test server seeded with synthetic records. Five endpoints under <code>/api/fhir</code> (patient search, summary, raw bundle, capability, and health) run as C# on .NET 10 on AWS Lambda, specified in the same OpenAPI document as the Experience API. The explorer in front of them is an Angular app of its own at fhir.mvcprogrammer.com. The browser never talks to the sandbox; the function is the boundary, parsing every resource with the Firely SDK and mapping only the US Core fields to small DTOs.</p>
           <p><strong>Built to be polite to a shared sandbox.</strong> Every upstream call has a short timeout, retries with backoff, and a circuit breaker, and a failure comes back as an RFC 9457 problem the explorer turns into a plain message. Responses carry ETags and CloudFront caches them. No real patient data, nothing stored.</p>
           <ul class="tag-list card-tags" role="list" aria-label="Technologies used on the FHIR API">
             <li class="tag">C# / .NET 10 on Lambda</li>
@@ -59,19 +58,16 @@
             <li class="tag">CloudFront caching</li>
             <li class="tag">Angular 22</li>
           </ul>
-          <details class="fhir-accordion" data-fhir-accordion #fhirAccordion [open]="fhirOpen()" (toggle)="onFhirToggle(fhirAccordion.open)">
-            <summary class="button button-primary fhir-accordion-summary">
+          <div class="button-row card-actions">
+            <button type="button" class="button button-primary" (click)="fhirDialog.show()">
               <app-icon name="data" />
-              <span class="fhir-accordion-open-label">Try the patient explorer</span>
-              <span class="fhir-accordion-close-label">Close the patient explorer</span>
-            </summary>
-            @defer (when fhirOpen()) {
-              <app-fhir-explorer />
-            }
-          </details>
+              Try the patient explorer
+            </button>
+          </div>
           <div class="card-links">
             <a class="card-link" href="https://github.com/mvcprogrammer/mvcprogrammer.com/tree/main/api/src/Fhir.Api" target="_blank" rel="noopener">API repo</a>
             <a class="card-link" href="https://github.com/mvcprogrammer/mvcprogrammer.com/blob/main/api/openapi.yaml" target="_blank" rel="noopener">OpenAPI spec</a>
+            <a class="card-link" href="https://github.com/mvcprogrammer/mvcprogrammer.com/tree/main/fhir" target="_blank" rel="noopener">Explorer repo</a>
           </div>
         </div>
       </article>
@@ -144,4 +140,9 @@
   </div>
 </section>
 
-<app-kiosk-dialog #kiosk />
+<app-demo-dialog dialogId="kiosk-dialog" heading="Interactive Property Search Window Display"
+                 note="The real kiosk at display.lightsplitters.com, scaled to fit this window. Touch or click around; it returns to its lock screen after three minutes idle, like the one behind the glass."
+                 [src]="options.kioskUrl" frameTitle="Interactive Property Search Window Display, live" #kiosk />
+<app-demo-dialog dialogId="fhir-dialog" heading="FHIR R4 Patient Explorer"
+                 note="The explorer at fhir.mvcprogrammer.com, an Angular app in front of the C# FHIR API. Search the sandbox, pick a patient, and watch every upstream call in the log."
+                 [src]="options.fhirExplorerUrl" frameTitle="FHIR R4 Patient Explorer, live" [tall]="true" #fhirDialog />

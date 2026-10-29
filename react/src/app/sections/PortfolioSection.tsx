@@ -1,57 +1,17 @@
-import { Suspense, lazy, useEffect, useRef, useState, type SyntheticEvent } from 'react';
+import { useState } from 'react';
+import { DemoDialog } from '../components/DemoDialog';
 import { Icon } from '../components/Icon';
-import { KioskDialog } from '../components/KioskDialog';
-
-/** The URL fragment that opens the FHIR API card, the target of the Healthcare chip and the old /fhir redirect. */
-export const FHIR_HASH = '#fhir-api';
-
-// The explorer is its own chunk, fetched the first time the accordion opens.
-const FhirExplorer = lazy(() =>
-  import('../components/FhirExplorer').then((module) => ({ default: module.FhirExplorer })),
-);
+import { useSite } from '../providers/SiteProvider';
 
 /**
- * Selected work. The kiosk card opens the live demo dialog; the FHIR API card's accordion holds the
- * patient explorer, loaded lazily the first time it opens, and opens itself for "#fhir-api".
+ * Selected work. The kiosk card and the FHIR API card each open a live demo in a DemoDialog: the
+ * real kiosk, and the patient explorer at fhir.mvcprogrammer.com. The dialogs own nothing until a
+ * visitor presses a button.
  */
 export function PortfolioSection() {
+  const { options } = useSite();
   const [kioskOpen, setKioskOpen] = useState(false);
   const [fhirOpen, setFhirOpen] = useState(false);
-  const [fhirLoaded, setFhirLoaded] = useState(false);
-  const fhirCard = useRef<HTMLElement>(null);
-
-  // "#fhir-api" opens the accordion on first render and on hashchange; the browser scrolls to the card
-  // on its own, and the toggle below scrolls again.
-  useEffect(() => {
-    const openFromHash = (): void => {
-      if (window.location.hash === FHIR_HASH) {
-        setFhirOpen(true);
-      }
-    };
-    openFromHash();
-    window.addEventListener('hashchange', openFromHash);
-    return () => window.removeEventListener('hashchange', openFromHash);
-  }, []);
-
-  // Once opened, the explorer stays mounted so a closed card keeps its search.
-  useEffect(() => {
-    if (fhirOpen) {
-      setFhirLoaded(true);
-    }
-  }, [fhirOpen]);
-
-  /**
-   * Keeps the state in step with a toggle on the native element. Opening hides the card's image, so
-   * the body jumps up and the explorer unfolds below the fold; scrolling the card to the top of the
-   * viewport keeps the whole thing in view. The stylesheet's scroll-padding-top clears the header
-   * and prefers-reduced-motion drops the glide.
-   */
-  const onFhirToggle = (event: SyntheticEvent<HTMLDetailsElement>): void => {
-    setFhirOpen(event.currentTarget.open);
-    if (event.currentTarget.open) {
-      fhirCard.current?.scrollIntoView({ block: 'start' });
-    }
-  };
 
   return (
     <>
@@ -133,14 +93,13 @@ export function PortfolioSection() {
               </div>
             </article>
 
-            {/* FHIR API card. The explorer is a lazy component rendered once the accordion has opened,
-                so its chunk and its first request to /api/fhir load only when a visitor asks. Open, the
-                card spans the grid row (styles.css) so the two-panel results keep their width. */}
-            <article className="card portfolio-card" id="fhir-api" ref={fhirCard}>
+            {/* FHIR API card. The explorer lives at fhir.mvcprogrammer.com; the button opens it in the
+                demo dialog, so nothing FHIR-related loads until a visitor asks. */}
+            <article className="card portfolio-card" id="fhir-api">
               <div className="card-media">
                 <img
-                  src="assets/images/portfolio/fhir-api-react.jpg"
-                  alt="The React edition's FHIR R4 patient explorer in dark mode, showing a synthetic patient's summary: counts and active conditions with SNOMED codes"
+                  src="assets/images/portfolio/fhir-explorer.jpg"
+                  alt="The FHIR R4 patient explorer at fhir.mvcprogrammer.com in dark mode, showing a synthetic patient's summary: counts and active conditions with SNOMED codes"
                   width="1200"
                   height="750"
                   loading="lazy"
@@ -150,10 +109,10 @@ export function PortfolioSection() {
               <div className="card-body">
                 <h3>FHIR API</h3>
                 <p className="card-subtitle">
-                  FHIR R4 patient explorer, C# on Lambda with the Firely SDK
+                  FHIR R4 patient explorer, Angular in front of C# on Lambda with the Firely SDK
                 </p>
                 <p>
-                  A window onto a public FHIR R4 test server seeded with synthetic records. Five endpoints under <code>/api/fhir</code> (patient search, summary, raw bundle, capability, and health) run as C# on .NET 10 on AWS Lambda behind this distribution, specified in the same OpenAPI document as the Experience API. The browser never talks to the sandbox; the function is the boundary, parsing every resource with the Firely SDK and mapping only the US Core fields to small DTOs.
+                  A window onto a public FHIR R4 test server seeded with synthetic records. Five endpoints under <code>/api/fhir</code> (patient search, summary, raw bundle, capability, and health) run as C# on .NET 10 on AWS Lambda, specified in the same OpenAPI document as the Experience API. The explorer in front of them is an Angular app of its own at fhir.mvcprogrammer.com. The browser never talks to the sandbox; the function is the boundary, parsing every resource with the Firely SDK and mapping only the US Core fields to small DTOs.
                 </p>
                 <p>
                   <strong>Built to be polite to a shared sandbox.</strong> Every upstream call has a short timeout, retries with backoff, and a circuit breaker, and a failure comes back as an RFC 9457 problem the explorer turns into a plain message. Responses carry ETags and CloudFront caches them. No real patient data, nothing stored.
@@ -171,25 +130,18 @@ export function PortfolioSection() {
                   <li className="tag">Polly</li>
                   <li className="tag">RFC 9457</li>
                   <li className="tag">CloudFront caching</li>
-                  <li className="tag">React 19</li>
+                  <li className="tag">Angular 22</li>
                 </ul>
-                <details
-                  className="fhir-accordion"
-                  data-fhir-accordion
-                  open={fhirOpen}
-                  onToggle={onFhirToggle}
-                >
-                  <summary className="button button-primary fhir-accordion-summary">
+                <div className="button-row card-actions">
+                  <button
+                    type="button"
+                    className="button button-primary"
+                    onClick={() => setFhirOpen(true)}
+                  >
                     <Icon name="data" />
-                    <span className="fhir-accordion-open-label">Try the patient explorer</span>
-                    <span className="fhir-accordion-close-label">Close the patient explorer</span>
-                  </summary>
-                  {fhirLoaded && (
-                    <Suspense fallback={null}>
-                      <FhirExplorer />
-                    </Suspense>
-                  )}
-                </details>
+                    Try the patient explorer
+                  </button>
+                </div>
                 <div className="card-links">
                   <a
                     className="card-link"
@@ -206,6 +158,14 @@ export function PortfolioSection() {
                     rel="noopener"
                   >
                     OpenAPI spec
+                  </a>
+                  <a
+                    className="card-link"
+                    href="https://github.com/mvcprogrammer/mvcprogrammer.com/tree/main/fhir"
+                    target="_blank"
+                    rel="noopener"
+                  >
+                    Explorer repo
                   </a>
                 </div>
               </div>
@@ -355,7 +315,25 @@ export function PortfolioSection() {
         </div>
       </section>
 
-      <KioskDialog open={kioskOpen} onClose={() => setKioskOpen(false)} />
+      <DemoDialog
+        id="kiosk-dialog"
+        title="Interactive Property Search Window Display"
+        note="The real kiosk at display.lightsplitters.com, scaled to fit this window. Touch or click around; it returns to its lock screen after three minutes idle, like the one behind the glass."
+        src={options.kioskUrl}
+        frameTitle="Interactive Property Search Window Display, live"
+        open={kioskOpen}
+        onClose={() => setKioskOpen(false)}
+      />
+      <DemoDialog
+        id="fhir-dialog"
+        title="FHIR R4 Patient Explorer"
+        note="The explorer at fhir.mvcprogrammer.com, an Angular app in front of the C# FHIR API. Search the sandbox, pick a patient, and watch every upstream call in the log."
+        src={options.fhirExplorerUrl}
+        frameTitle="FHIR R4 Patient Explorer, live"
+        tall
+        open={fhirOpen}
+        onClose={() => setFhirOpen(false)}
+      />
     </>
   );
 }

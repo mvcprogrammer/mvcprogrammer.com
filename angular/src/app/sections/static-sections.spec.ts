@@ -5,7 +5,7 @@ import { HeroSection } from './hero-section/hero-section';
 import { PortfolioSection } from './portfolio-section/portfolio-section';
 import { QuoteSection } from './quote-section/quote-section';
 import { ResumeSection } from './resume-section/resume-section';
-import { SiteTestServices, createSiteTestServices } from '../../testing/site-testing';
+import { createSiteTestServices } from '../../testing/site-testing';
 
 describe('static sections', () => {
   describe('HeroSection', () => {
@@ -67,32 +67,27 @@ describe('static sections', () => {
   });
 
   describe('PortfolioSection', () => {
-    let services: SiteTestServices;
     let fixture: ComponentFixture<PortfolioSection>;
     let host: HTMLElement;
-    let scrollIntoView: ReturnType<typeof vi.fn<Element['scrollIntoView']>>;
 
     beforeEach(async () => {
-      services = createSiteTestServices();
-      // jsdom has no scrollIntoView; the stub records which element asked to be scrolled
-      scrollIntoView = vi.fn<Element['scrollIntoView']>();
-      Element.prototype.scrollIntoView = scrollIntoView;
+      const services = createSiteTestServices();
       await TestBed.configureTestingModule({ imports: [PortfolioSection], providers: services.providers }).compileComponents();
-      window.location.hash = '';
       fixture = TestBed.createComponent(PortfolioSection);
       await fixture.whenStable();
       host = fixture.nativeElement as HTMLElement;
-    });
-
-    afterEach(() => {
-      window.location.hash = '';
+      // jsdom has no modal dialogs; the stub keeps the open state honest for both dialogs
+      for (const dialog of Array.from(host.querySelectorAll('dialog'))) {
+        Object.defineProperty(dialog, 'showModal', { value: vi.fn(() => dialog.setAttribute('open', '')), configurable: true });
+        Object.defineProperty(dialog, 'open', { get: () => dialog.hasAttribute('open'), configurable: true });
+      }
     });
 
     it('should give each project card one primary button with a single row of links after it', () => {
       // Assert
       const cards = Array.from(host.querySelectorAll('.portfolio-card:not(.portfolio-card-featured)'));
       const actions = cards.map((card) => {
-        const buttons = card.querySelectorAll('.card-actions .button-primary, .fhir-accordion > summary.button-primary');
+        const buttons = card.querySelectorAll('.card-actions .button-primary');
         const rows = card.querySelectorAll(':scope > .card-body > .card-links');
         const button = buttons[0];
         const row = rows[0];
@@ -105,7 +100,7 @@ describe('static sections', () => {
         };
       });
       expect(actions).toEqual([
-        { buttons: 1, rows: 1, rowAfterButton: true, links: ['API repo', 'OpenAPI spec'] },
+        { buttons: 1, rows: 1, rowAfterButton: true, links: ['API repo', 'OpenAPI spec', 'Explorer repo'] },
         { buttons: 1, rows: 1, rowAfterButton: true, links: ['Site repo'] },
         { buttons: 1, rows: 1, rowAfterButton: true, links: ['Screen repo', 'API repo'] },
       ]);
@@ -117,112 +112,57 @@ describe('static sections', () => {
 
     it('should link only to the source and open the kiosk from the card button', async () => {
       // Arrange
-      const dialog = host.querySelector('dialog') as HTMLDialogElement;
-      Object.defineProperty(dialog, 'showModal', { value: vi.fn(), configurable: true });
       expect(host.querySelector('iframe')).toBeNull();
 
       // Act
-      host.querySelector<HTMLButtonElement>('.card-actions button')?.click();
+      host.querySelector<HTMLButtonElement>('.portfolio-card:last-of-type .card-actions button')?.click();
       await fixture.whenStable();
 
       // Assert
-      expect(host.querySelector('iframe')?.getAttribute('src')).toBe('https://kiosk.example.test/');
+      expect(host.querySelector('#kiosk-dialog iframe')?.getAttribute('src')).toBe('https://kiosk.example.test/');
+      expect(host.querySelector('#fhir-dialog iframe')).toBeNull();
       const links = Array.from(host.querySelectorAll('.portfolio-card-featured .card-link')).map((a) => a.getAttribute('href'));
       expect(links).toEqual(['https://github.com/mvcprogrammer/mvcprogrammer.com']);
       expect(host.querySelectorAll('.portfolio-card').length).toBe(4);
     });
 
-    it('should render the FHIR API card first after the featured card, closed, without the explorer or any FHIR request', () => {
+    it('should render the FHIR API card first after the featured card as a pitch with no explorer in the page', () => {
       // Assert
-      const cards = host.querySelectorAll('.portfolio-card');
-      const card = cards[1];
+      const card = host.querySelectorAll('.portfolio-card')[1];
       expect(card.id).toBe('fhir-api');
       expect(card.querySelector('h3')?.textContent).toBe('FHIR API');
-      expect(card.querySelector('.card-media img')?.getAttribute('src')).toBe('assets/images/portfolio/fhir-api-angular.jpg');
+      expect(card.querySelector('.card-subtitle')?.textContent).toBe('FHIR R4 patient explorer, Angular in front of C# on Lambda with the Firely SDK');
+      expect(card.querySelector('.card-media img')?.getAttribute('src')).toBe('assets/images/portfolio/fhir-explorer.jpg');
+      expect(card.querySelector('.card-actions button')?.textContent?.trim()).toBe('Try the patient explorer');
+      expect(card.querySelector('.card-actions button use')?.getAttribute('href')).toBe('#icon-data');
       const links = Array.from(card.querySelectorAll(':scope > .card-body > .card-links > .card-link')).map((a) => a.getAttribute('href'));
       expect(links).toEqual([
         'https://github.com/mvcprogrammer/mvcprogrammer.com/tree/main/api/src/Fhir.Api',
         'https://github.com/mvcprogrammer/mvcprogrammer.com/blob/main/api/openapi.yaml',
+        'https://github.com/mvcprogrammer/mvcprogrammer.com/tree/main/fhir',
       ]);
-      expect(accordion().nextElementSibling?.classList.contains('card-links')).toBe(true);
-      expect(accordion().open).toBe(false);
-      expect(accordion().querySelector('summary')?.classList.contains('button-primary')).toBe(true);
-      expect(host.querySelector('app-fhir-explorer')).toBeNull();
-      expect(services.fhir.capabilityCalls).toBe(0);
-      expect(scrollIntoView).not.toHaveBeenCalled();
+      expect(card.querySelector('details')).toBeNull();
+      expect(host.querySelector('.fhir-explorer')).toBeNull();
+      expect(host.querySelector('iframe')).toBeNull();
     });
 
-    it('should render the explorer, which checks the capability, when the accordion is opened, and keep it when closed again', async () => {
-      // Act
-      toggle(true);
-      await fixture.whenStable();
-
-      // Assert
-      expect(host.querySelector('app-fhir-explorer #fhir-search')).not.toBeNull();
-      expect(services.fhir.capabilityCalls).toBe(1);
-
-      // Act again
-      toggle(false);
-      await fixture.whenStable();
-
-      // Assert again
-      expect(accordion().open).toBe(false);
-      expect(host.querySelector('app-fhir-explorer')).not.toBeNull();
-      expect(services.fhir.capabilityCalls).toBe(1);
-    });
-
-    it('should scroll the card to the top of the viewport when the accordion is opened, and not when it is closed', async () => {
-      // Act
-      toggle(true);
-      await fixture.whenStable();
-
-      // Assert (jsdom fires its own toggle beside the helper's, so the count is checked for growth, not exactness)
-      const callsAfterOpen = scrollIntoView.mock.calls.length;
-      expect(callsAfterOpen).toBeGreaterThan(0);
-      expect(scrollIntoView.mock.instances.every((element) => element === host.querySelector('#fhir-api'))).toBe(true);
-      expect(scrollIntoView).toHaveBeenCalledWith({ block: 'start' });
-
-      // Act again
-      toggle(false);
-      await fixture.whenStable();
-
-      // Assert again
-      expect(scrollIntoView).toHaveBeenCalledTimes(callsAfterOpen);
-    });
-
-    it('should open the accordion when the URL fragment changes to #fhir-api', async () => {
-      // Act
-      window.location.hash = PortfolioSection.FHIR_HASH;
-      window.dispatchEvent(new Event('hashchange'));
-      await fixture.whenStable();
-
-      // Assert
-      expect(accordion().open).toBe(true);
-      expect(host.querySelector('app-fhir-explorer')).not.toBeNull();
-    });
-
-    it('should open the accordion on first render when the page loads on #fhir-api', async () => {
+    it('should open the patient explorer in the tall demo dialog from the FHIR card button', async () => {
       // Arrange
-      window.location.hash = PortfolioSection.FHIR_HASH;
-      const other = TestBed.createComponent(PortfolioSection);
+      const dialog = host.querySelector('#fhir-dialog') as HTMLDialogElement;
+      expect(dialog.getAttribute('data-frame')).toBe('tall');
+      expect(dialog.getAttribute('aria-labelledby')).toBe('fhir-dialog-title');
+      expect(dialog.querySelector('#fhir-dialog-title')?.textContent).toBe('FHIR R4 Patient Explorer');
 
       // Act
-      await other.whenStable();
+      host.querySelector<HTMLButtonElement>('#fhir-api .card-actions button')?.click();
+      await fixture.whenStable();
 
       // Assert
-      const details = (other.nativeElement as HTMLElement).querySelector('details.fhir-accordion') as HTMLDetailsElement;
-      expect(details.open).toBe(true);
+      expect(dialog.querySelector('iframe')?.getAttribute('src')).toBe('https://fhir.example.test/');
+      expect(dialog.querySelector('iframe')?.getAttribute('title')).toBe('FHIR R4 Patient Explorer, live');
+      expect(dialog.querySelector('.demo-dialog-foot a')?.getAttribute('href')).toBe('https://fhir.example.test/');
+      expect(host.querySelector('#kiosk-dialog iframe')).toBeNull();
     });
-
-    function accordion(): HTMLDetailsElement {
-      return host.querySelector('details.fhir-accordion') as HTMLDetailsElement;
-    }
-
-    /** Flips the native element the way a click on the summary does, then fires its toggle event. */
-    function toggle(open: boolean): void {
-      accordion().open = open;
-      accordion().dispatchEvent(new Event('toggle'));
-    }
   });
 
   describe('ResumeSection', () => {

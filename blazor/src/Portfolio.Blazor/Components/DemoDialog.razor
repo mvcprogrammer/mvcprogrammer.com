@@ -1,0 +1,19 @@
+@* A live demo in a native dialog. The iframe is rendered only while the dialog is open, so the demo
+   and whatever runs behind it load only for visitors who ask. The parent opens it through OpenAsync(). *@
+<dialog class="demo-dialog" id="@Id" aria-labelledby="@($"{Id}-title")" data-frame="@(Tall ? "tall" : null)" @ref="_dialog">
+    <div class="demo-dialog-head">
+        <div>
+            <p class="eyebrow">Live demo</p>
+            <h2 id="@($"{Id}-title")">@Title</h2>
+            <p class="demo-dialog-note">@Note</p>
+        </div>
+        <button type="button" class="demo-dialog-close" aria-label="Close the demo" @onclick="CloseAsync">&times;</button>
+    </div>
+    <div class="demo-frame-slot">
+        @if (_open)
+        {
+            <iframe class="demo-frame" src="@Src" title="@FrameTitle" loading="eager"></iframe>
+        }
+    </div>
+    <p class="demo-dialog-foot"><a href="@Src" target="_blank" rel="noopener">Open full size in a new tab</a></p>
+</dialog>

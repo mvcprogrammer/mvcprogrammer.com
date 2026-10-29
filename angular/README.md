@@ -19,7 +19,8 @@ angular/
   src/app/pages/                Home (the sections in order; starts the engagement tracker) and NotFound.
   src/app/sections/             One component per section of the page, markup lifted from ../index.html.
   src/app/components/           Header (menu, scroll state, current section), footer, icon and sprite,
-                                social links, the experience timeline with its skill filter, the kiosk dialog.
+                                social links, the experience timeline with its skill filter, and the demo dialog
+                                (one component, two instances: the kiosk and the patient explorer at fhir.mvcprogrammer.com).
   src/app/configurations/       SiteOptions and its injection token.
   src/app/interfaces/           ExperienceClient, ContactClient, ContactTopicState, EngagementTracker: abstract
                                 classes that double as injection tokens, so components depend on the contract.
@@ -69,7 +70,7 @@ npx ng test --watch=false --include "**/site-header.spec.ts"
 
 The tests are Vitest through the Angular CLI's unit-test builder, on jsdom. Components render
 through TestBed against fakes of the two client interfaces, so the skill filter, the seed fallback,
-the contact form's validation and status messages, the mobile menu, and the kiosk dialog are all
+the contact form's validation and status messages, the mobile menu, and the demo dialogs are all
 exercised without a browser. The two HTTP clients are tested over `HttpTestingController`. The
 workflow runs the suite before every build.
 

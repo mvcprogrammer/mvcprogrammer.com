@@ -81,7 +81,7 @@ story += [
             [c("src/app/app.routes.ts"), c('""') + " is Home; " + c("**") + " is NotFound, for the paths CloudFront hands to " + c("index.html") + "."],
             [c("pages/"), c("Home") + " (the sections in page order) and " + c("NotFound") + "."],
             [c("sections/"), "One component per section of the page: Hero, About, Quote, Services, Portfolio, Resume, Contact, Colophon. Templates lifted from " + c("index.html") + "."],
-            [c("components/"), "Header (menu, scroll state, current section), footer, icon and icon sprite, social links, the experience timeline with its skill filter, and the kiosk demo dialog."],
+            [c("components/"), "Header (menu, scroll state, current section), footer, icon and icon sprite, social links, the experience timeline with its skill filter, and the demo dialog the kiosk and the patient explorer open in."],
             [c("configurations/"), c("SiteOptions") + " and its " + c("SITE_OPTIONS") + " injection token."],
             [c("interfaces/"), c("ExperienceClient") + ", " + c("ContactClient") + ", " + c("ContactTopicState") + ": abstract classes that double as injection tokens, so components depend on the contract and tests swap in fakes."],
             [c("services/"), c("HttpExperienceClient") + " and " + c("HttpContactClient") + " over " + c("HttpClient") + ", and " + c("SubjectContactTopicState") + "."],
@@ -116,7 +116,7 @@ story += [
             ["Configuration", c("data-") + " attributes in the HTML.", c("appsettings.json") + " bound to " + c("SiteOptions") + ".", "A " + c("SiteOptions") + " literal in " + c("app.config.ts") + ", validated by " + c("provideSite()") + " and injected through " + c("SITE_OPTIONS") + "."],
             ["Header behavior", "Listeners in " + c("main.js") + ".", "Observers in " + c("site.js") + " reporting through " + c("[JSInvokable]") + ".", "Observers in " + c("SiteHeader") + "; the section observer attaches after each " + c("NavigationEnd") + " because the sections render after the header."],
             ["Theme toggle", "A click handler in " + c("main.js") + " sets " + c("data-theme") + " and saves the choice.", "A " + c("site.js") + " function called through " + c("IJSRuntime") + ".", "A " + c("toggleTheme()") + " method on " + c("SiteHeader") + ". All four keep no theme state; the stylesheet picks the icon, and the shared " + c("theme.js") + " in the head applies a saved choice before boot."],
-            ["Kiosk demo", "Native dialog; iframe cleared on close.", c("KioskDialog") + " with JS interop for " + c("showModal") + ".", c("KioskDialog") + " calls " + c("showModal()") + " itself; the iframe exists only while the " + c("open") + " signal is true."],
+            ["Live demos", "Native dialogs; iframe cleared on close.", "One " + c("DemoDialog") + " component with JS interop for " + c("showModal") + ".", "One " + c("DemoDialog") + " component with signal inputs for the title, note, and URL, used twice (kiosk, patient explorer); it calls " + c("showModal()") + " itself and the iframe exists only while the " + c("open") + " signal is true."],
             ["Styling", "Shared stylesheet plus " + c("vanilla.css") + " (palette).", "Shared stylesheet plus " + c("blazor.css") + " (palette, boot screen).", "Shared stylesheet plus " + c("angular.css") + " (palette, boot screen). <b>No component styles</b>: Angular injects them inline, which the CSP forbids. Host elements get " + c("display: contents") + " so the sticky header and the grids are unaffected."],
             ["Build output", "The files as committed.", c("dotnet publish") + ", trimmed.", c("ng build") + ": esbuild, fingerprinted bundles, critical-CSS inlining off (it would be an inline " + c("&lt;style&gt;") + ")."],
             ["Hosting", "Bucket root, distribution for mvcprogrammer.com.", c("blazor/") + " prefix, own distribution, CSP with " + c("'wasm-unsafe-eval'") + ".", c("angular/") + " prefix, own distribution, the static site's response headers policy unchanged, S3 403 rewritten to " + c("index.html") + "."],
@@ -170,7 +170,7 @@ story += [
     p("The suite is Vitest 4 through the Angular CLI's unit-test builder, on jsdom, with the Vitest globals. Components "
       "render through " + c("TestBed") + " against fakes of the two client interfaces, so the skill filter, the seed "
       "fallback, the contact form's validation and status messages, the mobile menu, the section observer, and the "
-      "kiosk dialog are all exercised without a browser. The two HTTP clients are tested over "
+      "demo dialog are all exercised without a browser. The two HTTP clients are tested over "
       + c("HttpTestingController") + ". The deploy workflow runs the suite before every build, so a red test blocks the "
       "Angular deploy."),
     KeepTogether([p("Commands", "h2"), *code_block([
@@ -191,17 +191,17 @@ story += [
     b("Zoneless rules: every async step is followed by " + c("await fixture.whenStable()") + ". The components wrap their loads in " + c("PendingTasks") + ", which is what makes that wait reliable."),
     b("jsdom has no " + c("IntersectionObserver") + ", no " + c("matchMedia") + ", and no modal dialogs. The components guard for that; the specs stub the observer and the dialog methods where the behavior matters."),
     p("Test layout", "h2"),
-    p("Files mirror the app. The counts are test cases as Vitest reports them (192 in all)."),
+    p("Files mirror the app. The counts are test cases as Vitest reports them (150 in all)."),
     table(
         ["File", "Tests", "What it proves"],
         [
             [link("components/experience-timeline/experience-timeline.spec.ts", BLOB + SRC + "components/experience-timeline/experience-timeline.spec.ts"), "16", "API render, date and place labels, every fallback path (error, empty, not a list, seed failure, empty seed, skills failure), chip order, the more button, chip titles, filtering, restore without refetch, filter failure, late response after destroy."],
             [link("components/site-header/site-header.spec.ts", BLOB + SRC + "components/site-header/site-header.spec.ts"), "24", "Nav links and initial state, the theme toggle (both OS schemes, a saved choice both ways, no matchMedia, icons and name), the edition list (four entries, current marked, open and close, Escape, outside click), menu toggle, close on nav click, Escape with focus return, outside and inside clicks, listeners released, scrolled class, section observer after navigation, current link set and cleared, observer replaced and disconnected, no observer in the browser."],
-            [link("components/kiosk-dialog/kiosk-dialog.spec.ts", BLOB + SRC + "components/kiosk-dialog/kiosk-dialog.spec.ts"), "7", "No iframe while closed, show renders the configured kiosk and opens modally, show is idempotent, close button, close before open, backdrop versus inside click, close event removes the iframe."],
+            [link("components/demo-dialog/demo-dialog.spec.ts", BLOB + SRC + "components/demo-dialog/demo-dialog.spec.ts"), "9", "The id and aria-labelledby wiring, the tall frame attribute, no iframe while closed, show renders the configured URL and opens modally, show is idempotent, close button, close before open, backdrop versus inside click, close event removes the iframe."],
             [link("components/icon-sprite/icon-sprite.spec.ts", BLOB + SRC + "components/icon-sprite/icon-sprite.spec.ts"), "14", "Every symbol the page references exists in the sprite."],
             [link("components/icon, social-links, site-footer", TREE + SRC + "components"), "3", "Icon references a sprite symbol, three social profiles, footer year and legal links."],
             [link("sections/contact-section/contact-section.spec.ts", BLOB + SRC + "sections/contact-section/contact-section.spec.ts"), "15", "Phone field hidden and disabled by default, topic preselection and unsubscribe, phone reveal and hide, post and confirmations, honeypot forwarded, 429, generic failure, timeout, non-HTTP error, no post when invalid, when a call has no number, or the message is too short."],
-            [link("sections/static-sections.spec.ts", BLOB + SRC + "sections/static-sections.spec.ts"), "7", "Hero, the About tag exception, the quote, one button and one row of links on each project card, the portfolio links and kiosk button, the resume URL and education, the colophon."],
+            [link("sections/static-sections.spec.ts", BLOB + SRC + "sections/static-sections.spec.ts"), "9", "Hero, the About tag exception, the quote, one button and one row of links on each project card, the kiosk button and its dialog, the FHIR card's pitch and the explorer dialog it opens, the resume URL and education, the colophon."],
             [link("sections/call-to-action.spec.ts", BLOB + SRC + "sections/call-to-action.spec.ts"), "1", "The Services button selects its contact topic."],
             [link("pages/home, pages/not-found, app.spec.ts", TREE + SRC), "5", "Home renders every section in order, NotFound, the layout around the routed page, an unknown path routes to NotFound."],
             [link("services/beacon-engagement-tracker.spec.ts", BLOB + SRC + "services/beacon-engagement-tracker.spec.ts"), "12", "Load ping with screen class and color scheme, view pings once per section, click pings for edition and profile links with their place, leave pings with the visible seconds, silence on localhost, no observer in the browser, failed pings ignored, restart and stop."],

@@ -118,58 +118,6 @@ export function closeDialog(dialog) {
   if (dialog.open) dialog.close();
 }
 
-/** Tells .NET when a <details> element is opened or closed by the visitor, so its state stays in step. */
-export function watchDetails(details, dotnet, method = "OnToggled") {
-  const onToggle = () => dotnet.invokeMethodAsync(method, details.open);
-  details.addEventListener("toggle", onToggle);
-  return { dispose: () => details.removeEventListener("toggle", onToggle) };
-}
-
-/** Calls .NET now and whenever the URL fragment becomes the given hash. Blazor intercepts clicks on
- *  in-page links and, for a same-page hash, pushes history and scrolls without raising hashchange or
- *  telling .NET, so clicks on links to the hash are caught here in the capture phase, before Blazor's
- *  own document listener runs; hashchange and popstate cover the address bar and the history buttons. */
-export function watchHash(dotnet, hash, method = "OnHashMatched") {
-  const check = () => {
-    if (window.location.hash === hash) dotnet.invokeMethodAsync(method);
-  };
-  const onClick = (event) => {
-    const anchor = event.target?.closest?.("a[href]");
-    if (!anchor || event.defaultPrevented) return;
-    let url;
-    try {
-      url = new URL(anchor.getAttribute("href"), window.location.href);
-    } catch {
-      return;
-    }
-    if (url.origin === window.location.origin && url.pathname === window.location.pathname && url.hash === hash) {
-      dotnet.invokeMethodAsync(method);
-    }
-  };
-  check();
-  window.addEventListener("hashchange", check);
-  window.addEventListener("popstate", check);
-  document.addEventListener("click", onClick, true);
-  return {
-    dispose: () => {
-      window.removeEventListener("hashchange", check);
-      window.removeEventListener("popstate", check);
-      document.removeEventListener("click", onClick, true);
-    },
-  };
-}
-
-/** Scrolls the page so the element sits at the top of the viewport, under the header: the stylesheet's
- *  scroll-padding-top and scroll-behavior apply as they do to an anchor link. */
-export function scrollIntoView(element) {
-  element?.scrollIntoView({ block: "start" });
-}
-
-/** Keeps a scrolling element's newest content in view, as a terminal does. */
-export function scrollToEnd(element) {
-  if (element) element.scrollTop = element.scrollHeight;
-}
-
 /** The engagement beacon, mirrored from main.js: small GET /ping requests the CloudFront edge answers
  *  with 204. "load" once with the viewport class and color scheme, "view" once per section that reaches
  *  the middle of the viewport, "click" when an edition or profile link is followed, and "leave" with the

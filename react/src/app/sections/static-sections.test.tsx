@@ -1,9 +1,9 @@
 import { fireEvent, render, screen } from '@testing-library/react';
-import { createSiteTestServices, renderWithSite } from '../../testing/site-testing';
+import { TEST_SITE_OPTIONS, createSiteTestServices, renderWithSite } from '../../testing/site-testing';
 import { AboutSection } from './AboutSection';
 import { ColophonSection } from './ColophonSection';
 import { HeroSection } from './HeroSection';
-import { FHIR_HASH, PortfolioSection } from './PortfolioSection';
+import { PortfolioSection } from './PortfolioSection';
 import { QuoteSection } from './QuoteSection';
 import { ResumeSection } from './ResumeSection';
 
@@ -70,14 +70,6 @@ describe('static sections', () => {
   });
 
   describe('PortfolioSection', () => {
-    let scrollIntoView: ReturnType<typeof vi.fn<Element['scrollIntoView']>>;
-
-    beforeEach(() => {
-      // jsdom has no scrollIntoView; the stub records which element asked to be scrolled
-      scrollIntoView = vi.fn<Element['scrollIntoView']>();
-      Element.prototype.scrollIntoView = scrollIntoView;
-    });
-
     it('should give each project card one primary button with a single row of links after it', () => {
       // Arrange, Act
       renderWithSite(<PortfolioSection />, createSiteTestServices());
@@ -85,7 +77,7 @@ describe('static sections', () => {
       // Assert
       const cards = Array.from(document.querySelectorAll('.portfolio-card:not(.portfolio-card-featured)'));
       const actions = cards.map((card) => {
-        const buttons = card.querySelectorAll('.card-actions .button-primary, .fhir-accordion > summary.button-primary');
+        const buttons = card.querySelectorAll('.card-actions .button-primary');
         const rows = card.querySelectorAll(':scope > .card-body > .card-links');
         const button = buttons[0];
         const row = rows[0];
@@ -98,7 +90,7 @@ describe('static sections', () => {
         };
       });
       expect(actions).toEqual([
-        { buttons: 1, rows: 1, rowAfterButton: true, links: ['API repo', 'OpenAPI spec'] },
+        { buttons: 1, rows: 1, rowAfterButton: true, links: ['API repo', 'OpenAPI spec', 'Explorer repo'] },
         { buttons: 1, rows: 1, rowAfterButton: true, links: ['Site repo'] },
         { buttons: 1, rows: 1, rowAfterButton: true, links: ['Screen repo', 'API repo'] },
       ]);
@@ -112,17 +104,17 @@ describe('static sections', () => {
       // Arrange
       const services = createSiteTestServices();
       renderWithSite(<PortfolioSection />, services);
-      const dialog = document.querySelector('dialog') as HTMLDialogElement;
-      Object.defineProperty(dialog, 'showModal', { value: vi.fn(), configurable: true });
+      stubShowModal('kiosk-dialog');
       expect(document.querySelector('iframe')).toBeNull();
 
       // Act
       fireEvent.click(screen.getByRole('button', { name: 'Try the live kiosk' }));
 
       // Assert
-      expect(document.querySelector('iframe')?.getAttribute('src')).toBe(
+      expect(document.querySelector('#kiosk-dialog iframe')?.getAttribute('src')).toBe(
         'https://kiosk.example.test/',
       );
+      expect(document.querySelector('#fhir-dialog iframe')).toBeNull();
       const links = Array.from(
         document.querySelectorAll('.portfolio-card-featured .card-link'),
       ).map((a) => a.getAttribute('href'));
@@ -133,130 +125,71 @@ describe('static sections', () => {
       );
     });
 
-    it('should render the FHIR API card first after the featured card, closed, without the explorer or any FHIR request', () => {
-      // Arrange
-      const services = createSiteTestServices();
-      window.location.hash = '';
-
-      // Act
-      renderWithSite(<PortfolioSection />, services);
+    it('should render the FHIR API card first after the featured card as a pitch with the explorer button', () => {
+      // Arrange, Act
+      renderWithSite(<PortfolioSection />, createSiteTestServices());
 
       // Assert
-      const cards = document.querySelectorAll('.portfolio-card');
-      const card = cards[1]!;
+      const card = document.querySelectorAll('.portfolio-card')[1]!;
       expect(card.id).toBe('fhir-api');
       expect(card.querySelector('h3')?.textContent).toBe('FHIR API');
-      expect(card.querySelector('.card-media img')?.getAttribute('src')).toBe('assets/images/portfolio/fhir-api-react.jpg');
+      expect(card.querySelector('.card-subtitle')?.textContent?.trim()).toBe(
+        'FHIR R4 patient explorer, Angular in front of C# on Lambda with the Firely SDK',
+      );
+      expect(card.querySelector('.card-media img')?.getAttribute('src')).toBe('assets/images/portfolio/fhir-explorer.jpg');
       const links = Array.from(card.querySelectorAll(':scope > .card-body > .card-links > .card-link')).map((a) => a.getAttribute('href'));
       expect(links).toEqual([
         'https://github.com/mvcprogrammer/mvcprogrammer.com/tree/main/api/src/Fhir.Api',
         'https://github.com/mvcprogrammer/mvcprogrammer.com/blob/main/api/openapi.yaml',
+        'https://github.com/mvcprogrammer/mvcprogrammer.com/tree/main/fhir',
       ]);
-      expect(accordion().nextElementSibling?.classList.contains('card-links')).toBe(true);
-      expect(accordion().open).toBe(false);
-      expect(accordion().querySelector('summary')?.classList.contains('button-primary')).toBe(true);
-      expect(document.getElementById('fhir-search')).toBeNull();
-      expect(services.fhir.capabilityCalls).toBe(0);
-      expect(scrollIntoView).not.toHaveBeenCalled();
+      const tags = Array.from(card.querySelectorAll('.card-tags .tag')).map((tag) => tag.textContent);
+      expect(tags[tags.length - 1]).toBe('Angular 22');
+      const button = card.querySelector('.card-actions button.button-primary');
+      expect(button?.textContent?.trim()).toBe('Try the patient explorer');
+      expect(button?.querySelector('use')?.getAttribute('href')).toBe('#icon-data');
+      expect(card.querySelector('details')).toBeNull();
+      expect(document.querySelector('iframe')).toBeNull();
     });
 
-    it('should load the explorer, which checks the capability, when the accordion is opened, and keep it when closed again', async () => {
+    it('should open the explorer in the tall FHIR dialog from the card button', () => {
       // Arrange
-      const services = createSiteTestServices();
-      window.location.hash = '';
-      renderWithSite(<PortfolioSection />, services);
+      renderWithSite(<PortfolioSection />, createSiteTestServices());
+      const showModal = stubShowModal('fhir-dialog');
 
       // Act
-      toggle(true);
-      await screen.findByText(/every resource and search parameter/);
+      fireEvent.click(screen.getByRole('button', { name: 'Try the patient explorer' }));
 
       // Assert
-      expect(document.getElementById('fhir-search')).not.toBeNull();
-      expect(services.fhir.capabilityCalls).toBe(1);
-
-      // Act again
-      toggle(false);
-
-      // Assert again
-      expect(accordion().open).toBe(false);
-      expect(document.getElementById('fhir-search')).not.toBeNull();
-      expect(services.fhir.capabilityCalls).toBe(1);
+      expect(showModal).toHaveBeenCalledTimes(1);
+      const dialog = document.getElementById('fhir-dialog');
+      expect(dialog?.getAttribute('data-frame')).toBe('tall');
+      expect(dialog?.querySelector('h2')?.textContent).toBe('FHIR R4 Patient Explorer');
+      expect(dialog?.querySelector('iframe')?.getAttribute('src')).toBe(TEST_SITE_OPTIONS.fhirExplorerUrl);
+      expect(document.querySelector('#kiosk-dialog iframe')).toBeNull();
     });
 
-    it('should scroll the card to the top of the viewport when the accordion is opened, and not when it is closed', async () => {
-      // Arrange
-      window.location.hash = '';
-      renderWithSite(<PortfolioSection />);
-
-      // Act
-      toggle(true);
-      await screen.findByText(/every resource and search parameter/);
-
-      // Assert (jsdom fires its own toggle beside the helper's, so the count is checked for growth, not exactness)
-      const callsAfterOpen = scrollIntoView.mock.calls.length;
-      expect(callsAfterOpen).toBeGreaterThan(0);
-      expect(scrollIntoView.mock.instances.every((element) => element === document.getElementById('fhir-api'))).toBe(true);
-      expect(scrollIntoView).toHaveBeenCalledWith({ block: 'start' });
-
-      // Act again
-      toggle(false);
-
-      // Assert again
-      expect(scrollIntoView).toHaveBeenCalledTimes(callsAfterOpen);
-    });
-
-    it('should open the accordion when the URL fragment changes to #fhir-api', async () => {
-      // Arrange
-      const services = createSiteTestServices();
-      window.location.hash = '';
-      renderWithSite(<PortfolioSection />, services);
-
-      // Act
-      window.location.hash = FHIR_HASH;
-      fireEvent(window, new Event('hashchange'));
-      await screen.findByText(/every resource and search parameter/);
-
-      // Assert
-      expect(accordion().open).toBe(true);
-      window.location.hash = '';
-    });
-
-    it('should open the accordion on first render when the page loads on #fhir-api', async () => {
-      // Arrange
-      window.location.hash = FHIR_HASH;
-
-      // Act
-      renderWithSite(<PortfolioSection />);
-      await screen.findByText(/every resource and search parameter/);
-
-      // Assert
-      expect(accordion().open).toBe(true);
-      window.location.hash = '';
-    });
-
-    it('should remove the iframe once the dialog closes', () => {
+    it('should remove the iframe once a dialog closes', () => {
       // Arrange
       renderWithSite(<PortfolioSection />);
-      const dialog = document.querySelector('dialog') as HTMLDialogElement;
-      Object.defineProperty(dialog, 'showModal', { value: vi.fn(), configurable: true });
+      stubShowModal('kiosk-dialog');
       fireEvent.click(screen.getByRole('button', { name: 'Try the live kiosk' }));
       expect(document.querySelector('iframe')).not.toBeNull();
 
       // Act
-      fireEvent(dialog, new Event('close'));
+      fireEvent(document.getElementById('kiosk-dialog')!, new Event('close'));
 
       // Assert
       expect(document.querySelector('iframe')).toBeNull();
     });
 
-    function accordion(): HTMLDetailsElement {
-      return document.querySelector('details.fhir-accordion') as HTMLDetailsElement;
-    }
-
-    /** Flips the native element the way a click on the summary does, then fires its toggle event. */
-    function toggle(open: boolean): void {
-      accordion().open = open;
-      fireEvent(accordion(), new Event('toggle'));
+    /** jsdom has no modal dialogs; the stubs record the calls and track the open attribute the way a browser does. */
+    function stubShowModal(id: string): ReturnType<typeof vi.fn> {
+      const dialog = document.getElementById(id) as HTMLDialogElement;
+      const showModal = vi.fn(() => dialog.setAttribute('open', ''));
+      Object.defineProperty(dialog, 'showModal', { value: showModal, configurable: true });
+      Object.defineProperty(dialog, 'close', { value: () => dialog.removeAttribute('open'), configurable: true });
+      return showModal;
     }
   });
 

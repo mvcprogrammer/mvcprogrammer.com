@@ -14,8 +14,8 @@ export interface SiteOptions {
   /** Relative path of the bundled copy of the positions seed, the fallback when the API is unreachable. */
   readonly experienceSeedPath: string;
 
-  /** Relative base of the FHIR API behind the patient explorer, served by CloudFront on the same origin. */
-  readonly fhirApiBase: string;
+  /** The patient explorer, embedded in the portfolio demo dialog. */
+  readonly fhirExplorerUrl: string;
 
   /** The live kiosk, embedded in the portfolio demo dialog. */
   readonly kioskUrl: string;

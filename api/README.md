@@ -5,7 +5,7 @@ behaviors under `/api`, both specified in the one `openapi.yaml` before any code
 
 - **Experience API** (`/api/experience`, `/api/skills`): the source of truth for the Experience
   section of [mvcprogrammer.com](https://mvcprogrammer.com), reading a single DynamoDB table.
-- **FHIR API** (`/api/fhir/*`): the function behind the [patient explorer](https://mvcprogrammer.com/#fhir-api),
+- **FHIR API** (`/api/fhir/*`): the function behind the [patient explorer](https://fhir.mvcprogrammer.com/),
   a facade over a public FHIR R4 sandbox of synthetic records. See [FHIR API](#fhir-api) below.
 
 # Experience API
@@ -78,7 +78,7 @@ Deployment, seeding, and the CloudFront wiring are in [docs/DEPLOY.md](../docs/D
 
 # FHIR API
 
-The function behind the [FHIR API card](https://mvcprogrammer.com/#fhir-api) on every edition of mvcprogrammer.com, a patient
+The function behind the [patient explorer](https://fhir.mvcprogrammer.com/), which the FHIR API card on every edition of mvcprogrammer.com opens, a patient
 explorer over a public FHIR R4 sandbox that holds synthetic data only. It owns no data: every
 request is answered from the sandbox, mapped at the boundary into the small DTOs in `openapi.yaml`
 (tag `FHIR`), with a `trace` of the upstream calls for the page's "under the hood" panel.

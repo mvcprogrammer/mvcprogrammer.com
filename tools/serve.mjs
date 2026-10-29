@@ -1,13 +1,12 @@
 #!/usr/bin/env node
 // Local preview with the APIs: serves the repository root like `python3 -m http.server` and
-// forwards /api/* to the functions running on their Kestrel ports, so fhir.html and the
-// Experience timeline work same-origin as they do behind CloudFront. No dependencies.
+// forwards /api/* to the functions running on their Kestrel ports, so the Experience timeline
+// works same-origin as it does behind CloudFront. No dependencies. (The patient explorer is its own
+// app in fhir/; see fhir/README.md for previewing it.)
 //
 //   dotnet run --project api/src/Fhir.Api          # listens on http://localhost:5000
 //   node tools/serve.mjs                           # http://localhost:8080, /api/fhir/* -> :5000
 //   node tools/serve.mjs --port 8080 --api http://localhost:5000
-//
-// /fhir is rewritten to /fhir.html, as the CloudFront Function does in production.
 
 import { createServer, request as httpRequest } from "node:http";
 import { createReadStream, statSync } from "node:fs";
@@ -79,7 +78,7 @@ createServer((req, res) => {
     proxy(req, res);
     return;
   }
-  const pathname = url.pathname === "/fhir" || url.pathname === "/fhir/" ? "/fhir.html" : url.pathname;
+  const pathname = url.pathname;
   serveFile(decodeURIComponent(pathname), res);
 }).listen(port, () => {
   console.log(`Serving ${root} at http://localhost:${port}/ with /api/* forwarded to ${api.origin}`);
