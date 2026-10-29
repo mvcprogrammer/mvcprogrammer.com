@@ -183,14 +183,14 @@ Attach the returned policy ID to the default cache behavior (console: Behaviors 
 
 ### 4b. Redirect www to the apex (optional)
 
-Both hostnames point at the same distribution, so without a redirect the site is reachable at two URLs. A CloudFront Function on viewer-request fixes that. The same function answers the engagement beacon (`GET /ping`, see [Visitor stats](#visitor-stats)) with an empty 204 at the edge, so those requests are logged but never reach S3, and answers the patient explorer's old URL, `/fhir` (with or without a trailing slash), with a 301 to `https://mvcprogrammer.com/#fhir-api`, the FHIR API card on the home page (the explorer was its own page from 2026-10-20 to 2026-10-21; see [FHIR API](#fhir-api)). The code is checked in at [infra/cloudfront/www-redirect.js](../infra/cloudfront/www-redirect.js).
+Both hostnames point at the same distribution, so without a redirect the site is reachable at two URLs. A CloudFront Function on viewer-request fixes that. The same function answers the engagement beacon (`GET /ping`, see [Visitor stats](#visitor-stats)) with an empty 204 at the edge, so those requests are logged but never reach S3, and answers the patient explorer's old URL, `/fhir` (with or without a trailing slash), with a 301 to `https://fhir.mvcprogrammer.com/`, the explorer's own host (it was a page at `/fhir` from 2026-10-20 to 2026-10-21, then the FHIR API card on the home page until the app took over under #125; see [FHIR explorer](#fhir-explorer-fhirmvcprogrammercom)). The code is checked in at [infra/cloudfront/www-redirect.js](../infra/cloudfront/www-redirect.js).
 
 Create it under CloudFront > Functions as `mvcprogrammer-www-redirect` (runtime `cloudfront-js-2.0`), publish it, and associate it with the viewer request event of the default behavior and of the `/api/*` behavior. To change it later, update the DEVELOPMENT stage, test it, then publish; each call needs the stage's current ETag:
 
 ```sh
 ETAG=$(aws cloudfront describe-function --name mvcprogrammer-www-redirect --stage DEVELOPMENT --query ETag --output text)
 ETAG=$(aws cloudfront update-function --name mvcprogrammer-www-redirect --if-match "$ETAG" \
-  --function-config '{"Comment":"www to apex 301, /ping beacon 204, /fhir 301 to the FHIR API card","Runtime":"cloudfront-js-2.0"}' \
+  --function-config '{"Comment":"www to apex 301, /ping beacon 204, /fhir 301 to fhir.mvcprogrammer.com","Runtime":"cloudfront-js-2.0"}' \
   --function-code fileb://infra/cloudfront/www-redirect.js --query ETag --output text)
 aws cloudfront test-function --name mvcprogrammer-www-redirect --if-match "$ETAG" --stage DEVELOPMENT --event-object fileb://event.json
 aws cloudfront publish-function --name mvcprogrammer-www-redirect --if-match "$ETAG"
@@ -390,7 +390,7 @@ aws logs tail /aws/lambda/mvcprogrammer-resume-download --since 24h --format sho
 aws logs tail /aws/lambda/mvcprogrammer-contact --follow
 ```
 
-CloudFront access logs are separate and go to S3, not CloudWatch: standard logging on each distribution writes gzipped W3C files to `s3://mvcprogrammer-cf-logs-334383610383/` under `cf/` for mvcprogrammer.com (enabled 2026-10-07), `blazor/` and `angular/` for the two framework editions (enabled 2026-10-15) and `react/` for the third (enabled 2026-10-16); the bucket lifecycle expires them after 30 days. `tools/cf-stats.mjs` (see [Visitor stats](#visitor-stats)) reads all four. Logging itself is free; the only cost is S3 storage, well under a megabyte a day across the four.
+CloudFront access logs are separate and go to S3, not CloudWatch: standard logging on each distribution writes gzipped W3C files to `s3://mvcprogrammer-cf-logs-334383610383/` under `cf/` for mvcprogrammer.com (enabled 2026-10-07), `blazor/` and `angular/` for the two framework editions (enabled 2026-10-15), `react/` for the third (enabled 2026-10-16), and `fhir/` for the patient explorer (see [FHIR explorer](#fhir-explorer-fhirmvcprogrammercom)); the bucket lifecycle expires them after 30 days. `tools/cf-stats.mjs` (see [Visitor stats](#visitor-stats)) reads all five. Logging itself is free; the only cost is S3 storage, well under a megabyte a day across them.
 
 Reviewed 2026-10-08 over the first two days of logs (about 4,800 requests): every 4xx was scanner traffic (PHP and `.env`
 probes, WordPress paths, `POST /`), none of the old site's URLs (`/images/`, `/js/`, `/css/`, `single-blog.html`) arrived
@@ -413,7 +413,7 @@ node tools/cf-stats.mjs --days 30 --scanners              # a month, plus the 4x
 CF_STATS_EXCLUDE_IPS=203.0.113.7 node tools/cf-stats.mjs  # leave your own visits out
 ```
 
-The bucket defaults to `mvcprogrammer-cf-logs-<account id>` for the current AWS account (`--bucket` or `CF_LOG_BUCKET` override it), all four prefixes are read unless `--prefix cf/` or `--prefix blazor/,angular/,react/` narrows it, and files are cached under `~/.cache/mvcprogrammer-cf-stats/`, so a second run only downloads what is new. A "By edition" line splits the visits by host. Unique visitors are IP address plus browser string, the best a server log can do; carrier NAT and office networks blur it.
+The bucket defaults to `mvcprogrammer-cf-logs-<account id>` for the current AWS account (`--bucket` or `CF_LOG_BUCKET` override it), all five prefixes are read unless `--prefix cf/` or `--prefix blazor/,angular/,react/,fhir/` narrows it, and files are cached under `~/.cache/mvcprogrammer-cf-stats/`, so a second run only downloads what is new. A "By edition" line splits the visits by host. Unique visitors are IP address plus browser string, the best a server log can do; carrier NAT and office networks blur it.
 
 The parsing, the scanner list, the session rule, and the calendar math (days are cut in `America/New_York`, whatever the machine's zone; before October 18, 2026 the report used the machine's zone, which is the same thing on the owner's laptop) live in `tools/lib/cf-logs.mjs`, shared with `tools/stats-export.mjs`, which writes the same visits as JSON day files for the visitor dashboard: one `days/YYYY-MM-DD.json` per day plus an `index.json`. A day file holds the request totals and one small record per visit (a salted visitor token, the local hour, editions, referrer host, edge country, and what the beacon reported), never an IP address or browser string; the dashboard filters and sums the records in the browser. A day with no log lines gets no file, so the dashboard shows it as missing rather than quiet. It rebuilds the last three days by default, because CloudFront can deliver a log file hours late; `--days 365 --out <dir>` rebuilds a year. `STATS_VISITOR_SALT` (or `--salt`) keeps the tokens stable across runs and is required; a laptop run that only feeds the dev server can say `--allow-local-salt` instead (the `npm run data` script does). `--report <file>` also writes a JSON account of the run (counts, day keys, and seconds; never a row) that `tools/stats-report.mjs` renders as Markdown for the workflow's job summary. All three tools have tests over a synthetic log and a golden day file:
 
@@ -659,7 +659,7 @@ aws cloudformation describe-stacks --stack-name mvcprogrammer-fhir-api \
   --query 'Stacks[0].Outputs[].[OutputKey,OutputValue]' --output table
 ```
 
-### 2. Wire CloudFront (one time, on all four distributions)
+### 2. Wire CloudFront (one time, on every distribution that serves the explorer or the card)
 
 Same shape as the Experience API: a third origin at the function URL and an `/api/fhir/*` behavior. The
 behavior must come **before** `/api/*` in `CacheBehaviors.Items`, because CloudFront takes the first pattern
@@ -712,15 +712,14 @@ from the Experience section applies here too, so a missing patient reaches the p
 
 ### 3. The old URL
 
-The explorer is the FHIR API card in Selected Work on every edition since 2026-10-21, opened by `#fhir-api` in the
-URL. The `mvcprogrammer-www-redirect` function (section 4b) answers the old page URL, which existed from 2026-10-20
-to 2026-10-21, with a permanent redirect to the card on the default edition; the stub page that bridged the gap was
-removed once the 301 was live. After publishing a change to the function:
+`/fhir` has moved twice: a page of its own from 2026-10-20 to 2026-10-21, then the FHIR API card in Selected Work on
+every edition (opened by `#fhir-api` in the URL), and since #125 the explorer's own host. The `mvcprogrammer-www-redirect`
+function (section 4b) answers `/fhir` with a permanent redirect to `https://fhir.mvcprogrammer.com/`. After publishing a
+change to the function:
 
 ```bash
-curl -s -o /dev/null -w "%{http_code} %{redirect_url}\n" https://mvcprogrammer.com/fhir      # 301 https://mvcprogrammer.com/#fhir-api
+curl -s -o /dev/null -w "%{http_code} %{redirect_url}\n" https://mvcprogrammer.com/fhir      # 301 https://fhir.mvcprogrammer.com/
 curl -s -o /dev/null -w "%{http_code} %{redirect_url}\n" https://mvcprogrammer.com/fhir/     # same
-curl -s -o /dev/null -w "%{http_code}\n" https://mvcprogrammer.com/fhir.js                  # 200
 ```
 
 ### Logs
@@ -887,6 +886,106 @@ aws s3 sync . s3://mvcprogrammer.com/react/ --delete \
   --cache-control "public, max-age=300, s-maxage=31536000" \
   --exclude "bundles/*"
 aws cloudfront create-invalidation --distribution-id E2C51AKAKJUCBO --paths "/*"
+```
+
+## FHIR explorer (fhir.mvcprogrammer.com)
+
+Added under #125 (issue #140). The Angular app in `fhir/` (the patient explorer on its own, see
+[fhir/README.md](../fhir/README.md)) is published to the `fhir/` prefix of the same bucket and served by a
+fifth distribution, set up like the Angular edition with the FHIR API as its only API origin. The
+`deploy-fhir` job in the workflow tests, builds, and syncs it on every push to `main`. It is not an edition
+of the site: it has no edition menu, no contact form, and no Experience API, so the contact Lambda's
+origin list and the Experience API's permissions are untouched.
+
+| Piece | Value |
+| --- | --- |
+| CloudFront distribution | `E2IFX9QJTIW1A4` (dpnwjccnpnc2d.cloudfront.net), origin path `/fhir`, same S3 OAC `E2KEES7ZY0UA4S`, the `fhir-api` origin with its OAC `E3OMK0SCVK2C13` behind `/api/fhir/*`, 403 → `/index.html` 200, standard logging to the `fhir/` prefix |
+| Response headers policy | the static site's `mvcprogrammer-security-headers` (`28b549c3-c562-418c-a803-abe16efe78eb`), unchanged |
+| ACM certificate | `arn:aws:acm:us-east-1:334383610383:certificate/1f36a56c-f631-4942-9ff1-54cf8b4dc7dd` (fhir.mvcprogrammer.com, DNS-validated) |
+| Route 53 | A and AAAA aliases for `fhir.mvcprogrammer.com` to the distribution |
+| Bucket policy | the `AWS:SourceArn` condition lists every distribution (six with this one) |
+| FHIR API | Lambda permission `fhir-cloudfront-invoke` on `mvcprogrammer-fhir-api` lets the distribution invoke the function URL, outside the SAM template like the editions' |
+| Edge function | `mvcprogrammer-www-redirect` on the default behavior for `/ping`; on the main distribution it also sends `/fhir` here (section 4b) |
+| GitHub variable | `FHIR_DISTRIBUTION_ID` = `E2IFX9QJTIW1A4` |
+| IAM | `infra/iam/github-actions-deploy-role-policy.json` lists the distribution under `cloudfront:CreateInvalidation`; apply with the `put-role-policy` command in the Blazor section |
+
+### Create the resources
+
+The distribution is a copy of the Angular edition's with five changes: the alias, the origin path, the
+certificate, the comment and log prefix, and the Experience API origin and its `/api/*` behavior removed,
+since the explorer only calls `/api/fhir/*`.
+
+```bash
+# 1. Certificate (us-east-1), then add the CNAME it asks for to the hosted zone and wait for ISSUED
+aws acm request-certificate --region us-east-1 --domain-name fhir.mvcprogrammer.com --validation-method DNS
+aws acm describe-certificate --region us-east-1 --certificate-arn arn:aws:acm:us-east-1:334383610383:certificate/1f36a56c-f631-4942-9ff1-54cf8b4dc7dd \
+  --query 'Certificate.DomainValidationOptions[0].ResourceRecord'
+aws acm wait certificate-validated --region us-east-1 --certificate-arn arn:aws:acm:us-east-1:334383610383:certificate/1f36a56c-f631-4942-9ff1-54cf8b4dc7dd
+
+# 2. Distribution, cloned from the Angular edition's config
+aws cloudfront get-distribution-config --id E33NA2ZQ9O29DK --query DistributionConfig > /tmp/angular-config.json
+python3 - <<'PY'
+import json, time
+c = json.load(open('/tmp/angular-config.json'))
+c['CallerReference'] = f'fhir-{int(time.time())}'
+c['Comment'] = 'fhir.mvcprogrammer.com (FHIR patient explorer)'
+c['Aliases'] = {'Quantity': 1, 'Items': ['fhir.mvcprogrammer.com']}
+for key in ('ACMCertificateArn', 'Certificate'):
+    c['ViewerCertificate'][key] = 'arn:aws:acm:us-east-1:334383610383:certificate/1f36a56c-f631-4942-9ff1-54cf8b4dc7dd'
+c['Logging']['Prefix'] = 'fhir/'
+origins = [o for o in c['Origins']['Items'] if o['Id'] != 'experience-api']
+for origin in origins:
+    if origin.get('OriginPath') == '/angular':
+        origin['OriginPath'] = '/fhir'
+        origin['Id'] = 's3-mvcprogrammer.com-fhir'
+c['Origins'] = {'Quantity': len(origins), 'Items': origins}
+c['DefaultCacheBehavior']['TargetOriginId'] = 's3-mvcprogrammer.com-fhir'
+behaviors = [b for b in c['CacheBehaviors']['Items'] if b['PathPattern'] != '/api/*']
+c['CacheBehaviors'] = {'Quantity': len(behaviors), 'Items': behaviors}
+json.dump(c, open('/tmp/fhir-config.json', 'w'), indent=2)
+PY
+aws cloudfront create-distribution --distribution-config file:///tmp/fhir-config.json \
+  --query 'Distribution.[Id,DomainName,ARN]' --output text
+
+# 3. Let the new distribution read the bucket and call the FHIR API
+aws s3api get-bucket-policy --bucket mvcprogrammer.com --query Policy --output text > /tmp/bucket-policy.json
+#    add "arn:aws:cloudfront::334383610383:distribution/E2IFX9QJTIW1A4" to the AWS:SourceArn list of
+#    AllowCloudFrontServicePrincipalReadOnly, then
+aws s3api put-bucket-policy --bucket mvcprogrammer.com --policy file:///tmp/bucket-policy.json
+aws lambda add-permission --function-name mvcprogrammer-fhir-api \
+  --statement-id fhir-cloudfront-invoke --action lambda:InvokeFunctionUrl \
+  --principal cloudfront.amazonaws.com --function-url-auth-type AWS_IAM \
+  --source-arn arn:aws:cloudfront::334383610383:distribution/E2IFX9QJTIW1A4
+
+# 4. DNS: A and AAAA aliases, the same change batch shape as the apex (CloudFront zone Z2FDTNDATAQYW2)
+aws route53 change-resource-record-sets --hosted-zone-id Z02467662SJ3B6YDOZKEF --change-batch file://records.json
+
+# 5. Deploy role and GitHub: add the distribution ARN to infra/iam/github-actions-deploy-role-policy.json,
+#    apply it with put-role-policy, and set the repository variable
+gh variable set FHIR_DISTRIBUTION_ID --body E2IFX9QJTIW1A4
+
+# 6. Once the first deploy has filled fhir/, publish the edge function so /fhir on the main site lands here (section 4b)
+```
+
+Manual deploy, the same two syncs the workflow runs:
+
+```bash
+cd fhir && npm ci && npm test && npm run build && cd dist/fhir-explorer/browser
+aws s3 sync . s3://mvcprogrammer.com/fhir/ --delete \
+  --cache-control "public, max-age=604800, s-maxage=31536000, immutable" \
+  --exclude "*" --include "main-*.js" --include "polyfills-*.js" --include "chunk-*.js" --include "fhir-*.css"
+aws s3 sync . s3://mvcprogrammer.com/fhir/ --delete \
+  --cache-control "public, max-age=300, s-maxage=31536000" \
+  --exclude "main-*.js" --exclude "polyfills-*.js" --exclude "chunk-*.js" --exclude "fhir-*.css"
+aws cloudfront create-invalidation --distribution-id E2IFX9QJTIW1A4 --paths "/*"
+```
+
+Verify:
+
+```bash
+curl -si https://fhir.mvcprogrammer.com/ | grep -i "HTTP/\|content-security-policy"
+curl -si https://fhir.mvcprogrammer.com/api/fhir/capability | grep -i "HTTP/\|x-cache"
+curl -s -o /dev/null -w "%{http_code} %{redirect_url}\n" https://mvcprogrammer.com/fhir      # 301 https://fhir.mvcprogrammer.com/
 ```
 
 ## Visitor dashboard (stats.mvcprogrammer.com)

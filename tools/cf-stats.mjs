@@ -14,8 +14,8 @@
 //   node tools/cf-stats.mjs --exclude-ip 203.0.113.7  # leave your own visits out (or CF_STATS_EXCLUDE_IPS)
 //
 // The bucket defaults to mvcprogrammer-cf-logs-<account id> in the current AWS account; override
-// with --bucket or CF_LOG_BUCKET. The four distributions log under cf/ (mvcprogrammer.com), blazor/,
-// angular/, and react/; --prefix narrows the run to one or more of them (comma-separated). Files are
+// with --bucket or CF_LOG_BUCKET. The five distributions log under cf/ (mvcprogrammer.com), blazor/,
+// angular/, react/, and fhir/ (the patient explorer); --prefix narrows the run to one or more of them (comma-separated). Files are
 // cached under ~/.cache/mvcprogrammer-cf-stats/.
 import {
   BOT_PATTERN,
