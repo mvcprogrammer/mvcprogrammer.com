@@ -178,10 +178,12 @@
         </div>
       </div>
       <div class="fhir-edit-actions">
-        <button class="button button-primary" type="submit" id="fhir-create" [disabled]="writing()">Create patient</button>
-        <button class="button button-secondary" type="button" id="fhir-replace" [disabled]="!canChange()" (click)="replace()">Replace (PUT)</button>
-        <button class="button button-secondary" type="button" id="fhir-patch" [disabled]="!canChange() || !hasChanges()" (click)="patch()">Patch changes</button>
-        <button class="button button-secondary" type="button" id="fhir-delete" [disabled]="!canChange()" (click)="remove()">Delete</button>
+        <!-- A blocked button stays focusable and hoverable (aria-disabled, not disabled), carries its reason as the
+             title, and says it in the status when pressed, so pointer, keyboard, and screen-reader users all get why. -->
+        <button class="button button-primary" type="submit" id="fhir-create" [attr.aria-disabled]="createBlock() !== null ? 'true' : null" [attr.title]="createBlock()">Create patient</button>
+        <button class="button button-secondary" type="button" id="fhir-replace" [attr.aria-disabled]="changeBlock() !== null ? 'true' : null" [attr.title]="changeBlock()" (click)="replace()">Replace (PUT)</button>
+        <button class="button button-secondary" type="button" id="fhir-patch" [attr.aria-disabled]="patchBlock() !== null ? 'true' : null" [attr.title]="patchBlock()" (click)="patch()">Patch changes</button>
+        <button class="button button-secondary" type="button" id="fhir-delete" [attr.aria-disabled]="changeBlock() !== null ? 'true' : null" [attr.title]="changeBlock()" (click)="remove()">Delete</button>
       </div>
       <p [class]="editStatusClass()" id="fhir-edit-status" role="status" aria-live="polite">
         @if (editStatusText() === '') {
