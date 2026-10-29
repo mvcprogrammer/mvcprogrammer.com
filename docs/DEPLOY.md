@@ -668,7 +668,9 @@ Same shape as the Experience API: a third origin at the function URL and an `/ap
 behavior must come **before** `/api/*` in `CacheBehaviors.Items`, because CloudFront takes the first pattern
 that matches in list order; appended after it, `/api/*` would swallow every FHIR request. Every edition carried
 the explorer inside its FHIR API card from 2026-10-21 until #142 moved it to fhir.mvcprogrammer.com, so the Blazor,
-Angular, and React distributions got the same origin and behavior (kept; the editions' cards no longer call the API) (copied from their own `/api/*` behavior, which keeps that edition's response headers policy), and
+Angular, and React distributions got the same origin and behavior (kept; the editions' cards no longer call the API).
+Those behaviors allow `GET`, `HEAD`, and `OPTIONS` only; the explorer's own distribution is the one that forwards the
+write methods (see [FHIR explorer](#fhir-explorer-fhirmvcprogrammercom)) (copied from their own `/api/*` behavior, which keeps that edition's response headers policy), and
 the function must accept calls from them. The stack's `DistributionArn` grants the main distribution only; the
 other three get a Lambda permission outside the template, as the Experience API does (issue #60, 2026-10-21):
 
@@ -902,7 +904,7 @@ origin list and the Experience API's permissions are untouched.
 
 | Piece | Value |
 | --- | --- |
-| CloudFront distribution | `E2IFX9QJTIW1A4` (dpnwjccnpnc2d.cloudfront.net), origin path `/fhir`, same S3 OAC `E2KEES7ZY0UA4S`, the `fhir-api` origin with its OAC `E3OMK0SCVK2C13` behind `/api/fhir/*`, 403 → `/index.html` 200, standard logging to the `fhir/` prefix |
+| CloudFront distribution | `E2IFX9QJTIW1A4` (dpnwjccnpnc2d.cloudfront.net), origin path `/fhir`, same S3 OAC `E2KEES7ZY0UA4S`, the `fhir-api` origin with its OAC `E3OMK0SCVK2C13` behind `/api/fhir/*` with all seven methods allowed and `GET`/`HEAD` cached (the explorer writes; set under #155), 403 → `/index.html` 200, standard logging to the `fhir/` prefix |
 | Response headers policy | `mvcprogrammer-fhir-headers` (`337bb8ed-9a38-44c5-945f-78ef345a7c1f`): the site's policy with `frame-ancestors https://mvcprogrammer.com https://blazor.mvcprogrammer.com https://angular.mvcprogrammer.com https://react.mvcprogrammer.com` instead of `'none'`, no `X-Frame-Options`, and `connect-src 'self'` only, so the editions' demo dialog can frame the explorer and nothing else can (#142) |
 | ACM certificate | `arn:aws:acm:us-east-1:334383610383:certificate/1f36a56c-f631-4942-9ff1-54cf8b4dc7dd` (fhir.mvcprogrammer.com, DNS-validated) |
 | Route 53 | A and AAAA aliases for `fhir.mvcprogrammer.com` to the distribution |
@@ -944,6 +946,8 @@ for origin in origins:
 c['Origins'] = {'Quantity': len(origins), 'Items': origins}
 c['DefaultCacheBehavior']['TargetOriginId'] = 's3-mvcprogrammer.com-fhir'
 behaviors = [b for b in c['CacheBehaviors']['Items'] if b['PathPattern'] != '/api/*']
+# The explorer writes, so its API behavior forwards every method; only GET and HEAD are cached.
+behaviors[0]['AllowedMethods'] = {'Quantity': 7, 'Items': ['GET', 'HEAD', 'OPTIONS', 'PUT', 'POST', 'PATCH', 'DELETE'], 'CachedMethods': {'Quantity': 2, 'Items': ['GET', 'HEAD']}}
 c['CacheBehaviors'] = {'Quantity': len(behaviors), 'Items': behaviors}
 json.dump(c, open('/tmp/fhir-config.json', 'w'), indent=2)
 PY
@@ -1010,6 +1014,8 @@ Verify:
 ```bash
 curl -si https://fhir.mvcprogrammer.com/ | grep -i "HTTP/\|content-security-policy"
 curl -si https://fhir.mvcprogrammer.com/api/fhir/capability | grep -i "HTTP/\|x-cache"
+curl -s -o /dev/null -w "%{http_code}\n" -X POST -H "content-type: application/json" -d '{}' \
+  https://fhir.mvcprogrammer.com/api/fhir/patients                                           # 400 from the function, not the S3 page
 curl -s -o /dev/null -w "%{http_code} %{redirect_url}\n" https://mvcprogrammer.com/fhir      # 301 https://fhir.mvcprogrammer.com/
 ```
 
