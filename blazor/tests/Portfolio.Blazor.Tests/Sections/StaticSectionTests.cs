@@ -24,6 +24,7 @@ public sealed class StaticSectionTests : BunitContext
             ("React", "https://react.mvcprogrammer.com/", "See the React edition of this site"),
             ("Blazor", "https://blazor.mvcprogrammer.com/", "See the Blazor edition of this site"),
             ("JavaScript", "https://mvcprogrammer.com/", "See the plain JavaScript edition of this site"),
+            ("Healthcare (HL7, FHIR, HIPAA)", "https://fhir.mvcprogrammer.com/", "See the live FHIR R4 patient explorer"),
         ], links);
         Assert.Equal(12, cut.FindAll("ul[aria-label=Skills] .tag").Count);
         Assert.Contains(cut.FindAll(".tag"), t => t.TextContent == "Claude Pair Programming");

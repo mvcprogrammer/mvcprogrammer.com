@@ -49,6 +49,7 @@ describe('static sections', () => {
           'https://mvcprogrammer.com/',
           'See the plain JavaScript edition of this site',
         ],
+        ['Healthcare (HL7, FHIR, HIPAA)', 'https://fhir.mvcprogrammer.com/', 'See the live FHIR R4 patient explorer'],
       ]);
       const tags = Array.from(container.querySelectorAll('ul[aria-label="Skills"] .tag')).map(
         (tag) => tag.textContent?.trim(),
