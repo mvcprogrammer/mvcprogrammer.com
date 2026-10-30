@@ -89,13 +89,17 @@ request is answered from the sandbox, mapped at the boundary into the small DTOs
 api/src/Fhir.Api/
   Program.cs                Minimal API host, same shape as the Experience one.
   Configuration/            FhirOptions: base URL, page cap, page sizes, timeouts, retry, rate limit, capability TTL.
-  Endpoints/                /api/fhir/patients (GET, POST), .../{id} (PUT, PATCH, DELETE), .../{id}/conditions (POST, stubbed),
+  Endpoints/                /api/fhir/patients (GET, POST), .../{id} (PUT, PATCH, DELETE), .../{id}/conditions (POST),
                             .../{id}/summary, .../{id}/raw, /api/fhir/capability, /api/fhir/health.
-  Fhir/                     IFhirGateway over a Firely FhirClient: read, search with paging, _summary=count, metadata;
-                            UpstreamNotFound / UpstreamUnavailable / UpstreamTimeout; CapabilityCache.
-  Services/                 PatientExplorerService: the Patient first, then four bounded searches concurrently.
-  Mapping/                  PatientMapper, ConditionMapper, VitalSignMapper, CapabilityMapper (US Core fields only).
-  Http/                     RateLimiter and the endpoint filters (rate limit, upstream problems).
+  Fhir/                     IFhirGateway over a Firely FhirClient: read, search with paging, _summary=count, metadata,
+                            conditional create, update, delete; the upstream and write exceptions; CapabilityCache;
+                            DemoIdentifiers and ConditionPickList (the ten SNOMED CT conditions a visitor may add).
+  Services/                 PatientExplorerService (the Patient first, then four bounded searches concurrently),
+                            DemoGuardService (seeded patient 403, not this session's 404), PatientWriteService,
+                            ConditionWriteService (pick list, active cap, conditional create).
+  Mapping/                  PatientMapper, ConditionMapper, VitalSignMapper, CapabilityMapper (US Core fields only);
+                            PatientInputMapper / Validator / PatchApplier and ConditionInputMapper for the writes.
+  Http/                     Two RateLimiters and the endpoint filters (read and write budgets, upstream and write problems).
   Models/                   Records matching the schemas in openapi.yaml.
 ```
 
@@ -126,12 +130,15 @@ wiped or down. `FHIR_SOURCE_NAME` is the label the trace carries.
   that reaches the sandbox; the patch applier (`PatientPatchApplier`) covers the six RFC 6902
   operations over its five fields in-house, since a general JSON Patch library would need a mutable
   model and brings nothing the five scalar paths need.
-- **Conditions, spec first.** `openapi.yaml` 1.4.0 specifies `POST /fhir/patients/{id}/conditions`,
-  the first write on a clinical resource: the body carries a SNOMED CT code from a pick list of ten
-  the function owns (off the list is 422, as is an eleventh active condition), the create is
-  conditional on patient, code, and active status (a repeat answers 200), and the patient guard above
-  runs first (403 for the seeded patient, 404 for anyone else's). The route exists and answers `501`
-  until the handler lands (#190).
+- **Conditions, the first clinical write.** `POST /fhir/patients/{id}/conditions` (specified in
+  `openapi.yaml` 1.4.0, built in 1.5.0) records one of ten listed conditions. `ConditionPickList` is
+  the source of truth (a well-formed code off it is 422 before any upstream call), `DemoGuardService`
+  is the same guard the patient writes run (403 for the seeded patient, 404 for anyone else's), the
+  cap of active conditions per patient is counted on the sandbox (`clinical-status=active`,
+  `_summary=count`; at the cap, 422), and the create is a FHIR conditional create on patient, code,
+  and active status, so a repeat answers 200 with the existing resource and a resolved condition can
+  be recorded again. `ConditionInputMapper` builds the resource and both searches; nothing the
+  visitor sends reaches the sandbox but a listed code.
 - **The function is the boundary.** The browser never talks to the sandbox. Resources are parsed
   by the Firely SDK (`Hl7.Fhir.R4`) into typed objects and mapped to DTOs; only the raw-bundle
   endpoint passes FHIR JSON through, as a `collection` Bundle of what the summary fetched.

@@ -10,23 +10,27 @@ using Task = System.Threading.Tasks.Task;
 namespace Fhir.Api.Services;
 
 /// <summary>
-/// The guard and the orchestration for the writes. Every change to an existing patient reads it
-/// first and checks the session identifier; a create counts the session's patients first. Nothing
-/// is kept in the function: the guard reads the resource it is about to change, and the sandbox
-/// enforces idempotency through the conditional create.
+/// The orchestration for the patient writes. Every change to an existing patient runs the demo
+/// guard first (<see cref="IDemoGuardService"/>), which reads it and checks the session identifier;
+/// a create counts the session's patients first. Nothing is kept in the function: the guard reads
+/// the resource it is about to change, and the sandbox enforces idempotency through the
+/// conditional create.
 /// </summary>
 public sealed class PatientWriteService : IPatientWriteService
 {
     private readonly IFhirGateway _gateway;
+    private readonly IDemoGuardService _guard;
     private readonly FhirOptions _options;
     private readonly TimeProvider _time;
 
-    public PatientWriteService(IFhirGateway gateway, IOptions<FhirOptions> options, TimeProvider time)
+    public PatientWriteService(IFhirGateway gateway, IDemoGuardService guard, IOptions<FhirOptions> options, TimeProvider time)
     {
         ArgumentNullException.ThrowIfNull(gateway);
+        ArgumentNullException.ThrowIfNull(guard);
         ArgumentNullException.ThrowIfNull(options);
         ArgumentNullException.ThrowIfNull(time);
         _gateway = gateway;
+        _guard = guard;
         _options = options.Value;
         _time = time;
     }
@@ -62,7 +66,7 @@ public sealed class PatientWriteService : IPatientWriteService
         ThrowIfInvalid(input);
 
         var trace = NewTrace();
-        var stored = await GuardAsync(patientId, sessionToken, trace, cancellationToken)
+        var stored = await _guard.OwnedPatientAsync(patientId, sessionToken, trace, cancellationToken)
             ?? throw new WritablePatientNotFoundException(patientId);
         var updated = await _gateway.UpdateAsync(PatientInputMapper.ToReplacement(stored, input), trace, cancellationToken);
         return Result(updated, trace);
@@ -75,7 +79,7 @@ public sealed class PatientWriteService : IPatientWriteService
         ArgumentException.ThrowIfNullOrWhiteSpace(sessionToken);
 
         var trace = NewTrace();
-        var stored = await GuardAsync(patientId, sessionToken, trace, cancellationToken)
+        var stored = await _guard.OwnedPatientAsync(patientId, sessionToken, trace, cancellationToken)
             ?? throw new WritablePatientNotFoundException(patientId);
         var patched = PatientPatchApplier.Apply(PatientInputMapper.ToInput(stored), operations);
         ThrowIfInvalid(patched);
@@ -89,7 +93,7 @@ public sealed class PatientWriteService : IPatientWriteService
         ArgumentException.ThrowIfNullOrWhiteSpace(sessionToken);
 
         var trace = NewTrace();
-        var stored = await GuardAsync(patientId, sessionToken, trace, cancellationToken);
+        var stored = await _guard.OwnedPatientAsync(patientId, sessionToken, trace, cancellationToken);
         if (stored is null)
         {
             // Gone: a patient this session (or the sandbox wipe) already removed. The state a delete asks for.
@@ -97,37 +101,6 @@ public sealed class PatientWriteService : IPatientWriteService
         }
 
         await _gateway.DeleteAsync<Patient>(patientId, trace, cancellationToken);
-    }
-
-    /// <summary>
-    /// The guard. The seeded patient answers 403. A patient the sandbox reports gone returns null.
-    /// A patient that exists but does not carry this session's token, or does not exist at all,
-    /// answers 404 through the same exception, so the explorer cannot probe other records.
-    /// </summary>
-    private async Task<Patient?> GuardAsync(string patientId, string sessionToken, TraceBuilder trace, CancellationToken cancellationToken)
-    {
-        if (string.Equals(patientId, _options.SeedPatientId, StringComparison.Ordinal))
-        {
-            throw new DemoPatientReadOnlyException(patientId);
-        }
-
-        Patient stored;
-        try
-        {
-            stored = await _gateway.ReadAsync<Patient>(patientId, trace, cancellationToken);
-        }
-        catch (UpstreamNotFoundException ex) when (ex.Gone)
-        {
-            return null;
-        }
-        catch (UpstreamNotFoundException)
-        {
-            throw new WritablePatientNotFoundException(patientId);
-        }
-
-        return string.Equals(PatientInputMapper.SessionTokenOf(stored), sessionToken, StringComparison.Ordinal)
-            ? stored
-            : throw new WritablePatientNotFoundException(patientId);
     }
 
     private void ThrowIfInvalid(PatientInput input)

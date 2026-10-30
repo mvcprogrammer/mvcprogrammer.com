@@ -85,6 +85,18 @@ public static class Problems
             instance: context.Request.Path);
     }
 
+    /// <summary>422 for a well-formed request that breaks a rule of the operation; <paramref name="typeSuffix"/> names the rule in the problem type. Never cached.</summary>
+    public static IResult Unprocessable(HttpContext context, string typeSuffix, string title, string detail)
+    {
+        context.Response.Headers.CacheControl = "no-store";
+        return Results.Problem(
+            type: TYPE_BASE + typeSuffix,
+            title: title,
+            statusCode: StatusCodes.Status422UnprocessableEntity,
+            detail: detail,
+            instance: context.Request.Path);
+    }
+
     /// <summary>429 with Retry-After. Never cached.</summary>
     public static IResult RateLimited(HttpContext context, string detail, int retryAfterSeconds)
     {

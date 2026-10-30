@@ -34,6 +34,21 @@ public sealed class ConditionMapperTests
         Assert.Equal("unknown", item.ClinicalStatus);
     }
 
+    /// <summary>The sandbox's logical id rides along so a write result and a later resolve can address the resource.</summary>
+    [Fact]
+    public void ToItem_ShouldCarryTheId()
+    {
+        // Arrange
+        var condition = Fixtures.Condition("9f1c", "active", "Thing");
+
+        // Act
+        var item = ConditionMapper.ToItem(condition);
+
+        // Assert
+        Assert.Equal("9f1c", item.Id);
+        Assert.Null(ConditionMapper.ToItem(new Condition { ClinicalStatus = condition.ClinicalStatus, Code = condition.Code }).Id);
+    }
+
     [Fact]
     public void Prefers_snomed_then_icd10cm_and_labels_the_system()
     {

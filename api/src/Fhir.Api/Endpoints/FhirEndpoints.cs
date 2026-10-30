@@ -32,9 +32,6 @@ public static partial class FhirEndpoints
 
     private const string JSON_PATCH_MEDIA_TYPE = "application/json-patch+json";
 
-    /// <summary>The detail the stubbed condition write answers with until its handler ships (#190).</summary>
-    private const string CONDITIONS_NOT_IMPLEMENTED = "Conditions are specified and arrive with the explorer's next release.";
-
     /// <summary>Firely's System.Text.Json serializer for R4 POCOs, pretty-printed for the raw-bundle toggle.</summary>
     private static readonly JsonSerializerOptions _fhirJson = new JsonSerializerOptions().ForFhir(ModelInfo.ModelInspector).Pretty();
 
@@ -61,11 +58,7 @@ public static partial class FhirEndpoints
         writes.MapPut("/patients/{patientId}", ReplacePatient).WithName("replacePatient");
         writes.MapPatch("/patients/{patientId}", PatchPatient).WithName("patchPatient");
         writes.MapDelete("/patients/{patientId}", DeletePatient).WithName("deletePatient");
-
-        // Conditions, stubbed. Answers 501 until the handler lands (#190, second pull request); the
-        // route and name already match openapi.yaml 1.4.0 so the contract is settled before the code.
-        // Mapped outside the write filters so the stub spends no budget and binds no body.
-        group.MapPost("/patients/{patientId}/conditions", AddCondition).WithName("addCondition");
+        writes.MapPost("/patients/{patientId}/conditions", AddCondition).WithName("addCondition");
 
         group.MapGet("/health", GetHealth).WithName("getFhirHealth").WithTags("Operations");
         return group;
@@ -209,7 +202,30 @@ public static partial class FhirEndpoints
         return NoStoreJson.NoContent(context);
     }
 
-    private static IResult AddCondition(HttpContext context, string patientId) => Problems.NotImplemented(context, CONDITIONS_NOT_IMPLEMENTED);
+    private static async Task<IResult> AddCondition(HttpContext context, IConditionWriteService service, string patientId, CancellationToken cancellationToken)
+    {
+        if (!IsFhirId(patientId))
+        {
+            return Problems.InvalidParameter(context, "'patientId' must be a FHIR id: 1 to 64 letters, digits, hyphens, or dots.");
+        }
+
+        var errors = new Dictionary<string, string[]>(StringComparer.Ordinal);
+        var session = Token(context, SESSION_HEADER, errors);
+        var input = await ReadBodyAsync<ConditionInput>(context, errors, cancellationToken);
+        if (input is not null && (input.Code is null || !SnomedCodePattern().IsMatch(input.Code)))
+        {
+            errors["code"] = ["'code' is required and must be a SNOMED CT concept id: 6 to 18 digits."];
+        }
+
+        if (errors.Count > 0 || session is null || input is null)
+        {
+            return Problems.ValidationFailed(context, errors);
+        }
+
+        var (result, created) = await service.AddAsync(patientId, input, session, cancellationToken);
+        var location = $"/api/fhir/patients/{Uri.EscapeDataString(patientId)}/summary";
+        return NoStoreJson.Json(context, result, created ? StatusCodes.Status201Created : StatusCodes.Status200OK, location);
+    }
 
     /// <summary>A UUID header, lower-cased, or null with an error recorded under the header's name.</summary>
     private static string? Token(HttpContext context, string header, Dictionary<string, string[]> errors)
@@ -268,4 +284,8 @@ public static partial class FhirEndpoints
 
     [GeneratedRegex(@"^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$")]
     private static partial Regex DemoTokenPattern();
+
+    /// <summary>The shape of a SNOMED CT concept id, as ConditionInput.code in openapi.yaml constrains it. Membership of the pick list is the service's call.</summary>
+    [GeneratedRegex(@"^[0-9]{6,18}$")]
+    private static partial Regex SnomedCodePattern();
 }

@@ -60,6 +60,7 @@ public sealed record ResourceCounts(int Conditions, int Encounters, int Observat
 
 /// <summary>One Condition (US Core Condition). Mirrors ConditionItem in openapi.yaml.</summary>
 public sealed record ConditionItem(
+    [property: JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)] string? Id,
     string Display,
     [property: JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)] string? Code,
     [property: JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)] string? System,

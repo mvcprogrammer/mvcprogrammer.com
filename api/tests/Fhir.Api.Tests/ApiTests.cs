@@ -865,27 +865,301 @@ public sealed class ApiTests
 
     #endregion
 
-    #region Conditions (stubbed)
+    #region Conditions
 
-    /// <summary>The condition write openapi.yaml 1.4.0 specifies answers 501 with the promised problem until its handler ships, and never reaches the sandbox.</summary>
+    private const string HYPERTENSION = """{"code":"59621000"}""";
+
+    /// <summary>The Condition the sandbox stores for an add: the pick-list coding, active, with an id of its own.</summary>
+    private static Condition Stored(string id = "9f1c", string status = "active") =>
+        Fixtures.Condition(id, status, "Essential hypertension", onset: null);
+
+    private static HttpRequestMessage AddCondition(string body = HYPERTENSION, string? session = SESSION, string patientId = "1842") =>
+        Write(HttpMethod.Post, $"/api/fhir/patients/{patientId}/conditions", body, session);
+
+    /// <summary>The happy path: the guard reads the patient, the cap counts the active conditions, and a conditional create records the condition.</summary>
     [Fact]
-    public async Task AddCondition_is_a_501_problem_until_built()
+    public async Task AddCondition_ShouldRecordAnActiveConditionAndAnswer201WithLocation()
+    {
+        // Arrange
+        using var factory = new FhirApiFactory();
+        factory.Handler.On(HttpMethod.Get, "/Patient/1842", Created());
+        factory.Handler.On(HttpMethod.Get, "/Condition?", Fixtures.CountOnly(2));
+        factory.Handler.On(HttpMethod.Post, "/Condition", Stored(), HttpStatusCode.Created);
+        using var client = factory.CreateClient();
+
+        // Act
+        var response = await client.SendAsync(AddCondition(), Ct);
+
+        // Assert
+        Assert.Equal(HttpStatusCode.Created, response.StatusCode);
+        Assert.Equal("/api/fhir/patients/1842/summary", response.Headers.Location?.ToString());
+        Assert.Equal("no-store", response.Headers.CacheControl?.ToString());
+        var result = await response.Content.ReadFromJsonAsync<ConditionWriteResult>(ApiJson.Options, Ct);
+        Assert.NotNull(result);
+        Assert.Equal("9f1c", result.Condition.Id);
+        Assert.Equal("59621000", result.Condition.Code);
+        Assert.Equal("Essential hypertension", result.Condition.Display);
+        Assert.Equal("SNOMED CT", result.Condition.SystemLabel);
+        Assert.Equal("active", result.Condition.ClinicalStatus);
+        Assert.Equal(["GET", "GET", "POST"], result.Trace.Requests.Select(r => r.Method));
+
+        var count = Assert.Single(factory.Handler.Sent, r => r.Uri.PathAndQuery.Contains("/Condition?", StringComparison.Ordinal));
+        Assert.Contains("_summary=count", count.Uri.Query, StringComparison.Ordinal);
+        Assert.Contains("clinical-status=active", count.Uri.Query, StringComparison.Ordinal);
+        Assert.Contains("patient=Patient%2F1842", count.Uri.Query, StringComparison.Ordinal);
+
+        var post = Assert.Single(factory.Handler.Sent, r => r.Method == HttpMethod.Post);
+        Assert.Equal("patient=Patient%2F1842&clinical-status=active&code=http%3A%2F%2Fsnomed.info%2Fsct%7C59621000", post.IfNoneExist);
+        Assert.Contains("\"code\":\"59621000\"", post.Body, StringComparison.Ordinal);
+        Assert.Contains("\"display\":\"Essential hypertension\"", post.Body, StringComparison.Ordinal);
+        Assert.Contains("\"reference\":\"Patient/1842\"", post.Body, StringComparison.Ordinal);
+        Assert.Contains("problem-list-item", post.Body, StringComparison.Ordinal);
+        Assert.Contains("\"recordedDate\":\"", post.Body, StringComparison.Ordinal);
+        Assert.DoesNotContain("\"id\"", post.Body, StringComparison.Ordinal);
+    }
+
+    /// <summary>The sandbox answers a matched conditional create with 200 and the existing resource; the function passes that through and creates nothing.</summary>
+    [Fact]
+    public async Task AddCondition_ShouldAnswer200WhenThePatientAlreadyHasItActive()
+    {
+        // Arrange
+        using var factory = new FhirApiFactory();
+        factory.Handler.On(HttpMethod.Get, "/Patient/1842", Created());
+        factory.Handler.On(HttpMethod.Get, "/Condition?", Fixtures.CountOnly(1));
+        factory.Handler.On(HttpMethod.Post, "/Condition", Stored(), HttpStatusCode.OK);
+        using var client = factory.CreateClient();
+
+        // Act
+        var response = await client.SendAsync(AddCondition(), Ct);
+
+        // Assert
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+        Assert.Equal("/api/fhir/patients/1842/summary", response.Headers.Location?.ToString());
+        var result = await response.Content.ReadFromJsonAsync<ConditionWriteResult>(ApiJson.Options, Ct);
+        Assert.Equal("9f1c", result?.Condition.Id);
+    }
+
+    /// <summary>A missing or malformed header or body is a 400 validation problem naming the field, before anything goes upstream.</summary>
+    [Theory]
+    [InlineData(null, HYPERTENSION, "X-Demo-Session")]
+    [InlineData("not-a-uuid", HYPERTENSION, "X-Demo-Session")]
+    [InlineData(SESSION, "{}", "code")]
+    [InlineData(SESSION, """{"code":"hypertension"}""", "code")]
+    [InlineData(SESSION, """{"code":"123"}""", "code")]
+    [InlineData(SESSION, "not json", "body")]
+    public async Task AddCondition_ShouldRejectBadHeadersAndBodiesWithAValidationProblem(string? session, string body, string field)
     {
         // Arrange
         using var factory = new FhirApiFactory();
         using var client = factory.CreateClient();
-        using var request = new HttpRequestMessage(HttpMethod.Post, "/api/fhir/patients/1842/conditions");
-        request.Headers.Add(FhirEndpoints.SESSION_HEADER, SESSION);
-        request.Content = new StringContent("{\"code\":\"59621000\"}", System.Text.Encoding.UTF8, "application/json");
 
         // Act
-        var response = await client.SendAsync(request, Ct);
+        var response = await client.SendAsync(AddCondition(body, session), Ct);
 
         // Assert
-        var problem = await AssertProblem(response, HttpStatusCode.NotImplemented, "not-implemented");
-        Assert.Equal("Conditions are specified and arrive with the explorer's next release.", problem.GetProperty("detail").GetString());
-        Assert.Equal("/api/fhir/patients/1842/conditions", problem.GetProperty("instance").GetString());
+        var problem = await AssertProblem(response, HttpStatusCode.BadRequest, "validation-failed");
+        Assert.True(problem.GetProperty("errors").TryGetProperty(field, out var messages), $"expected an error for {field}");
+        Assert.NotEmpty(messages.EnumerateArray());
         Assert.Empty(factory.Handler.Requests);
+    }
+
+    /// <summary>A path id that is not a FHIR id is a 400 before any header or body is read.</summary>
+    [Fact]
+    public async Task AddCondition_ShouldRejectAMalformedPatientId()
+    {
+        // Arrange
+        using var factory = new FhirApiFactory();
+        using var client = factory.CreateClient();
+
+        // Act
+        var response = await client.SendAsync(AddCondition(patientId: "not%20an%20id"), Ct);
+
+        // Assert
+        await AssertProblem(response, HttpStatusCode.BadRequest, "invalid-parameter");
+        Assert.Empty(factory.Handler.Requests);
+    }
+
+    /// <summary>A well-formed code that is not one of the ten is a 422, decided before the sandbox is asked anything.</summary>
+    [Fact]
+    public async Task AddCondition_ShouldAnswer422ForACodeOffThePickList()
+    {
+        // Arrange
+        using var factory = new FhirApiFactory();
+        using var client = factory.CreateClient();
+
+        // Act
+        var response = await client.SendAsync(AddCondition("""{"code":"123456"}"""), Ct);
+
+        // Assert
+        var problem = await AssertProblem(response, HttpStatusCode.UnprocessableEntity, "condition-rejected");
+        Assert.Equal("Condition rejected", problem.GetProperty("title").GetString());
+        Assert.Contains("'123456' is not on the pick list", problem.GetProperty("detail").GetString(), StringComparison.Ordinal);
+        Assert.Equal("no-store", response.Headers.CacheControl?.ToString());
+        Assert.Empty(factory.Handler.Requests);
+    }
+
+    /// <summary>The cap is counted on the sandbox; at the cap the add is a 422 and nothing is posted.</summary>
+    [Fact]
+    public async Task AddCondition_ShouldAnswer422OnceThePatientHoldsItsActiveConditions()
+    {
+        // Arrange
+        using var factory = new FhirApiFactory(new Dictionary<string, string> { ["Fhir:MaxActiveConditionsPerPatient"] = "3" });
+        factory.Handler.On(HttpMethod.Get, "/Patient/1842", Created());
+        factory.Handler.On(HttpMethod.Get, "/Condition?", Fixtures.CountOnly(3));
+        using var client = factory.CreateClient();
+
+        // Act
+        var response = await client.SendAsync(AddCondition(), Ct);
+
+        // Assert
+        var problem = await AssertProblem(response, HttpStatusCode.UnprocessableEntity, "condition-rejected");
+        Assert.Contains("already has 3 active conditions", problem.GetProperty("detail").GetString(), StringComparison.Ordinal);
+        Assert.DoesNotContain(factory.Handler.Sent, r => r.Method == HttpMethod.Post);
+    }
+
+    /// <summary>The seeded patient is read-only for conditions too, and the refusal costs no upstream call.</summary>
+    [Fact]
+    public async Task AddCondition_ShouldAnswer403ForTheSeededPatientWithoutTouchingTheSandbox()
+    {
+        // Arrange
+        using var factory = new FhirApiFactory();
+        using var client = factory.CreateClient();
+
+        // Act
+        var response = await client.SendAsync(AddCondition(patientId: "mvc-programmer"), Ct);
+
+        // Assert
+        var problem = await AssertProblem(response, HttpStatusCode.Forbidden, "read-only");
+        Assert.Contains("seeded demo patient", problem.GetProperty("detail").GetString(), StringComparison.Ordinal);
+        Assert.Empty(factory.Handler.Requests);
+    }
+
+    /// <summary>Another session's patient, a patient the explorer never made, a missing one, and a wiped one all answer the same 404, and nothing is posted.</summary>
+    [Theory]
+    [InlineData("other-session")]
+    [InlineData("not-created-by-the-explorer")]
+    [InlineData("missing")]
+    [InlineData("gone")]
+    public async Task AddCondition_ShouldAnswer404ForAPatientThatIsNotThisSessions(string which)
+    {
+        // Arrange
+        using var factory = new FhirApiFactory();
+        switch (which)
+        {
+            case "other-session":
+                factory.Handler.On(HttpMethod.Get, "/Patient/1842", Created(session: OTHER_SESSION));
+                break;
+            case "not-created-by-the-explorer":
+                factory.Handler.On(HttpMethod.Get, "/Patient/1842", Fixtures.Patient("1842"));
+                break;
+            case "missing":
+                factory.Handler.On(HttpMethod.Get, "/Patient/1842", FakeFhirHandler.Outcome("no such patient"), HttpStatusCode.NotFound);
+                break;
+            default:
+                factory.Handler.On(HttpMethod.Get, "/Patient/1842", FakeFhirHandler.Outcome("gone"), HttpStatusCode.Gone);
+                break;
+        }
+
+        using var client = factory.CreateClient();
+
+        // Act
+        var response = await client.SendAsync(AddCondition(), Ct);
+
+        // Assert
+        var problem = await AssertProblem(response, HttpStatusCode.NotFound, "not-found");
+        Assert.Contains("This session created no Patient with id '1842'", problem.GetProperty("detail").GetString(), StringComparison.Ordinal);
+        Assert.DoesNotContain(factory.Handler.Sent, r => r.Method == HttpMethod.Post);
+    }
+
+    /// <summary>An add spends the write budget like any other write.</summary>
+    [Fact]
+    public async Task AddCondition_ShouldSpendTheWriteBudget()
+    {
+        // Arrange
+        using var factory = new FhirApiFactory(new Dictionary<string, string> { ["Fhir:WriteRateLimitBudget"] = "1" });
+        factory.Handler.On(HttpMethod.Get, "/Patient/1842", Created());
+        factory.Handler.On(HttpMethod.Get, "/Condition?", Fixtures.CountOnly(0));
+        factory.Handler.On(HttpMethod.Post, "/Condition", Stored(), HttpStatusCode.Created);
+        using var client = factory.CreateClient();
+
+        // Act
+        var first = await client.SendAsync(AddCondition(), Ct);
+        var second = await client.SendAsync(AddCondition(), Ct);
+
+        // Assert
+        Assert.Equal(HttpStatusCode.Created, first.StatusCode);
+        var problem = await AssertProblem(second, HttpStatusCode.TooManyRequests, "rate-limited");
+        Assert.Contains("1 writes", problem.GetProperty("detail").GetString(), StringComparison.Ordinal);
+        Assert.NotNull(second.Headers.RetryAfter?.Delta);
+    }
+
+    /// <summary>A sandbox that fails the create is a 502 problem, never cached.</summary>
+    [Fact]
+    public async Task AddCondition_ShouldAnswer502WhenTheSandboxIsDown()
+    {
+        // Arrange
+        using var factory = new FhirApiFactory();
+        factory.Handler.On(HttpMethod.Get, "/Patient/1842", Created());
+        factory.Handler.On(HttpMethod.Get, "/Condition?", Fixtures.CountOnly(0));
+        factory.Handler.OnServerError("/Condition");
+        using var client = factory.CreateClient();
+
+        // Act
+        var response = await client.SendAsync(AddCondition(), Ct);
+
+        // Assert
+        await AssertProblem(response, HttpStatusCode.BadGateway, "upstream-unavailable");
+        Assert.Equal("no-store", response.Headers.CacheControl?.ToString());
+    }
+
+    /// <summary>A sandbox that never answers the guard read runs out the time budget; the add is a 504 and nothing is posted.</summary>
+    [Fact]
+    public async Task AddCondition_ShouldAnswer504WhenTheSandboxHangs()
+    {
+        // Arrange
+        using var factory = new FhirApiFactory();
+        factory.Handler.OnHang("/Patient/1842");
+        using var client = factory.CreateClient();
+
+        // Act
+        var response = await client.SendAsync(AddCondition(), Ct);
+
+        // Assert
+        await AssertProblem(response, HttpStatusCode.GatewayTimeout, "upstream-timeout");
+        Assert.DoesNotContain(factory.Handler.Sent, r => r.Method == HttpMethod.Post);
+    }
+
+    /// <summary>A caller that gives up mid-flight cancels the upstream call through the token; nothing is posted after the cancellation.</summary>
+    [Fact]
+    public async Task AddCondition_ShouldStopWhenTheCallerCancels()
+    {
+        // Arrange
+        using var factory = new FhirApiFactory();
+        var upstreamCancelled = new TaskCompletionSource();
+        factory.Handler.On(HttpMethod.Get, "/Patient/1842", async (_, _, ct) =>
+        {
+            try
+            {
+                await Task.Delay(TimeSpan.FromSeconds(10), ct);
+            }
+            catch (OperationCanceledException)
+            {
+                upstreamCancelled.TrySetResult();
+                throw;
+            }
+
+            return FakeFhirHandler.Json(Created());
+        });
+        using var client = factory.CreateClient();
+        using var cancellation = new CancellationTokenSource(TimeSpan.FromMilliseconds(50));
+
+        // Act
+        var act = () => client.SendAsync(AddCondition(), cancellation.Token);
+
+        // Assert
+        await Assert.ThrowsAnyAsync<OperationCanceledException>(act);
+        await upstreamCancelled.Task.WaitAsync(TimeSpan.FromSeconds(2), Ct);
+        Assert.DoesNotContain(factory.Handler.Sent, r => r.Method == HttpMethod.Post);
     }
 
     #endregion

@@ -4,8 +4,8 @@ using Hl7.Fhir.Model;
 namespace Fhir.Api.Mapping;
 
 /// <summary>
-/// Condition to <see cref="ConditionItem"/> and the active/resolved split. Reads what US Core
-/// Condition requires: clinicalStatus, code (SNOMED CT or ICD-10-CM preferred), onset, recordedDate.
+/// Condition to <see cref="ConditionItem"/> and the active/resolved split. Reads the id and what US
+/// Core Condition requires: clinicalStatus, code (SNOMED CT or ICD-10-CM preferred), onset, recordedDate.
 /// </summary>
 public static class ConditionMapper
 {
@@ -32,6 +32,7 @@ public static class ConditionMapper
         var coding = PreferredCoding(condition.Code);
         var display = coding?.Display ?? condition.Code?.Text ?? coding?.Code ?? "Unknown condition";
         return new ConditionItem(
+            condition.Id,
             display,
             coding?.Code,
             coding?.System,
