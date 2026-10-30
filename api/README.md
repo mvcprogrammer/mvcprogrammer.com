@@ -90,7 +90,8 @@ api/src/Fhir.Api/
   Program.cs                Minimal API host, same shape as the Experience one.
   Configuration/            FhirOptions: base URL, page cap, page sizes, timeouts, retry, rate limit, capability TTL.
   Endpoints/                /api/fhir/patients (GET, POST), .../{id} (PUT, PATCH, DELETE), .../{id}/conditions (POST),
-                            .../{id}/summary, .../{id}/raw, /api/fhir/capability, /api/fhir/health.
+                            .../{id}/conditions/{conditionId}/resolve (POST, stubbed), .../{id}/summary, .../{id}/raw,
+                            /api/fhir/capability, /api/fhir/health.
   Fhir/                     IFhirGateway over a Firely FhirClient: read, search with paging, _summary=count, metadata,
                             conditional create, update, delete; the upstream and write exceptions; CapabilityCache;
                             DemoIdentifiers and ConditionPickList (the ten SNOMED CT conditions a visitor may add).
@@ -139,6 +140,12 @@ wiped or down. `FHIR_SOURCE_NAME` is the label the trace carries.
   and active status, so a repeat answers 200 with the existing resource and a resolved condition can
   be recorded again. `ConditionInputMapper` builds the resource and both searches; nothing the
   visitor sends reaches the sandbox but a listed code.
+- **Resolve, spec first.** `openapi.yaml` 1.6.0 specifies `POST /fhir/patients/{id}/conditions/{conditionId}/resolve`:
+  `clinicalStatus` becomes `resolved` on any condition of a session-created patient, 204 and idempotent,
+  the same guard first (403 seeded, 404 for a foreign patient or a condition not on that patient). It is
+  the one action-shaped path in the contract; the operation's description records why a `POST` to a
+  sub-resource beat a `PATCH`, a `PUT`, and a `DELETE`. The route exists and answers `501` until the
+  handler lands (#191).
 - **The function is the boundary.** The browser never talks to the sandbox. Resources are parsed
   by the Firely SDK (`Hl7.Fhir.R4`) into typed objects and mapped to DTOs; only the raw-bundle
   endpoint passes FHIR JSON through, as a `collection` Bundle of what the summary fetched.

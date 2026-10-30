@@ -2,7 +2,7 @@ openapi: 3.1.0
 
 info:
   title: mvcprogrammer.com API
-  version: 1.5.0
+  version: 1.6.0
   summary: "APIs behind mvcprogrammer.com: the Experience section and the FHIR R4 patient explorer."
   description: |
     Two small, public functions served same-origin under `/api`.
@@ -67,6 +67,11 @@ info:
       - A patient holds at most ten active conditions; the eleventh answers `422`.
       - Conditions share the write budget. The patient is checked first, so the seeded patient
         answers `403` and a patient another session created answers `404`, as for patient writes.
+      - Resolving (`POST /fhir/patients/{id}/conditions/{conditionId}/resolve`, specified in 1.6.0,
+        stubbed to `501` until the handler ships) sets `clinicalStatus` to `resolved` on any
+        condition of a session-created patient, the ones the add made and any other. It answers
+        `204`, again for a condition already resolved, so it is idempotent. The operation is the one
+        action-shaped endpoint in this document; its description says why.
   contact:
     name: Neal Thomas
     url: https://mvcprogrammer.com/#contact
@@ -667,6 +672,54 @@ paths:
         '504':
           $ref: '#/components/responses/UpstreamTimeout'
 
+  /fhir/patients/{patientId}/conditions/{conditionId}/resolve:
+    post:
+      tags: [FHIR]
+      operationId: resolveCondition
+      summary: Resolve a condition of a demo patient
+      description: |
+        Marks a condition of a patient this session created as resolved: `clinicalStatus` becomes
+        `resolved` and `abatementDateTime` today, and the condition moves from the summary's active
+        list to its resolved one. Any condition that references the patient qualifies, not only
+        those the add operation made. No request body.
+
+        Idempotent: resolving a condition that is already resolved changes nothing and answers
+        `204` again. The same guard as the other writes applies, checked before anything is
+        written: the seeded demo patient answers `403`; a patient this session did not create, or
+        a condition that does not reference that patient, answers `404`.
+
+        **Why an action in the path.** The endpoint rules say a path names a resource, never an
+        action, and this one ends in `/resolve`. The alternatives were weighed: a `PATCH` on the
+        condition would expose JSON Patch on a second resource for a single, fixed transition; a
+        `PUT` would make the caller resend a resource it never sees whole; a `DELETE` would be
+        untrue. A `POST` to a sub-resource is the documented exception (per the rules, favoured
+        when strict adherence would misrepresent the resource), and it stays idempotent in
+        practice because the transition has one end state.
+      parameters:
+        - $ref: '#/components/parameters/PatientId'
+        - $ref: '#/components/parameters/ConditionId'
+        - $ref: '#/components/parameters/DemoSession'
+      responses:
+        '204':
+          description: Resolved, or already resolved. No body.
+          headers:
+            Cache-Control:
+              $ref: '#/components/headers/NoStore'
+        '400':
+          $ref: '#/components/responses/ValidationFailed'
+        '403':
+          $ref: '#/components/responses/DemoPatientReadOnly'
+        '404':
+          $ref: '#/components/responses/WritableConditionNotFound'
+        '429':
+          $ref: '#/components/responses/WriteRateLimited'
+        '500':
+          $ref: '#/components/responses/InternalError'
+        '502':
+          $ref: '#/components/responses/UpstreamUnavailable'
+        '504':
+          $ref: '#/components/responses/UpstreamTimeout'
+
   /fhir/patients/{patientId}/summary:
     get:
       tags: [FHIR]
@@ -846,6 +899,15 @@ components:
       schema:
         $ref: '#/components/schemas/FhirId'
       example: '1842'
+
+    ConditionId:
+      name: conditionId
+      in: path
+      required: true
+      description: The sandbox's logical id for the Condition resource, as the summary's `conditions` items and the add operation return it.
+      schema:
+        $ref: '#/components/schemas/FhirId'
+      example: '9f1c'
 
     DemoSession:
       name: X-Demo-Session
@@ -1141,6 +1203,22 @@ components:
             status: 429
             detail: This address has made 10 writes in the last 10 minutes. Try again in 240 seconds.
             instance: /api/fhir/patients
+    WritableConditionNotFound:
+      description: |
+        No such condition on a patient this session created. The patient may not be this
+        session's (the same answer as for patient writes), or the condition may not exist, may
+        have been wiped, or may belong to another patient; the answer is the same in every case
+        so the explorer cannot probe records it did not create.
+      content:
+        application/problem+json:
+          schema:
+            $ref: '#/components/schemas/Problem'
+          example:
+            type: https://mvcprogrammer.com/api/problems/not-found
+            title: Condition not found
+            status: 404
+            detail: Patient '1842' created by this session has no Condition with id '9f1c'. It may have been wiped.
+            instance: /api/fhir/patients/1842/conditions/9f1c/resolve
     ConditionRejected:
       description: |
         The body is well-formed but the function will not record the condition: the code is not
@@ -1604,7 +1682,7 @@ components:
       properties:
         id:
           $ref: '#/components/schemas/FhirId'
-          description: The sandbox's logical id of the `Condition`, as the write operations return it and a later resolve addresses it. Present from 1.4.0.
+          description: The sandbox's logical id of the `Condition`, as the write operations return it and the resolve operation addresses it. Present from 1.4.0.
         display:
           type: string
           description: '`code.coding.display`, else `code.text`, else the code itself.'
