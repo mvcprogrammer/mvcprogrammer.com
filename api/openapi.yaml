@@ -2,7 +2,7 @@ openapi: 3.1.0
 
 info:
   title: mvcprogrammer.com API
-  version: 1.4.0
+  version: 1.5.0
   summary: "APIs behind mvcprogrammer.com: the Experience section and the FHIR R4 patient explorer."
   description: |
     Two small, public functions served same-origin under `/api`.
@@ -56,8 +56,8 @@ info:
         a session may create at most 5 patients. Both answer `429` with `Retry-After`.
       - Nothing is cleaned up by the function; created patients are the visitor's to delete
         and go with the next sandbox wipe.
-    - Conditions (`POST /fhir/patients/{id}/conditions`, specified in 1.4.0, stubbed to `501`
-      until the handler ships) are the first write on a clinical resource, under the same guard:
+    - Conditions (`POST /fhir/patients/{id}/conditions`, specified in 1.4.0, built in 1.5.0) are
+      the first write on a clinical resource, under the same guard:
       - The request carries a SNOMED CT code only. The function owns a pick list of ten
         conditions (the table on the operation) and answers `422` for anything off it; there is
         no terminology service to validate free text against.

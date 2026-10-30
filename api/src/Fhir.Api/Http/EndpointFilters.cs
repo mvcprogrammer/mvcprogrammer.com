@@ -135,5 +135,9 @@ public sealed class WriteProblemFilter(IOptions<FhirOptions> options) : IEndpoin
         {
             return Problems.RateLimited(context.HttpContext, ex.Message, options.Value.RateLimitWindowSeconds);
         }
+        catch (ConditionRejectedException ex)
+        {
+            return Problems.Unprocessable(context.HttpContext, "condition-rejected", "Condition rejected", ex.Message);
+        }
     }
 }

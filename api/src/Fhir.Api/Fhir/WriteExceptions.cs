@@ -1,3 +1,5 @@
+using Fhir.Api.Models;
+
 namespace Fhir.Api.Fhir;
 
 /// <summary>A write aimed at the seeded demo patient, which every visitor searches for first.</summary>
@@ -26,6 +28,12 @@ public sealed class SessionCapExceededException(int cap)
     : Exception($"This session has created its {cap} patients. Delete one, or start a new session, to create another.")
 {
     public int Cap { get; } = cap;
+}
+
+/// <summary>A well-formed condition the function will not record: the code is off the pick list, or the patient holds its cap of active conditions. Nothing was written.</summary>
+public sealed class ConditionRejectedException(ConditionRejection reason, string message) : Exception(message)
+{
+    public ConditionRejection Reason { get; } = reason;
 }
 
 /// <summary>The body or a header failed validation; <see cref="Errors"/> names each field.</summary>

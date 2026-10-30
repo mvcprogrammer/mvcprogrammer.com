@@ -54,6 +54,9 @@ public sealed class FhirOptions
     /// <summary>Patients one session token may create. Counted on the sandbox by the session identifier.</summary>
     public int MaxPatientsPerSession { get; set; } = 5;
 
+    /// <summary>Active conditions one patient may hold; an add past it answers 422. Counted on the sandbox.</summary>
+    public int MaxActiveConditionsPerPatient { get; set; } = 10;
+
     /// <summary>The seeded demo patient every visitor searches for first. Read-only to the write operations.</summary>
     public string SeedPatientId { get; set; } = "mvc-programmer";
 
