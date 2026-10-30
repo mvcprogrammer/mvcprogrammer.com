@@ -40,6 +40,9 @@ export class FakeFhirClient extends FhirClient {
   /** Ids and inputs passed to addCondition(), in call order. */
   readonly conditionAdds: { id: string; input: ConditionInput }[] = [];
 
+  /** Patient and condition ids passed to resolveCondition(), in call order. */
+  readonly resolves: { patientId: string; conditionId: string }[] = [];
+
   /** Behaviour of searchPatients(). */
   onSearchPatients: (request: PatientSearchRequest) => Promise<FhirResponse<PatientSearchResult>> = () =>
     Promise.resolve(createFhirResponse(createPatientSearchResult()));
@@ -72,6 +75,10 @@ export class FakeFhirClient extends FhirClient {
   /** Behaviour of addCondition(): a 201 with the listed condition for the code. */
   onAddCondition: (id: string, input: ConditionInput) => Promise<FhirResponse<ConditionWriteResult>> = (id, input) =>
     Promise.resolve(createFhirResponse(createConditionWriteResult(input.code, id), { status: 201, xCache: null, etag: null }));
+
+  /** Behaviour of resolveCondition(): a 204. */
+  onResolveCondition: (patientId: string, conditionId: string) => Promise<FhirResponse<null>> = () =>
+    Promise.resolve(createFhirResponse(null, { status: 204, xCache: null, etag: null, contentType: null }));
 
   override searchPatients(request: PatientSearchRequest): Promise<FhirResponse<PatientSearchResult>> {
     this.searches.push(request);
@@ -116,5 +123,10 @@ export class FakeFhirClient extends FhirClient {
   override addCondition(patientId: string, input: ConditionInput): Promise<FhirResponse<ConditionWriteResult>> {
     this.conditionAdds.push({ id: patientId, input });
     return this.onAddCondition(patientId, input);
+  }
+
+  override resolveCondition(patientId: string, conditionId: string): Promise<FhirResponse<null>> {
+    this.resolves.push({ patientId, conditionId });
+    return this.onResolveCondition(patientId, conditionId);
   }
 }

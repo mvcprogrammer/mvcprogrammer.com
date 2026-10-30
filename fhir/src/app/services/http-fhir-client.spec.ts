@@ -263,6 +263,42 @@ describe('HttpFhirClient', () => {
     });
   });
 
+  describe('resolveCondition', () => {
+    it('should POST to the escaped resolve path with the session header, no body, and no hash, and resolve a 204 with a null body', async () => {
+      // Act
+      const pending = client.resolveCondition('a/b', 'c d');
+      await settle();
+      const request = http.expectOne('api/fhir/patients/a%2Fb/conditions/c%20d/resolve');
+      request.flush(null, { status: 204, statusText: 'No Content', headers: { 'cache-control': 'no-store' } });
+
+      // Assert
+      expect(request.request.method).toBe('POST');
+      expect(request.request.headers.get('X-Demo-Session')).toBe(FakeDemoSession.TOKEN);
+      expect(request.request.headers.has('Content-Type')).toBe(false);
+      expect(request.request.headers.has('x-amz-content-sha256')).toBe(false);
+      expect(request.request.body).toBeNull();
+      const response = await pending;
+      expect(response.status).toBe(204);
+      expect(response.body).toBeNull();
+    });
+
+    it('should reject a 404 with the problem the function sent', async () => {
+      // Act
+      const rejected = client.resolveCondition('mine-1', 'c-hyp');
+      await settle();
+      http.expectOne('api/fhir/patients/mine-1/conditions/c-hyp/resolve').flush(
+        { type: 'https://mvcprogrammer.com/api/problems/not-found', title: 'Condition not found', status: 404, detail: "Patient 'mine-1' created by this session has no Condition with id 'c-hyp'. It may have been wiped." },
+        { status: 404, statusText: 'Not Found' },
+      );
+
+      // Assert
+      const error = await rejected.catch((e: unknown) => e);
+      expect(error).toBeInstanceOf(FhirProblemError);
+      expect((error as FhirProblemError).status).toBe(404);
+      expect((error as FhirProblemError).title).toBe('Condition not found');
+    });
+  });
+
   describe('replacePatient, patchPatient, deletePatient', () => {
     it('should PUT the input to the patient path with the session header', async () => {
       // Act

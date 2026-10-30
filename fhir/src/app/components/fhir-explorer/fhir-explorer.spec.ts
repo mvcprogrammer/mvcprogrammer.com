@@ -958,6 +958,123 @@ describe('FhirExplorer', () => {
     }
   });
 
+  describe('resolveCondition', () => {
+    it('should show a Resolve action on each active chip of the session\'s own patient only', async () => {
+      // Arrange
+      client.onSearchPatients = () => Promise.resolve(createFhirResponse(createPatientSearchResult(createPatientListItem({ id: 'mvc-programmer' }), createPatientListItem({ id: '78785' }), createPatientListItem({ id: 'mine-1' }))));
+      client.onGetSummary = (id) => Promise.resolve(createFhirResponse(id === 'mine-1' ? createOwnPatientSummary() : { ...createPatientSummary(), patient: { ...createPatientSummary().patient, id } }));
+      await render();
+      submit();
+      await fixture.whenStable();
+
+      // Assert: the seed has no action
+      expect(host.querySelector('.fhir-pill-action')).toBeNull();
+
+      // Act: another session's patient
+      (host.querySelector('.fhir-patient[data-id="78785"]') as HTMLButtonElement).click();
+      await fixture.whenStable();
+
+      // Assert
+      expect(host.querySelector('.fhir-pill-action')).toBeNull();
+
+      // Act: the session's own patient
+      (host.querySelector('.fhir-patient[data-id="mine-1"]') as HTMLButtonElement).click();
+      await fixture.whenStable();
+
+      // Assert: one action per active chip, none on the resolved ones
+      const action = host.querySelector('#fhir-resolve-c-hyp') as HTMLButtonElement;
+      expect(action).not.toBeNull();
+      expect(action.textContent).toBe('Resolve');
+      expect(action.getAttribute('aria-label')).toBe('Resolve Essential hypertension (disorder)');
+      expect(action.title).toBe('Resolve Essential hypertension (disorder)');
+      expect(action.getAttribute('aria-disabled')).toBeNull();
+      expect(host.querySelectorAll('#fhir-resolved .fhir-pill-action')).toHaveLength(0);
+    });
+
+    it('should resolve the condition, move its chip under the resolved count, and log the call', async () => {
+      // Arrange
+      await selectOwnPatient();
+
+      // Act
+      (host.querySelector('#fhir-resolve-c-hyp') as HTMLButtonElement).click();
+      await fixture.whenStable();
+
+      // Assert: the request
+      expect(client.resolves).toEqual([{ patientId: 'mine-1', conditionId: 'c-hyp' }]);
+      expect(client.summaryCalls).toEqual(['mine-1']);
+
+      // Assert: the card follows without a re-read; the count tile is unchanged, the resource still exists
+      expect(host.querySelectorAll('#fhir-conditions .fhir-pill:not(.fhir-pill-more)')).toHaveLength(0);
+      expect(host.querySelector('#fhir-conditions .fhir-pill-more button')?.textContent).toBe('+2 resolved');
+      expect(host.querySelector('#fhir-tile-conditions')?.textContent).toBe('2');
+      (host.querySelector('#fhir-conditions .fhir-pill-more button') as HTMLButtonElement).click();
+      await fixture.whenStable();
+      const resolved = Array.from(host.querySelectorAll('#fhir-resolved .fhir-pill.is-resolved .fhir-pill-text')).map((e) => e.textContent);
+      expect(resolved).toEqual(['Essential hypertension (disorder)', 'Acute bronchitis (disorder)']);
+      expect(textOf(editStatus())).toBe('Resolved Essential hypertension (disorder) (Condition/c-hyp) on Patient/mine-1.');
+      expect(editStatus().classList.contains('is-ok')).toBe(true);
+
+      // Assert: the log
+      const log = logText();
+      expect(log).toContain(`→ POST /api/fhir/patients/mine-1/conditions/c-hyp/resolve · X-Demo-Session ${FakeDemoSession.TOKEN}`);
+      expect(log).toContain('← 204 /patients/mine-1/conditions/c-hyp/resolve in 120 ms');
+      expect(log).toContain('Condition/c-hyp is resolved; the card moves it under the resolved count');
+    });
+
+    it('should show a 404 from the function as the status and leave the chip where it was', async () => {
+      // Arrange
+      await selectOwnPatient();
+      client.onResolveCondition = () =>
+        Promise.reject(new FhirProblemError("Patient 'mine-1' created by this session has no Condition with id 'c-hyp'. It may have been wiped.", 404, 'Condition not found', 35, null, false));
+
+      // Act
+      (host.querySelector('#fhir-resolve-c-hyp') as HTMLButtonElement).click();
+      await fixture.whenStable();
+
+      // Assert
+      expect(textOf(editStatus())).toBe("Patient 'mine-1' created by this session has no Condition with id 'c-hyp'. It may have been wiped.");
+      expect(editStatus().classList.contains('is-error')).toBe(true);
+      expect(host.querySelector('#fhir-resolve-c-hyp')).not.toBeNull();
+      expect(host.querySelectorAll('#fhir-conditions .fhir-pill:not(.fhir-pill-more)')).toHaveLength(1);
+      expect(logText()).toContain('← 404 /patients/mine-1/conditions/c-hyp/resolve: Condition not found in 35 ms');
+    });
+
+    it('should block the action while a write is in flight and say why when pressed', async () => {
+      // Arrange
+      await selectOwnPatient();
+      let resolve: () => void = () => undefined;
+      client.onResolveCondition = () =>
+        new Promise((r) => {
+          resolve = () => r(createFhirResponse(null, { status: 204, xCache: null, etag: null, contentType: null }));
+        });
+
+      // Act
+      const action = host.querySelector('#fhir-resolve-c-hyp') as HTMLButtonElement;
+      action.click();
+      fixture.detectChanges();
+
+      // Assert
+      expect(action.getAttribute('aria-disabled')).toBe('true');
+      expect(action.title).toBe(FhirExplorer.BLOCK_WRITING_MESSAGE);
+      expect(textOf(editStatus())).toBe('Resolving…');
+
+      // Act: a second press while blocked
+      action.click();
+      fixture.detectChanges();
+
+      // Assert
+      expect(textOf(editStatus())).toBe(FhirExplorer.BLOCK_WRITING_MESSAGE);
+      expect(client.resolves).toHaveLength(1);
+
+      // Act
+      resolve();
+      await fixture.whenStable();
+
+      // Assert
+      expect(host.querySelector('#fhir-resolve-c-hyp')).toBeNull();
+    });
+  });
+
   async function selectOwnPatient(): Promise<void> {
     client.onSearchPatients = () => Promise.resolve(createFhirResponse(createPatientSearchResult(createPatientListItem({ id: 'mine-1', name: 'Watsica258, Kimi714' }))));
     client.onGetSummary = (id) => Promise.resolve(createFhirResponse(createOwnPatientSummary(id)));

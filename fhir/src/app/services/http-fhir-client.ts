@@ -114,6 +114,11 @@ export class HttpFhirClient extends FhirClient {
     return this.send<ConditionWriteResult>('POST', `${this.patientPath(patientId)}/conditions`, input, 'application/json');
   }
 
+  /** @inheritdoc */
+  override resolveCondition(patientId: string, conditionId: string): Promise<FhirResponse<null>> {
+    return this.send<null>('POST', `${this.patientPath(patientId)}/conditions/${encodeURIComponent(conditionId)}/resolve`, null, null);
+  }
+
   private patientPath(patientId: string): string {
     return `${this.options.fhirApiBase}/patients/${encodeURIComponent(patientId)}`;
   }
