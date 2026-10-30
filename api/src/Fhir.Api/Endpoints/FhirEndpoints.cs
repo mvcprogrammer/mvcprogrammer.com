@@ -32,6 +32,9 @@ public static partial class FhirEndpoints
 
     private const string JSON_PATCH_MEDIA_TYPE = "application/json-patch+json";
 
+    /// <summary>The detail the stubbed condition write answers with until its handler ships (#190).</summary>
+    private const string CONDITIONS_NOT_IMPLEMENTED = "Conditions are specified and arrive with the explorer's next release.";
+
     /// <summary>Firely's System.Text.Json serializer for R4 POCOs, pretty-printed for the raw-bundle toggle.</summary>
     private static readonly JsonSerializerOptions _fhirJson = new JsonSerializerOptions().ForFhir(ModelInfo.ModelInspector).Pretty();
 
@@ -58,6 +61,11 @@ public static partial class FhirEndpoints
         writes.MapPut("/patients/{patientId}", ReplacePatient).WithName("replacePatient");
         writes.MapPatch("/patients/{patientId}", PatchPatient).WithName("patchPatient");
         writes.MapDelete("/patients/{patientId}", DeletePatient).WithName("deletePatient");
+
+        // Conditions, stubbed. Answers 501 until the handler lands (#190, second pull request); the
+        // route and name already match openapi.yaml 1.4.0 so the contract is settled before the code.
+        // Mapped outside the write filters so the stub spends no budget and binds no body.
+        group.MapPost("/patients/{patientId}/conditions", AddCondition).WithName("addCondition");
 
         group.MapGet("/health", GetHealth).WithName("getFhirHealth").WithTags("Operations");
         return group;
@@ -200,6 +208,8 @@ public static partial class FhirEndpoints
         await service.DeleteAsync(patientId, session, cancellationToken);
         return NoStoreJson.NoContent(context);
     }
+
+    private static IResult AddCondition(HttpContext context, string patientId) => Problems.NotImplemented(context, CONDITIONS_NOT_IMPLEMENTED);
 
     /// <summary>A UUID header, lower-cased, or null with an error recorded under the header's name.</summary>
     private static string? Token(HttpContext context, string header, Dictionary<string, string[]> errors)
