@@ -1236,24 +1236,271 @@ public sealed class ApiTests
 
     #endregion
 
-    #region Resolve (stubbed)
+    #region Resolve
 
-    /// <summary>The resolve openapi.yaml 1.6.0 specifies answers 501 with the promised problem until its handler ships, and never reaches the sandbox.</summary>
+    private const string RESOLVE_PATH = "/api/fhir/patients/1842/conditions/9f1c/resolve";
+
+    private static HttpRequestMessage Resolve(string path = RESOLVE_PATH, string? session = SESSION) => Write(HttpMethod.Post, path, session: session);
+
+    /// <summary>The happy path: the guard reads the patient, the condition is read and found to reference it, and one PUT sets it resolved with today's abatement.</summary>
     [Fact]
-    public async Task ResolveCondition_ShouldBeA501ProblemUntilBuilt()
+    public async Task ResolveCondition_ShouldSetTheConditionResolvedAndAnswer204()
+    {
+        // Arrange
+        using var factory = new FhirApiFactory();
+        factory.Handler.On(HttpMethod.Get, "/Patient/1842", Created());
+        factory.Handler.On(HttpMethod.Get, "/Condition/9f1c", Stored());
+        factory.Handler.On(HttpMethod.Put, "/Condition/9f1c", (request, _, ct) => Echo(request, ct));
+        using var client = factory.CreateClient();
+
+        // Act
+        var response = await client.SendAsync(Resolve(), Ct);
+
+        // Assert
+        Assert.Equal(HttpStatusCode.NoContent, response.StatusCode);
+        Assert.Equal("no-store", response.Headers.CacheControl?.ToString());
+        var put = Assert.Single(factory.Handler.Sent, r => r.Method == HttpMethod.Put);
+        Assert.Contains("\"id\":\"9f1c\"", put.Body, StringComparison.Ordinal);
+        Assert.Contains("\"code\":\"resolved\"", put.Body, StringComparison.Ordinal);
+        Assert.DoesNotContain("\"code\":\"active\"", put.Body, StringComparison.Ordinal);
+        Assert.Contains("\"abatementDateTime\":\"" + DateTime.UtcNow.ToString("yyyy-MM-dd", System.Globalization.CultureInfo.InvariantCulture), put.Body, StringComparison.Ordinal);
+        Assert.Contains("\"code\":\"59621000\"", put.Body, StringComparison.Ordinal);
+        Assert.Equal([HttpMethod.Get, HttpMethod.Get, HttpMethod.Put], factory.Handler.Sent.Select(r => r.Method));
+    }
+
+    /// <summary>Resolving a resolved condition is the end state already: 204 and no write, so the operation is idempotent.</summary>
+    [Fact]
+    public async Task ResolveCondition_ShouldAnswer204WithoutWritingWhenAlreadyResolved()
+    {
+        // Arrange
+        using var factory = new FhirApiFactory();
+        factory.Handler.On(HttpMethod.Get, "/Patient/1842", Created());
+        factory.Handler.On(HttpMethod.Get, "/Condition/9f1c", Stored(status: "resolved"));
+        using var client = factory.CreateClient();
+
+        // Act
+        var response = await client.SendAsync(Resolve(), Ct);
+
+        // Assert
+        Assert.Equal(HttpStatusCode.NoContent, response.StatusCode);
+        Assert.DoesNotContain(factory.Handler.Sent, r => r.Method == HttpMethod.Put);
+    }
+
+    /// <summary>A malformed id in either place is a 400 before any header is read or anything goes upstream.</summary>
+    [Theory]
+    [InlineData("/api/fhir/patients/not%20an%20id/conditions/9f1c/resolve", "patientId")]
+    [InlineData("/api/fhir/patients/1842/conditions/not%20an%20id/resolve", "conditionId")]
+    public async Task ResolveCondition_ShouldRejectAMalformedId(string path, string parameter)
     {
         // Arrange
         using var factory = new FhirApiFactory();
         using var client = factory.CreateClient();
 
         // Act
-        var response = await client.SendAsync(Write(HttpMethod.Post, "/api/fhir/patients/1842/conditions/9f1c/resolve"), Ct);
+        var response = await client.SendAsync(Resolve(path), Ct);
 
         // Assert
-        var problem = await AssertProblem(response, HttpStatusCode.NotImplemented, "not-implemented");
-        Assert.Equal("Resolving a condition is specified and arrives with the explorer's next release.", problem.GetProperty("detail").GetString());
-        Assert.Equal("/api/fhir/patients/1842/conditions/9f1c/resolve", problem.GetProperty("instance").GetString());
+        var problem = await AssertProblem(response, HttpStatusCode.BadRequest, "invalid-parameter");
+        Assert.Contains($"'{parameter}'", problem.GetProperty("detail").GetString(), StringComparison.Ordinal);
         Assert.Empty(factory.Handler.Requests);
+    }
+
+    /// <summary>A missing or malformed session header is a 400 validation problem naming it.</summary>
+    [Theory]
+    [InlineData(null)]
+    [InlineData("not-a-uuid")]
+    public async Task ResolveCondition_ShouldRejectABadSessionHeaderWithAValidationProblem(string? session)
+    {
+        // Arrange
+        using var factory = new FhirApiFactory();
+        using var client = factory.CreateClient();
+
+        // Act
+        var response = await client.SendAsync(Resolve(session: session), Ct);
+
+        // Assert
+        var problem = await AssertProblem(response, HttpStatusCode.BadRequest, "validation-failed");
+        Assert.True(problem.GetProperty("errors").TryGetProperty("X-Demo-Session", out _), "expected an error for the session header");
+        Assert.Empty(factory.Handler.Requests);
+    }
+
+    /// <summary>The seeded patient's conditions are read-only too, and the refusal costs no upstream call.</summary>
+    [Fact]
+    public async Task ResolveCondition_ShouldAnswer403ForTheSeededPatientWithoutTouchingTheSandbox()
+    {
+        // Arrange
+        using var factory = new FhirApiFactory();
+        using var client = factory.CreateClient();
+
+        // Act
+        var response = await client.SendAsync(Resolve("/api/fhir/patients/mvc-programmer/conditions/c1/resolve"), Ct);
+
+        // Assert
+        await AssertProblem(response, HttpStatusCode.Forbidden, "read-only");
+        Assert.Empty(factory.Handler.Requests);
+    }
+
+    /// <summary>A patient that is not this session's answers the patient 404 before the condition is read.</summary>
+    [Theory]
+    [InlineData("other-session")]
+    [InlineData("missing")]
+    [InlineData("gone")]
+    public async Task ResolveCondition_ShouldAnswer404ForAPatientThatIsNotThisSessions(string which)
+    {
+        // Arrange
+        using var factory = new FhirApiFactory();
+        switch (which)
+        {
+            case "other-session":
+                factory.Handler.On(HttpMethod.Get, "/Patient/1842", Created(session: OTHER_SESSION));
+                break;
+            case "missing":
+                factory.Handler.On(HttpMethod.Get, "/Patient/1842", FakeFhirHandler.Outcome("no such patient"), HttpStatusCode.NotFound);
+                break;
+            default:
+                factory.Handler.On(HttpMethod.Get, "/Patient/1842", FakeFhirHandler.Outcome("gone"), HttpStatusCode.Gone);
+                break;
+        }
+
+        using var client = factory.CreateClient();
+
+        // Act
+        var response = await client.SendAsync(Resolve(), Ct);
+
+        // Assert
+        var problem = await AssertProblem(response, HttpStatusCode.NotFound, "not-found");
+        Assert.Contains("This session created no Patient with id '1842'", problem.GetProperty("detail").GetString(), StringComparison.Ordinal);
+        Assert.DoesNotContain(factory.Handler.Requests, u => u.PathAndQuery.Contains("/Condition/", StringComparison.Ordinal));
+        Assert.DoesNotContain(factory.Handler.Sent, r => r.Method == HttpMethod.Put);
+    }
+
+    /// <summary>A condition that is missing, wiped, or on another patient is one and the same 404, and nothing is written.</summary>
+    [Theory]
+    [InlineData("missing")]
+    [InlineData("gone")]
+    [InlineData("another-patient")]
+    public async Task ResolveCondition_ShouldAnswer404ForAConditionThatIsNotThePatients(string which)
+    {
+        // Arrange
+        using var factory = new FhirApiFactory();
+        factory.Handler.On(HttpMethod.Get, "/Patient/1842", Created());
+        switch (which)
+        {
+            case "missing":
+                factory.Handler.On(HttpMethod.Get, "/Condition/9f1c", FakeFhirHandler.Outcome("no such condition"), HttpStatusCode.NotFound);
+                break;
+            case "gone":
+                factory.Handler.On(HttpMethod.Get, "/Condition/9f1c", FakeFhirHandler.Outcome("gone"), HttpStatusCode.Gone);
+                break;
+            default:
+                var other = Stored();
+                other.Subject = new ResourceReference("Patient/9999");
+                factory.Handler.On(HttpMethod.Get, "/Condition/9f1c", other);
+                break;
+        }
+
+        using var client = factory.CreateClient();
+
+        // Act
+        var response = await client.SendAsync(Resolve(), Ct);
+
+        // Assert
+        var problem = await AssertProblem(response, HttpStatusCode.NotFound, "not-found");
+        Assert.Equal("Condition not found", problem.GetProperty("title").GetString());
+        Assert.Contains("Patient '1842' created by this session has no Condition with id '9f1c'", problem.GetProperty("detail").GetString(), StringComparison.Ordinal);
+        Assert.Equal("no-store", response.Headers.CacheControl?.ToString());
+        Assert.DoesNotContain(factory.Handler.Sent, r => r.Method == HttpMethod.Put);
+    }
+
+    /// <summary>A resolve spends the write budget like any other write.</summary>
+    [Fact]
+    public async Task ResolveCondition_ShouldSpendTheWriteBudget()
+    {
+        // Arrange
+        using var factory = new FhirApiFactory(new Dictionary<string, string> { ["Fhir:WriteRateLimitBudget"] = "1" });
+        factory.Handler.On(HttpMethod.Get, "/Patient/1842", Created());
+        factory.Handler.On(HttpMethod.Get, "/Condition/9f1c", Stored(status: "resolved"));
+        using var client = factory.CreateClient();
+
+        // Act
+        var first = await client.SendAsync(Resolve(), Ct);
+        var second = await client.SendAsync(Resolve(), Ct);
+
+        // Assert
+        Assert.Equal(HttpStatusCode.NoContent, first.StatusCode);
+        var problem = await AssertProblem(second, HttpStatusCode.TooManyRequests, "rate-limited");
+        Assert.Contains("1 writes", problem.GetProperty("detail").GetString(), StringComparison.Ordinal);
+    }
+
+    /// <summary>A sandbox that fails the update is a 502 problem, never cached.</summary>
+    [Fact]
+    public async Task ResolveCondition_ShouldAnswer502WhenTheSandboxIsDown()
+    {
+        // Arrange
+        using var factory = new FhirApiFactory();
+        factory.Handler.On(HttpMethod.Get, "/Patient/1842", Created());
+        factory.Handler.On(HttpMethod.Get, "/Condition/9f1c", Stored());
+        factory.Handler.OnServerError("/Condition/9f1c");
+        using var client = factory.CreateClient();
+
+        // Act
+        var response = await client.SendAsync(Resolve(), Ct);
+
+        // Assert
+        await AssertProblem(response, HttpStatusCode.BadGateway, "upstream-unavailable");
+        Assert.Equal("no-store", response.Headers.CacheControl?.ToString());
+    }
+
+    /// <summary>A sandbox that never answers the condition read runs out the time budget; 504 and nothing written.</summary>
+    [Fact]
+    public async Task ResolveCondition_ShouldAnswer504WhenTheSandboxHangs()
+    {
+        // Arrange
+        using var factory = new FhirApiFactory();
+        factory.Handler.On(HttpMethod.Get, "/Patient/1842", Created());
+        factory.Handler.OnHang("/Condition/9f1c");
+        using var client = factory.CreateClient();
+
+        // Act
+        var response = await client.SendAsync(Resolve(), Ct);
+
+        // Assert
+        await AssertProblem(response, HttpStatusCode.GatewayTimeout, "upstream-timeout");
+        Assert.DoesNotContain(factory.Handler.Sent, r => r.Method == HttpMethod.Put);
+    }
+
+    /// <summary>A caller that gives up mid-flight cancels the upstream call through the token; nothing is written after the cancellation.</summary>
+    [Fact]
+    public async Task ResolveCondition_ShouldStopWhenTheCallerCancels()
+    {
+        // Arrange
+        using var factory = new FhirApiFactory();
+        factory.Handler.On(HttpMethod.Get, "/Patient/1842", Created());
+        var upstreamCancelled = new TaskCompletionSource();
+        factory.Handler.On(HttpMethod.Get, "/Condition/9f1c", async (_, _, ct) =>
+        {
+            try
+            {
+                await Task.Delay(TimeSpan.FromSeconds(10), ct);
+            }
+            catch (OperationCanceledException)
+            {
+                upstreamCancelled.TrySetResult();
+                throw;
+            }
+
+            return FakeFhirHandler.Json(Stored());
+        });
+        using var client = factory.CreateClient();
+        using var cancellation = new CancellationTokenSource(TimeSpan.FromMilliseconds(80));
+
+        // Act
+        var act = () => client.SendAsync(Resolve(), cancellation.Token);
+
+        // Assert
+        await Assert.ThrowsAnyAsync<OperationCanceledException>(act);
+        await upstreamCancelled.Task.WaitAsync(TimeSpan.FromSeconds(2), Ct);
+        Assert.DoesNotContain(factory.Handler.Sent, r => r.Method == HttpMethod.Put);
     }
 
     #endregion

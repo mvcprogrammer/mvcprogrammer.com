@@ -2,7 +2,7 @@ openapi: 3.1.0
 
 info:
   title: mvcprogrammer.com API
-  version: 1.6.0
+  version: 1.7.0
   summary: "APIs behind mvcprogrammer.com: the Experience section and the FHIR R4 patient explorer."
   description: |
     Two small, public functions served same-origin under `/api`.
@@ -68,7 +68,7 @@ info:
       - Conditions share the write budget. The patient is checked first, so the seeded patient
         answers `403` and a patient another session created answers `404`, as for patient writes.
       - Resolving (`POST /fhir/patients/{id}/conditions/{conditionId}/resolve`, specified in 1.6.0,
-        stubbed to `501` until the handler ships) sets `clinicalStatus` to `resolved` on any
+        built in 1.7.0) sets `clinicalStatus` to `resolved` on any
         condition of a session-created patient, the ones the add made and any other. It answers
         `204`, again for a condition already resolved, so it is idempotent. The operation is the one
         action-shaped endpoint in this document; its description says why.

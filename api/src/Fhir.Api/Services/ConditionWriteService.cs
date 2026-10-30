@@ -4,6 +4,7 @@ using Fhir.Api.Mapping;
 using Fhir.Api.Models;
 using Hl7.Fhir.Model;
 using Microsoft.Extensions.Options;
+using Task = System.Threading.Tasks.Task;
 
 namespace Fhir.Api.Services;
 
@@ -11,7 +12,8 @@ namespace Fhir.Api.Services;
 /// The add, in order: the code must be on the pick list (no upstream call is spent on one that is
 /// not), the patient must be this session's, the patient must have room under the active cap, and
 /// then a conditional create on patient, code, and active status so a repeat returns the condition
-/// already there. Nothing is kept in the function.
+/// already there. The resolve: the patient must be this session's, the condition must exist and
+/// reference it, and then one update unless it is already resolved. Nothing is kept in the function.
 /// </summary>
 public sealed class ConditionWriteService : IConditionWriteService
 {
@@ -59,5 +61,41 @@ public sealed class ConditionWriteService : IConditionWriteService
         var condition = ConditionInputMapper.ToNewCondition(entry, patientId, today);
         var stored = await _gateway.CreateAsync(condition, ConditionInputMapper.ExistingActiveQuery(patientId, entry), trace, cancellationToken);
         return (new ConditionWriteResult(ConditionMapper.ToItem(stored.Resource), trace.Build()), stored.Created);
+    }
+
+    public async Task ResolveAsync(string patientId, string conditionId, string sessionToken, CancellationToken cancellationToken)
+    {
+        ArgumentException.ThrowIfNullOrWhiteSpace(patientId);
+        ArgumentException.ThrowIfNullOrWhiteSpace(conditionId);
+        ArgumentException.ThrowIfNullOrWhiteSpace(sessionToken);
+
+        var trace = new TraceBuilder(new DataSource(_options.SourceName, _options.BaseUrl.ToString().TrimEnd('/')), _options.PageCap);
+        _ = await _guard.OwnedPatientAsync(patientId, sessionToken, trace, cancellationToken)
+            ?? throw new WritablePatientNotFoundException(patientId);
+
+        Condition stored;
+        try
+        {
+            stored = await _gateway.ReadAsync<Condition>(conditionId, trace, cancellationToken);
+        }
+        catch (UpstreamNotFoundException)
+        {
+            // Missing and wiped alike: there is nothing to resolve, and the answer must not say which.
+            throw new WritableConditionNotFoundException(patientId, conditionId);
+        }
+
+        if (!ConditionInputMapper.References(stored, patientId))
+        {
+            throw new WritableConditionNotFoundException(patientId, conditionId);
+        }
+
+        if (ConditionMapper.ClinicalStatusOf(stored) == ConditionInputMapper.RESOLVED)
+        {
+            // Already the end state the caller asks for: idempotent, and the sandbox is not written.
+            return;
+        }
+
+        var today = DateOnly.FromDateTime(_time.GetUtcNow().UtcDateTime);
+        await _gateway.UpdateAsync(ConditionInputMapper.ToResolved(stored, today), trace, cancellationToken);
     }
 }
