@@ -49,6 +49,7 @@ app-contact-section,
 app-colophon-section,
 app-home,
 app-ensemble,
+app-nexus,
 app-not-found {
   display: contents;
 }
@@ -81,7 +82,7 @@ app-not-found {
   border-color: var(--hover);
 }
 
-/* ---------- The unlisted /ensemble page ----------
+/* ---------- The unlisted /ensemble and /nexus pages ----------
    A document rendered with the site's type: a collapsible reading path, two tables, and graded chips. */
 .jd .section-intro {
   max-width: 60rem;
