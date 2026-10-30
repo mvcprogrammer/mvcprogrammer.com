@@ -45,6 +45,7 @@ describe('static sections', () => {
         ['React', 'https://react.mvcprogrammer.com/', 'See the React edition of this site'],
         ['Blazor', 'https://blazor.mvcprogrammer.com/', 'See the Blazor edition of this site'],
         ['JavaScript', 'https://mvcprogrammer.com/', 'See the plain JavaScript edition of this site'],
+        ['Healthcare (HL7, FHIR, HIPAA)', 'https://fhir.mvcprogrammer.com/', 'See the live FHIR R4 patient explorer'],
       ]);
       const tags = Array.from(host.querySelectorAll('ul[aria-label="Skills"] .tag')).map((tag) => tag.textContent?.trim());
       expect(tags.length).toBe(12);
