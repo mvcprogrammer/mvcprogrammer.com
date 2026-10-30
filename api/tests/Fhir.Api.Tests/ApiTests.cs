@@ -575,6 +575,31 @@ public sealed class ApiTests
         Assert.Equal("1842", result?.Patient.Id);
     }
 
+    /// <summary>The same bodiless 200 on a patient create: the function reads the patient the Location names and answers 200.</summary>
+    [Fact]
+    public async Task Create_ShouldReadTheMatchedPatientWhenTheSandboxAnswers200WithoutABody()
+    {
+        // Arrange
+        using var factory = new FhirApiFactory();
+        factory.Handler.On(HttpMethod.Get, "/Patient?_summary=count", Fixtures.CountOnly(1));
+        factory.Handler.On(HttpMethod.Post, "/Patient", (_, _, _) => Task.FromResult(new HttpResponseMessage(HttpStatusCode.OK)
+        {
+            Headers = { Location = new Uri("https://fhir.test/r4/Patient/1842/_history/3") },
+        }));
+        factory.Handler.On(HttpMethod.Get, "/Patient/1842", Created());
+        using var client = factory.CreateClient();
+
+        // Act
+        var response = await client.SendAsync(Write(HttpMethod.Post, "/api/fhir/patients", INPUT, key: KEY), Ct);
+
+        // Assert
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+        Assert.Equal("/api/fhir/patients/1842/summary", response.Headers.Location?.ToString());
+        var result = await response.Content.ReadFromJsonAsync<PatientWriteResult>(ApiJson.Options, Ct);
+        Assert.Equal("1842", result?.Patient.Id);
+        Assert.Equal(["GET", "POST", "GET"], result!.Trace.Requests.Select(r => r.Method));
+    }
+
     [Theory]
     [InlineData(null, KEY, INPUT, "X-Demo-Session")]
     [InlineData("not-a-uuid", KEY, INPUT, "X-Demo-Session")]
@@ -919,6 +944,53 @@ public sealed class ApiTests
     }
 
     /// <summary>The sandbox answers a matched conditional create with 200 and the existing resource; the function passes that through and creates nothing.</summary>
+    /// <summary>HAPI answers a matched conditional create with 200, no body, and the existing resource's Location; the function reads that resource and still answers 200.</summary>
+    [Fact]
+    public async Task AddCondition_ShouldReadTheMatchedConditionWhenTheSandboxAnswers200WithoutABody()
+    {
+        // Arrange
+        using var factory = new FhirApiFactory();
+        factory.Handler.On(HttpMethod.Get, "/Patient/1842", Created());
+        factory.Handler.On(HttpMethod.Get, "/Condition?", Fixtures.CountOnly(1));
+        factory.Handler.On(HttpMethod.Post, "/Condition", (_, _, _) => Task.FromResult(new HttpResponseMessage(HttpStatusCode.OK)
+        {
+            Headers = { Location = new Uri("https://fhir.test/r4/Condition/9f1c/_history/1") },
+        }));
+        factory.Handler.On(HttpMethod.Get, "/Condition/9f1c", Stored());
+        using var client = factory.CreateClient();
+
+        // Act
+        var response = await client.SendAsync(AddCondition(), Ct);
+
+        // Assert
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+        var result = await response.Content.ReadFromJsonAsync<ConditionWriteResult>(ApiJson.Options, Ct);
+        Assert.NotNull(result);
+        Assert.Equal("9f1c", result.Condition.Id);
+        Assert.Equal("Essential hypertension", result.Condition.Display);
+        Assert.Equal(["GET", "GET", "POST", "GET"], result.Trace.Requests.Select(r => r.Method));
+        Assert.Equal(0, result.Trace.Requests[2].Entries);
+    }
+
+    /// <summary>A bodiless 200 without a usable Location is the sandbox misbehaving, and stays a 502.</summary>
+    [Fact]
+    public async Task AddCondition_ShouldAnswer502WhenAMatchedCreateNamesNoResource()
+    {
+        // Arrange
+        using var factory = new FhirApiFactory();
+        factory.Handler.On(HttpMethod.Get, "/Patient/1842", Created());
+        factory.Handler.On(HttpMethod.Get, "/Condition?", Fixtures.CountOnly(1));
+        factory.Handler.OnStatus(HttpMethod.Post, "/Condition", HttpStatusCode.OK);
+        using var client = factory.CreateClient();
+
+        // Act
+        var response = await client.SendAsync(AddCondition(), Ct);
+
+        // Assert
+        var problem = await AssertProblem(response, HttpStatusCode.BadGateway, "upstream-unavailable");
+        Assert.Contains("without the resource", problem.GetProperty("detail").GetString(), StringComparison.Ordinal);
+    }
+
     [Fact]
     public async Task AddCondition_ShouldAnswer200WhenThePatientAlreadyHasItActive()
     {
