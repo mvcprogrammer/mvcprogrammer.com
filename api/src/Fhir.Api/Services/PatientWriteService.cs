@@ -12,9 +12,10 @@ namespace Fhir.Api.Services;
 /// <summary>
 /// The orchestration for the patient writes. Every change to an existing patient runs the demo
 /// guard first (<see cref="IDemoGuardService"/>), which reads it and checks the session identifier;
-/// a create counts the session's patients first. Nothing is kept in the function: the guard reads
-/// the resource it is about to change, and the sandbox enforces idempotency through the
-/// conditional create.
+/// a create counts the session's patients first; a delete removes the patient's conditions first,
+/// since the sandbox refuses to delete a patient a condition still references. Nothing is kept in
+/// the function: the guard reads the resource it is about to change, and the sandbox enforces
+/// idempotency through the conditional create.
 /// </summary>
 public sealed class PatientWriteService : IPatientWriteService
 {
@@ -98,6 +99,19 @@ public sealed class PatientWriteService : IPatientWriteService
         {
             // Gone: a patient this session (or the sandbox wipe) already removed. The state a delete asks for.
             return;
+        }
+
+        // The cascade. Conditions are the only resource the explorer writes against a session-created
+        // patient, and the sandbox enforces referential integrity (409) while one remains. Each delete
+        // tolerates a condition already gone, so a retry after a partial failure finishes the job.
+        var conditions = await _gateway.SearchAsync<Condition>(
+            ConditionInputMapper.ConditionsOfPatientQuery(patientId).LimitTo(_options.ConditionPageSize),
+            _options.PageCap,
+            trace,
+            cancellationToken);
+        foreach (var conditionId in conditions.Resources.Select(c => c.Id).OfType<string>().Where(id => id.Length > 0))
+        {
+            await _gateway.DeleteAsync<Condition>(conditionId, trace, cancellationToken);
         }
 
         await _gateway.DeleteAsync<Patient>(patientId, trace, cancellationToken);

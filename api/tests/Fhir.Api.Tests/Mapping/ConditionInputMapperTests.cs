@@ -99,6 +99,22 @@ public sealed class ConditionInputMapperTests
 
     #endregion
 
+    #region ConditionsOfPatientQuery Tests
+
+    /// <summary>The cascade lists every condition of the patient, whatever its status.</summary>
+    [Fact]
+    public void ConditionsOfPatientQuery_ShouldFilterOnThePatientOnly()
+    {
+        // Arrange & Act
+        var query = ConditionInputMapper.ConditionsOfPatientQuery("1842").ToUriParamList();
+
+        // Assert
+        var single = Assert.Single(query);
+        Assert.Equal(("patient", "Patient/1842"), (single.Item1, single.Item2));
+    }
+
+    #endregion
+
     #region ActiveConditionsQuery Tests
 
     /// <summary>The cap counts active conditions of the patient and nothing else.</summary>

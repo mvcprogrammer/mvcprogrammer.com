@@ -2,7 +2,7 @@ openapi: 3.1.0
 
 info:
   title: mvcprogrammer.com API
-  version: 1.7.0
+  version: 1.8.0
   summary: "APIs behind mvcprogrammer.com: the Experience section and the FHIR R4 patient explorer."
   description: |
     Two small, public functions served same-origin under `/api`.
@@ -556,9 +556,13 @@ paths:
       operationId: deletePatient
       summary: Delete a demo patient
       description: |
-        Deletes the patient on the sandbox. The same guard as `PUT` applies. Idempotent:
-        deleting a patient this session already deleted answers `204` again, as the sandbox
-        reports the resource gone rather than missing.
+        Deletes the patient on the sandbox, and first every `Condition` that references it (the
+        only resource the explorer writes against a demo patient), because the sandbox refuses to
+        delete a patient a condition still references (from 1.8.0). The same guard as `PUT`
+        applies. Idempotent: deleting a patient this session already deleted answers `204` again,
+        as the sandbox reports the resource gone rather than missing, and a condition already
+        gone is skipped, so a retry after a failed cascade finishes it. If a condition delete
+        fails upstream the patient stays and the usual `502` or `504` says so.
       parameters:
         - $ref: '#/components/parameters/PatientId'
         - $ref: '#/components/parameters/DemoSession'
