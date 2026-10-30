@@ -1,8 +1,10 @@
 import { CapabilitySubset } from '../models/capability-subset';
+import { ConditionWriteResult } from '../models/condition-write-result';
 import { FhirResponse } from '../models/fhir-response';
 import { PatientSearchResult } from '../models/patient-search-result';
 import { PatientSummary } from '../models/patient-summary';
 import { PatientWriteResult } from '../models/patient-write-result';
+import { ConditionInput } from '../requests/condition-input';
 import { PatientInput } from '../requests/patient-input';
 import { PatientPatchOperation } from '../requests/patient-patch-operation';
 import { PatientSearchRequest } from '../requests/patient-search-request';
@@ -37,4 +39,7 @@ export abstract class FhirClient {
 
   /** DELETE /api/fhir/patients/{id}: 204, repeatable. */
   abstract deletePatient(patientId: string): Promise<FhirResponse<null>>;
+
+  /** POST /api/fhir/patients/{id}/conditions: 201 for a new condition, 200 when the patient already has it active. */
+  abstract addCondition(patientId: string, input: ConditionInput): Promise<FhirResponse<ConditionWriteResult>>;
 }

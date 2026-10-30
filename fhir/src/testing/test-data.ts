@@ -1,6 +1,8 @@
 import { ClinicalStatus } from '../app/enumerations/clinical-status';
 import { Sex } from '../app/enumerations/sex';
+import { CONDITION_PICK_LIST } from '../app/content/condition-pick-list';
 import { CapabilitySubset } from '../app/models/capability-subset';
+import { ConditionWriteResult } from '../app/models/condition-write-result';
 import { FhirResponse } from '../app/models/fhir-response';
 import { PatientListItem } from '../app/models/patient-list-item';
 import { PatientSearchResult } from '../app/models/patient-search-result';
@@ -152,6 +154,24 @@ export function createPatientWriteResult(input: PatientInput, id = 'new-1'): Pat
     trace: createTrace({
       requests: [{ method: 'POST', url: 'https://hapi.fhir.org/baseR4/Patient', status: 201, durationMs: 180, entries: 1, pages: 1 }],
       totalDurationMs: 180,
+    }),
+  };
+}
+
+/** What an add returns for a listed code, as the function maps it: the active condition with an id, and the three-request trace (the guard read, the active count, the create). */
+export function createConditionWriteResult(code = '59621000', patientId = 'mine-1', id = 'cond-1'): ConditionWriteResult {
+  const entry = CONDITION_PICK_LIST.find((c) => c.code === code) ?? { code, display: 'Unknown condition' };
+  return {
+    condition: { id, display: entry.display, code: entry.code, system: 'http://snomed.info/sct', systemLabel: 'SNOMED CT', clinicalStatus: ClinicalStatus.Active, recordedDate: '2026-10-30' },
+    trace: createTrace({
+      requests: [
+        { method: 'GET', url: `https://hapi.fhir.org/baseR4/Patient/${patientId}`, status: 200, durationMs: 120, entries: 1, pages: 1 },
+        { method: 'GET', url: `https://hapi.fhir.org/baseR4/Condition?patient=Patient%2F${patientId}&clinical-status=active&_summary=count`, status: 200, durationMs: 95, entries: 1, pages: 1 },
+        { method: 'POST', url: 'https://hapi.fhir.org/baseR4/Condition', status: 201, durationMs: 160, entries: 1, pages: 1 },
+      ],
+      totalDurationMs: 375,
+      bundleEntries: 3,
+      pagesWalked: 3,
     }),
   };
 }

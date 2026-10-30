@@ -5,8 +5,10 @@ import { Sex } from '../../enumerations/sex';
 import { createSiteTestServices, textOf, type } from '../../../testing/site-testing';
 import { FakeDemoSession } from '../../../testing/fake-demo-session';
 import { FakeFhirClient } from '../../../testing/fake-fhir-client';
+import { CONDITION_PICK_LIST } from '../../content/condition-pick-list';
 import {
   createCapabilitySubset,
+  createConditionWriteResult,
   createEmptyPatientSearchResult,
   createFhirResponse,
   createOwnPatientSummary,
@@ -794,14 +796,175 @@ describe('FhirExplorer', () => {
     });
 
     /** Searches, then selects a patient the fake session created. */
-    async function selectOwnPatient(): Promise<void> {
-      client.onSearchPatients = () => Promise.resolve(createFhirResponse(createPatientSearchResult(createPatientListItem({ id: 'mine-1', name: 'Watsica258, Kimi714' }))));
-      client.onGetSummary = (id) => Promise.resolve(createFhirResponse(createOwnPatientSummary(id)));
+  });
+
+  describe('addCondition', () => {
+    it('should offer the ten listed conditions, the first selected, and block Add while nothing is selected', async () => {
+      // Act
+      await render();
+
+      // Assert
+      const options = Array.from(host.querySelectorAll<HTMLOptionElement>('#fhir-condition-code option'));
+      expect(options.map((o) => o.value)).toEqual(CONDITION_PICK_LIST.map((c) => c.code));
+      expect(options[0].textContent).toBe('Essential hypertension · 59621000');
+      expect(conditionSelect().value).toBe('59621000');
+      expect(blocked('fhir-add-condition')).toBe(true);
+      expect(button('fhir-add-condition').title).toBe(FhirExplorer.BLOCK_NONE_MESSAGE);
+      expect(host.querySelector('#fhir-condition-title')?.textContent).toBe('Add a condition');
+
+      // Act: a blocked press says why and calls nothing
+      button('fhir-add-condition').click();
+      await fixture.whenStable();
+
+      // Assert
+      expect(textOf(editStatus())).toBe(FhirExplorer.BLOCK_NONE_MESSAGE);
+      expect(client.conditionAdds).toEqual([]);
+    });
+
+    it('should block Add for the seeded patient with its own reason', async () => {
+      // Arrange
+      client.onSearchPatients = () => Promise.resolve(createFhirResponse(createPatientSearchResult(createPatientListItem({ id: 'mvc-programmer' }))));
+      client.onGetSummary = (id) => Promise.resolve(createFhirResponse({ ...createPatientSummary(), patient: { ...createPatientSummary().patient, id } }));
       await render();
       submit();
       await fixture.whenStable();
+
+      // Act
+      button('fhir-add-condition').click();
+      await fixture.whenStable();
+
+      // Assert
+      expect(button('fhir-add-condition').title).toBe(FhirExplorer.BLOCK_SEED_MESSAGE);
+      expect(textOf(editStatus())).toBe(FhirExplorer.BLOCK_SEED_MESSAGE);
+      expect(client.conditionAdds).toEqual([]);
+    });
+
+    it('should add the selected condition to the session\'s patient, put its chip first on the card, and log the write', async () => {
+      // Arrange
+      await selectOwnPatient();
+      choose('44054006');
+
+      // Act
+      button('fhir-add-condition').click();
+      await fixture.whenStable();
+
+      // Assert: the request
+      expect(client.conditionAdds).toEqual([{ id: 'mine-1', input: { code: '44054006' } }]);
+
+      // Assert: the card follows the result without a re-read
+      expect(client.summaryCalls).toEqual(['mine-1']);
+      const chips = Array.from(host.querySelectorAll('#fhir-conditions .fhir-pill:not(.fhir-pill-more)'));
+      expect(chips).toHaveLength(2);
+      expect(chips[0].querySelector('.fhir-pill-text')?.textContent).toBe('Type 2 diabetes mellitus');
+      expect(chips[0].querySelector('.fhir-pill-code')?.textContent).toBe('SNOMED CT 44054006');
+      expect(host.querySelector('#fhir-tile-conditions')?.textContent).toBe('3');
+      expect(textOf(editStatus())).toBe('Added Type 2 diabetes mellitus (Condition/cond-1) to Patient/mine-1.');
+      expect(editStatus().classList.contains('is-ok')).toBe(true);
+      expect(blocked('fhir-add-condition')).toBe(false);
+
+      // Assert: the log
+      const log = logText();
+      expect(log).toContain(`→ POST /api/fhir/patients/mine-1/conditions · X-Demo-Session ${FakeDemoSession.TOKEN}`);
+      expect(log).toContain('code 44054006 (Type 2 diabetes mellitus, SNOMED CT)');
+      expect(log).toContain('← 201 /patients/mine-1/conditions in 120 ms');
+      expect(log).toContain('↳ GET https://hapi.fhir.org/baseR4/Condition?patient=Patient%2Fmine-1&clinical-status=active&_summary=count');
+      expect(log).toContain('↳ POST https://hapi.fhir.org/baseR4/Condition');
+      expect(log).toContain('added Condition/cond-1 · mapped to ConditionWriteResult');
+      expect(host.querySelector('#fhir-dto-details summary')?.textContent).toBe('The ConditionWriteResult the function returned');
+    });
+
+    it('should say the condition was already there on a 200 and neither double the chip nor bump the count', async () => {
+      // Arrange: the card already shows the condition the function will return, with the same id
+      const existing = createConditionWriteResult('59621000', 'mine-1', 'c-hyp').condition;
+      client.onSearchPatients = () => Promise.resolve(createFhirResponse(createPatientSearchResult(createPatientListItem({ id: 'mine-1' }))));
+      client.onGetSummary = (id) => {
+        const summary = createOwnPatientSummary(id);
+        return Promise.resolve(createFhirResponse({ ...summary, conditions: { ...summary.conditions, active: [existing] } }));
+      };
+      client.onAddCondition = (id, input) => Promise.resolve(createFhirResponse(createConditionWriteResult(input.code, id, 'c-hyp'), { status: 200, xCache: null, etag: null }));
+      await render();
+      submit();
+      await fixture.whenStable();
+
+      // Act
+      button('fhir-add-condition').click();
+      await fixture.whenStable();
+
+      // Assert
+      const chips = Array.from(host.querySelectorAll('#fhir-conditions .fhir-pill:not(.fhir-pill-more)'));
+      expect(chips).toHaveLength(1);
+      expect(host.querySelector('#fhir-tile-conditions')?.textContent).toBe('2');
+      expect(textOf(editStatus())).toBe('Patient/mine-1 already has Essential hypertension active (Condition/c-hyp); nothing was added.');
+      expect(logText()).toContain('← 200 /patients/mine-1/conditions');
+      expect(logText()).toContain('already there, returned Condition/c-hyp');
+    });
+
+    it('should show a 422 from the function as the status and leave the card as it was', async () => {
+      // Arrange
+      await selectOwnPatient();
+      client.onAddCondition = () =>
+        Promise.reject(new FhirProblemError('Patient \'mine-1\' already has 10 active conditions; resolve one before adding another.', 422, 'Condition rejected', 40, null, false));
+
+      // Act
+      button('fhir-add-condition').click();
+      await fixture.whenStable();
+
+      // Assert
+      expect(textOf(editStatus())).toBe('Patient \'mine-1\' already has 10 active conditions; resolve one before adding another.');
+      expect(editStatus().classList.contains('is-error')).toBe(true);
+      expect(host.querySelectorAll('#fhir-conditions .fhir-pill:not(.fhir-pill-more)')).toHaveLength(1);
+      expect(host.querySelector('#fhir-tile-conditions')?.textContent).toBe('2');
+      expect(logText()).toContain('← 422 /patients/mine-1/conditions: Condition rejected in 40 ms');
+      expect(blocked('fhir-add-condition')).toBe(false);
+    });
+
+    it('should block every verb, Add included, while a write is in flight', async () => {
+      // Arrange
+      await selectOwnPatient();
+      let resolve: () => void = () => undefined;
+      client.onAddCondition = (id, input) =>
+        new Promise((r) => {
+          resolve = () => r(createFhirResponse(createConditionWriteResult(input.code, id), { status: 201, xCache: null, etag: null }));
+        });
+
+      // Act
+      button('fhir-add-condition').click();
+      fixture.detectChanges();
+
+      // Assert
+      expect(button('fhir-add-condition').title).toBe(FhirExplorer.BLOCK_WRITING_MESSAGE);
+      expect(button('fhir-delete').title).toBe(FhirExplorer.BLOCK_WRITING_MESSAGE);
+      expect(textOf(editStatus())).toBe('Adding…');
+
+      // Act
+      resolve();
+      await fixture.whenStable();
+
+      // Assert
+      expect(blocked('fhir-add-condition')).toBe(false);
+      expect(client.conditionAdds).toHaveLength(1);
+    });
+
+    function conditionSelect(): HTMLSelectElement {
+      return host.querySelector('#fhir-condition-code') as HTMLSelectElement;
+    }
+
+    /** Picks a code in the select the way a visitor would, so the reactive form hears about it. */
+    function choose(code: string): void {
+      const select = conditionSelect();
+      select.value = code;
+      select.dispatchEvent(new Event('change', { bubbles: true }));
+      fixture.detectChanges();
     }
   });
+
+  async function selectOwnPatient(): Promise<void> {
+    client.onSearchPatients = () => Promise.resolve(createFhirResponse(createPatientSearchResult(createPatientListItem({ id: 'mine-1', name: 'Watsica258, Kimi714' }))));
+    client.onGetSummary = (id) => Promise.resolve(createFhirResponse(createOwnPatientSummary(id)));
+    await render();
+    submit();
+    await fixture.whenStable();
+  }
 
   describe('ngOnDestroy', () => {
     it('should drop a response that arrives after the component is destroyed', async () => {

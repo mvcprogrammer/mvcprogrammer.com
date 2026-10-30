@@ -18,16 +18,18 @@ fhir/
   src/app/app.config.ts         Router, global error listeners, and provideSite() with the API base and the site URL.
   src/app/app.routes.ts         "" is the explorer page; everything else is NotFound.
   src/app/pages/                Explorer (the one page; starts the engagement tracker) and NotFound.
-  src/app/components/           The explorer (search, summary, the edit panel for the four writes, the log), the header (brand
-                                back to the site, theme toggle), footer, icon and sprite, social links.
+  src/app/components/           The explorer (search, summary, the edit panel for the four patient writes and the condition
+                                add, the log), the header (brand back to the site, theme toggle), footer, icon and sprite,
+                                social links.
   src/app/configurations/       SiteOptions and its injection token.
+  src/app/content/              The condition pick list: the ten SNOMED CT conditions the select offers, a mirror of the function's.
   src/app/interfaces/           FhirClient, DemoSession (the session token and idempotency keys), and EngagementTracker: abstract
                                 classes that double as injection tokens.
   src/app/services/             HttpFhirClient over HttpClient (reads and writes), BrowserDemoSession (sessionStorage), and the beacon
                                 tracker (GET /ping, mirrored from ../main.js).
   src/app/providers/            provideSite(): validates the options and registers everything above.
-  src/app/models/, requests/    Interfaces matching the FHIR section of ../api/openapi.yaml, PatientInput and the JSON Patch
-                                operation among them.
+  src/app/models/, requests/    Interfaces matching the FHIR section of ../api/openapi.yaml, PatientInput, the JSON Patch
+                                operation, and ConditionInput among them.
   src/app/enumerations/         ClinicalStatus and Sex.
   src/app/exceptions/           FhirProblemError, built from an RFC 9457 problem response.
   src/app/validators/           notBlank, for the family-name field.
@@ -71,6 +73,15 @@ replaced, patched, or deleted. The panel says which case the selected patient is
 form holds the new-patient defaults (family name Patient, given name Demo, MRN mvcprogrammer.com), so Create
 works without typing. Selecting a patient this session created replaces them with its fields; selecting a
 read-only patient (the seeded one, or another session's) leaves them in place, since the form can only create.
+
+Under the verbs, the condition row is the first write on a clinical resource: a select of ten listed
+conditions (`src/app/content/condition-pick-list.ts`, a mirror of the function's list, which is the source
+of truth) and an Add button that is blocked for the same reasons as replace and delete. The add sends
+`POST /api/fhir/patients/{id}/conditions` with the SNOMED CT code; a 201 puts the returned condition at the
+top of the card's active chips and bumps the count, a 200 means the patient already had it active and
+changes nothing, and a 422 (off the list, or ten active already) shows as the status. The card is never
+re-read after a write: the browser and CloudFront may hold the old summary for a while, and the write
+result is the record as the sandbox stored it.
 
 The dev server has no `/api`, so the capability check fails and the explorer says so in its log.
 Serve the build output behind the real CloudFront behaviors (or any host that proxies `/api/fhir`)
