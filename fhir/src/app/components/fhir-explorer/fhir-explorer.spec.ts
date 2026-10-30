@@ -476,20 +476,21 @@ describe('FhirExplorer', () => {
       expect(host.querySelector('.fhir-edit-lead')?.textContent).toBe(FhirExplorer.EDIT_LEAD);
     });
 
-    it('should fill the form from a loaded summary and call another session\'s patient read-only here', async () => {
+    it('should keep the new-patient defaults when the loaded patient belongs to another session and call it read-only here', async () => {
       // Arrange
       await render();
+      type(editField('familyName'), 'Typed');
 
       // Act
       submit();
       await fixture.whenStable();
 
-      // Assert
-      expect(editField('familyName').value).toBe('Watsica258');
-      expect(editField('givenName').value).toBe('Kimi714');
-      expect((host.querySelector('#fhir-edit-sex') as HTMLSelectElement).value).toBe('female');
-      expect(editField('birthDate').value).toBe('1963-03-02');
-      expect(editField('mrn').value).toBe('eed8a921');
+      // Assert: the form can only create, so it holds the defaults, not the loaded patient's fields
+      expect(editField('familyName').value).toBe('Patient');
+      expect(editField('givenName').value).toBe('Demo');
+      expect((host.querySelector('#fhir-edit-sex') as HTMLSelectElement).value).toBe('');
+      expect(editField('birthDate').value).toBe('');
+      expect(editField('mrn').value).toBe('mvcprogrammer.com');
       expect(target().textContent).toContain('Patient/78785 was not created in this session');
       expect(target().classList.contains('is-mine')).toBe(false);
       expect(blocked('fhir-replace')).toBe(true);
@@ -503,17 +504,22 @@ describe('FhirExplorer', () => {
       submit();
       await fixture.whenStable();
 
-      // Assert: the seed
+      // Assert: the seed is read-only, so the form keeps the defaults
       expect(target().textContent).toContain('Patient/mvc-programmer is the seeded demo patient and is read-only here');
       expect(blocked('fhir-delete')).toBe(true);
+      expect(editField('familyName').value).toBe('Patient');
+      expect(editField('mrn').value).toBe('mvcprogrammer.com');
 
       // Act: select the session's own patient
       (host.querySelector('.fhir-patient[data-id="mine-1"]') as HTMLButtonElement).click();
       await fixture.whenStable();
 
-      // Assert
+      // Assert: an own patient fills the form, so replace, patch, and delete work against its fields
       expect(target().textContent).toContain('Editing Patient/mine-1, created in this session');
       expect(target().classList.contains('is-mine')).toBe(true);
+      expect(editField('familyName').value).toBe('Watsica258');
+      expect(editField('givenName').value).toBe('Kimi714');
+      expect(editField('mrn').value).toBe('eed8a921');
       expect(blocked('fhir-replace')).toBe(false);
       expect(blocked('fhir-delete')).toBe(false);
       // Nothing changed yet, so there is nothing to patch.

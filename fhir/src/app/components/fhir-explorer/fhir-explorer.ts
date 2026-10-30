@@ -597,6 +597,18 @@ export class FhirExplorer implements OnInit, OnDestroy {
     this.editStatusKind.set(kind);
   }
 
+  /**
+   * Puts the new-patient defaults back in the form. Used when the selected patient is read-only here (the
+   * seeded patient, or one another session created): the form can only create then, so its fields stay
+   * the defaults rather than a copy of a patient it cannot change.
+   */
+  private resetToDefaults(): void {
+    this.editForm.setValue({ ...FhirExplorer.NEW_PATIENT, sex: '', birthDate: '' });
+    this.loadedInput.set(null);
+    this.editValidated.set(false);
+    this.serverErrors.set({});
+  }
+
   /** Puts a loaded patient's fields in the form and remembers them as the patch baseline. */
   private loadIntoForm(patient: PatientDemographics): void {
     const input: PatientInput = {
@@ -743,7 +755,11 @@ export class FhirExplorer implements OnInit, OnDestroy {
       this.showDto('PatientSummary', body);
       this.resolvedShown.set(false);
       this.summary.set(body);
-      this.loadIntoForm(body.patient);
+      if (this.ownership() === 'mine') {
+        this.loadIntoForm(body.patient);
+      } else {
+        this.resetToDefaults();
+      }
     } catch (error: unknown) {
       if (this.destroyed || this.selectedId() !== id) {
         return;
