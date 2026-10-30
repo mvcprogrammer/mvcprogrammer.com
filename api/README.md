@@ -131,6 +131,12 @@ wiped or down. `FHIR_SOURCE_NAME` is the label the trace carries.
   that reaches the sandbox; the patch applier (`PatientPatchApplier`) covers the six RFC 6902
   operations over its five fields in-house, since a general JSON Patch library would need a mutable
   model and brings nothing the five scalar paths need.
+- **Delete cascades to conditions.** The sandbox enforces referential integrity: a `DELETE Patient/{id}`
+  answers 409 while a `Condition` references it, which #190 made reachable. `PatientWriteService.DeleteAsync`
+  therefore lists the patient's conditions (bounded by the condition page size and the page cap) and deletes
+  each before the patient, under the same guard; a condition already gone is skipped, so a retry after a
+  partial failure finishes the job, and a failed condition delete leaves the patient in place with the usual
+  502. HAPI's `_cascade` extension is not used: it is not FHIR and the SMART fallback lacks it.
 - **Conditions, the first clinical write.** `POST /fhir/patients/{id}/conditions` (specified in
   `openapi.yaml` 1.4.0, built in 1.5.0) records one of ten listed conditions. `ConditionPickList` is
   the source of truth (a well-formed code off it is 422 before any upstream call), `DemoGuardService`

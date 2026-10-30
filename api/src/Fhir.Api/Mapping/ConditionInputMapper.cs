@@ -40,6 +40,13 @@ public static class ConditionInputMapper
         };
     }
 
+    /// <summary>Condition?patient=, every condition of the patient, for the cascade a patient delete runs.</summary>
+    public static SearchParams ConditionsOfPatientQuery(string patientId)
+    {
+        ArgumentException.ThrowIfNullOrWhiteSpace(patientId);
+        return new SearchParams().Add("patient", SubjectReference(patientId));
+    }
+
     /// <summary>Condition?patient=&amp;clinical-status=active, for the count the cap is checked against.</summary>
     public static SearchParams ActiveConditionsQuery(string patientId)
     {

@@ -806,6 +806,7 @@ public sealed class ApiTests
         factory.Handler.On(HttpMethod.Get, "/Patient/1842", (_, _, _) => Task.FromResult(deleted
             ? FakeFhirHandler.Json(FakeFhirHandler.Outcome("gone"), HttpStatusCode.Gone)
             : FakeFhirHandler.Json(Created())));
+        factory.Handler.On(HttpMethod.Get, "/Condition?", Fixtures.Searchset([]));
         factory.Handler.On(HttpMethod.Delete, "/Patient/1842", (_, _, _) =>
         {
             deleted = true;
@@ -822,6 +823,80 @@ public sealed class ApiTests
         Assert.Equal("no-store", first.Headers.CacheControl?.ToString());
         Assert.Equal(HttpStatusCode.NoContent, second.StatusCode);
         Assert.Single(factory.Handler.Sent, r => r.Method == HttpMethod.Delete);
+    }
+
+    /// <summary>The cascade: every condition that references the patient is deleted first, in the order the sandbox listed them, then the patient.</summary>
+    [Fact]
+    public async Task Delete_ShouldRemoveThePatientsConditionsFirst()
+    {
+        // Arrange
+        using var factory = new FhirApiFactory();
+        factory.Handler.On(HttpMethod.Get, "/Patient/1842", Created());
+        factory.Handler.On(HttpMethod.Get, "/Condition?", Fixtures.Searchset(
+        [
+            Fixtures.Condition("c1", "active", "Essential hypertension"),
+            Fixtures.Condition("c2", "resolved", "Acute bronchitis", code: "10509002"),
+        ], total: 2));
+        factory.Handler.OnStatus(HttpMethod.Delete, "/Condition/", HttpStatusCode.NoContent);
+        factory.Handler.OnStatus(HttpMethod.Delete, "/Patient/1842", HttpStatusCode.NoContent);
+        using var client = factory.CreateClient();
+
+        // Act
+        var response = await client.SendAsync(Write(HttpMethod.Delete, "/api/fhir/patients/1842"), Ct);
+
+        // Assert
+        Assert.Equal(HttpStatusCode.NoContent, response.StatusCode);
+        var deletes = factory.Handler.Sent.Where(r => r.Method == HttpMethod.Delete).Select(r => r.Uri.AbsolutePath).ToArray();
+        Assert.Equal(["/r4/Condition/c1", "/r4/Condition/c2", "/r4/Patient/1842"], deletes);
+        var search = Assert.Single(factory.Handler.Sent, r => r.Uri.PathAndQuery.Contains("/Condition?", StringComparison.Ordinal));
+        Assert.Contains("patient=Patient%2F1842", search.Uri.Query, StringComparison.Ordinal);
+        Assert.Contains("_count=", search.Uri.Query, StringComparison.Ordinal);
+    }
+
+    /// <summary>A condition the sandbox already reports gone is skipped, not an error, so a retry after a partial failure completes.</summary>
+    [Fact]
+    public async Task Delete_ShouldSkipAConditionAlreadyGone()
+    {
+        // Arrange
+        using var factory = new FhirApiFactory();
+        factory.Handler.On(HttpMethod.Get, "/Patient/1842", Created());
+        factory.Handler.On(HttpMethod.Get, "/Condition?", Fixtures.Searchset([Fixtures.Condition("c1", "active", "Essential hypertension")]));
+        factory.Handler.On(HttpMethod.Delete, "/Condition/c1", FakeFhirHandler.Outcome("gone"), HttpStatusCode.Gone);
+        factory.Handler.OnStatus(HttpMethod.Delete, "/Patient/1842", HttpStatusCode.NoContent);
+        using var client = factory.CreateClient();
+
+        // Act
+        var response = await client.SendAsync(Write(HttpMethod.Delete, "/api/fhir/patients/1842"), Ct);
+
+        // Assert
+        Assert.Equal(HttpStatusCode.NoContent, response.StatusCode);
+        Assert.Single(factory.Handler.Sent, r => r.Method == HttpMethod.Delete && r.Uri.AbsolutePath == "/r4/Patient/1842");
+    }
+
+    /// <summary>A condition delete that fails upstream stops the cascade: 502, and the patient is never deleted, so nothing is half gone.</summary>
+    [Fact]
+    public async Task Delete_ShouldLeaveThePatientWhenAConditionDeleteFails()
+    {
+        // Arrange
+        using var factory = new FhirApiFactory();
+        factory.Handler.On(HttpMethod.Get, "/Patient/1842", Created());
+        factory.Handler.On(HttpMethod.Get, "/Condition?", Fixtures.Searchset(
+        [
+            Fixtures.Condition("c1", "active", "Essential hypertension"),
+            Fixtures.Condition("c2", "resolved", "Acute bronchitis", code: "10509002"),
+        ]));
+        factory.Handler.OnStatus(HttpMethod.Delete, "/Condition/c1", HttpStatusCode.NoContent);
+        factory.Handler.OnServerError("/Condition/c2");
+        factory.Handler.OnStatus(HttpMethod.Delete, "/Patient/1842", HttpStatusCode.NoContent);
+        using var client = factory.CreateClient();
+
+        // Act
+        var response = await client.SendAsync(Write(HttpMethod.Delete, "/api/fhir/patients/1842"), Ct);
+
+        // Assert
+        await AssertProblem(response, HttpStatusCode.BadGateway, "upstream-unavailable");
+        Assert.Single(factory.Handler.Sent, r => r.Method == HttpMethod.Delete && r.Uri.AbsolutePath == "/r4/Condition/c1");
+        Assert.DoesNotContain(factory.Handler.Sent, r => r.Method == HttpMethod.Delete && r.Uri.AbsolutePath == "/r4/Patient/1842");
     }
 
     [Fact]
