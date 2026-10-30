@@ -32,6 +32,9 @@ public static partial class FhirEndpoints
 
     private const string JSON_PATCH_MEDIA_TYPE = "application/json-patch+json";
 
+    /// <summary>The detail the stubbed resolve answers with until its handler ships (#191).</summary>
+    private const string RESOLVE_NOT_IMPLEMENTED = "Resolving a condition is specified and arrives with the explorer's next release.";
+
     /// <summary>Firely's System.Text.Json serializer for R4 POCOs, pretty-printed for the raw-bundle toggle.</summary>
     private static readonly JsonSerializerOptions _fhirJson = new JsonSerializerOptions().ForFhir(ModelInfo.ModelInspector).Pretty();
 
@@ -59,6 +62,11 @@ public static partial class FhirEndpoints
         writes.MapPatch("/patients/{patientId}", PatchPatient).WithName("patchPatient");
         writes.MapDelete("/patients/{patientId}", DeletePatient).WithName("deletePatient");
         writes.MapPost("/patients/{patientId}/conditions", AddCondition).WithName("addCondition");
+
+        // Resolve, stubbed. Answers 501 until the handler lands (#191, second pull request); the route
+        // and name already match openapi.yaml 1.6.0 so the contract is settled before the code. Mapped
+        // outside the write filters so the stub spends no budget.
+        group.MapPost("/patients/{patientId}/conditions/{conditionId}/resolve", ResolveCondition).WithName("resolveCondition");
 
         group.MapGet("/health", GetHealth).WithName("getFhirHealth").WithTags("Operations");
         return group;
@@ -226,6 +234,8 @@ public static partial class FhirEndpoints
         var location = $"/api/fhir/patients/{Uri.EscapeDataString(patientId)}/summary";
         return NoStoreJson.Json(context, result, created ? StatusCodes.Status201Created : StatusCodes.Status200OK, location);
     }
+
+    private static IResult ResolveCondition(HttpContext context, string patientId, string conditionId) => Problems.NotImplemented(context, RESOLVE_NOT_IMPLEMENTED);
 
     /// <summary>A UUID header, lower-cased, or null with an error recorded under the header's name.</summary>
     private static string? Token(HttpContext context, string header, Dictionary<string, string[]> errors)

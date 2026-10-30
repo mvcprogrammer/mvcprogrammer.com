@@ -1236,6 +1236,28 @@ public sealed class ApiTests
 
     #endregion
 
+    #region Resolve (stubbed)
+
+    /// <summary>The resolve openapi.yaml 1.6.0 specifies answers 501 with the promised problem until its handler ships, and never reaches the sandbox.</summary>
+    [Fact]
+    public async Task ResolveCondition_ShouldBeA501ProblemUntilBuilt()
+    {
+        // Arrange
+        using var factory = new FhirApiFactory();
+        using var client = factory.CreateClient();
+
+        // Act
+        var response = await client.SendAsync(Write(HttpMethod.Post, "/api/fhir/patients/1842/conditions/9f1c/resolve"), Ct);
+
+        // Assert
+        var problem = await AssertProblem(response, HttpStatusCode.NotImplemented, "not-implemented");
+        Assert.Equal("Resolving a condition is specified and arrives with the explorer's next release.", problem.GetProperty("detail").GetString());
+        Assert.Equal("/api/fhir/patients/1842/conditions/9f1c/resolve", problem.GetProperty("instance").GetString());
+        Assert.Empty(factory.Handler.Requests);
+    }
+
+    #endregion
+
     #region Helper Methods
 
     /// <summary>A patient with three conditions (two active, one resolved), vitals across two pages, and counts.</summary>
