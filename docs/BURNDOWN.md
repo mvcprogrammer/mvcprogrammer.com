@@ -70,6 +70,9 @@ node tools/burndown.mjs
 GitHub Projects can draw a burn-up of its own, but only on paid plans and only from the day the
 chart is created; this script is how the board gets a burndown from day one and from evidence.
 
+Each sprint ends with a retrospective recorded in [RETROSPECTIVES.md](RETROSPECTIVES.md): the
+numbers the chart and the board reported, what went well, what hurt, and the actions as issues.
+
 ## Scheduled refresh
 
 `.github/workflows/board.yml` runs the three board scripts once a day (03:30 UTC, after the evening's
