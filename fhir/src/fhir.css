@@ -161,6 +161,30 @@ app-not-found {
   flex: 1 1 18rem;
 }
 
+/* The Resolve action inside an active chip of the session's own patient: a small mono button under the code. */
+.fhir-pill-action {
+  margin-top: 0.15rem;
+  padding: 0.1rem 0.5rem;
+  font: inherit;
+  font-family: var(--font-mono);
+  font-size: 0.6875rem;
+  color: var(--accent);
+  background: transparent;
+  border: 1px solid var(--accent);
+  border-radius: 999px;
+  cursor: pointer;
+}
+
+.fhir-pill-action:hover {
+  color: var(--hover);
+  border-color: var(--hover);
+}
+
+.fhir-pill-action[aria-disabled="true"] {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
 /* A blocked verb is aria-disabled rather than disabled, so it keeps its hover (the reason is its title) and focus. */
 .fhir-edit .button[aria-disabled="true"] {
   opacity: 0.5;

@@ -1,6 +1,7 @@
 import { ChangeDetectionStrategy, Component, ElementRef, OnDestroy, OnInit, PendingTasks, afterRenderEffect, computed, inject, signal, viewChild } from '@angular/core';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { CONDITION_PICK_LIST } from '../../content/condition-pick-list';
+import { ClinicalStatus } from '../../enumerations/clinical-status';
 import { Sex } from '../../enumerations/sex';
 import { FhirProblemError } from '../../exceptions/fhir-problem-error';
 import { notBlank } from '../../validators/not-blank';
@@ -33,8 +34,9 @@ const EDIT_FIELDS: readonly PatientPatchPath[] = ['/familyName', '/givenName', '
 
 /**
  * The FHIR R4 patient explorer, the one page of fhir.mvcprogrammer.com: search, the patient list, the
- * summary card, the edit panel (create, replace, patch, delete, and add a condition, under the demo
- * guard), and the "under the hood" log. The first request to /api/fhir (the capability check) happens when the page renders.
+ * summary card with a Resolve action on each condition of the session's own patient, the edit panel
+ * (create, replace, patch, delete, and add a condition, under the demo guard), and the "under the
+ * hood" log. The first request to /api/fhir (the capability check) happens when the page renders.
  */
 @Component({
   selector: 'app-fhir-explorer',
@@ -184,6 +186,9 @@ export class FhirExplorer implements OnInit, OnDestroy {
     }
   });
   protected readonly canChange = computed(() => this.ownership() === 'mine' && !this.writing());
+
+  /** Whether the card shows its Resolve actions: the patient is this session's. The action itself is blocked while a write is in flight. */
+  protected readonly canResolve = computed(() => this.ownership() === 'mine');
 
   protected readonly hasChanges = computed(() => {
     const loaded = this.loadedInput();
@@ -425,6 +430,25 @@ export class FhirExplorer implements OnInit, OnDestroy {
     void this.pendingTasks.run(() => this.postCondition(id, code));
   }
 
+  /** The Resolve action's title: the block reason when blocked, else what it does. */
+  protected resolveTitle(condition: ConditionItem): string {
+    return this.changeBlock() ?? `Resolve ${condition.display}`;
+  }
+
+  /** POST .../conditions/{id}/resolve for one of the selected patient's active conditions. */
+  protected resolveCondition(condition: ConditionItem): void {
+    if (this.sayWhyBlocked(this.changeBlock())) {
+      return;
+    }
+
+    const id = this.changeableId();
+    if (id === null || condition.id === undefined) {
+      return;
+    }
+
+    void this.pendingTasks.run(() => this.postResolve(id, condition));
+  }
+
   /** DELETE the selected patient. */
   protected remove(): void {
     if (this.sayWhyBlocked(this.changeBlock())) {
@@ -600,6 +624,52 @@ export class FhirExplorer implements OnInit, OnDestroy {
     } finally {
       this.writing.set(false);
     }
+  }
+
+  private async postResolve(id: string, condition: ConditionItem): Promise<void> {
+    const conditionId = condition.id ?? '';
+    const path = `/patients/${encodeURIComponent(id)}/conditions/${encodeURIComponent(conditionId)}/resolve`;
+    this.writing.set(true);
+    this.setEditStatus('Resolving…', '');
+    this.write(`→ POST ${FhirExplorer.API}${path} · X-Demo-Session ${this.session.token}`, 'request');
+
+    try {
+      const response = await this.client.resolveCondition(id, conditionId);
+      if (this.destroyed) {
+        return;
+      }
+
+      this.write(`← ${response.status} ${path} in ${response.durationMs} ms · ${FhirExplorer.describeCache(response.xCache)}`, 'response');
+      this.write(`  Condition/${conditionId} is resolved; the card moves it under the resolved count (a cached summary may lag for a few minutes)`, 'detail');
+      this.moveToResolved(id, conditionId);
+      this.setEditStatus(`Resolved ${condition.display} (Condition/${conditionId}) on Patient/${id}.`, 'is-ok');
+    } catch (error: unknown) {
+      this.failWrite(path, error);
+    } finally {
+      this.writing.set(false);
+    }
+  }
+
+  /** Moves a condition from the card's active list to its resolved one, as the next summary would show it. Counts are unchanged: the resource still exists. */
+  private moveToResolved(patientId: string, conditionId: string): void {
+    this.summary.update((summary) => {
+      if (summary === null || summary.patient.id !== patientId) {
+        return summary;
+      }
+
+      const moved = summary.conditions.active.find((c) => c.id === conditionId);
+      if (moved === undefined) {
+        return summary;
+      }
+
+      return {
+        ...summary,
+        conditions: {
+          active: summary.conditions.active.filter((c) => c !== moved),
+          resolved: [{ ...moved, clinicalStatus: ClinicalStatus.Resolved }, ...summary.conditions.resolved.filter((c) => c.id !== conditionId)],
+        },
+      };
+    });
   }
 
   /**

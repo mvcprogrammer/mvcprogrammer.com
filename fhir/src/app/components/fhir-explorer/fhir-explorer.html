@@ -84,10 +84,15 @@
               <li class="fhir-empty-inline">None recorded.</li>
             }
             @for (condition of s.conditions.active; track $index) {
-              <li class="fhir-pill" [attr.title]="pillTitle(condition)">
+              <li class="fhir-pill" [class.has-action]="canResolve() && condition.id !== undefined" [attr.title]="pillTitle(condition)">
                 <span class="fhir-pill-text">{{ condition.display }}</span>
                 @if (condition.code) {
                   <code class="fhir-pill-code">{{ pillCode(condition) }}</code>
+                }
+                <!-- Resolve: only on the session's own patient, and only for a condition the function gave an id. Blocked, not
+                     disabled, while a write is in flight, so the reason stays hoverable and the status says it when pressed. -->
+                @if (canResolve() && condition.id !== undefined) {
+                  <button type="button" class="fhir-pill-action" [attr.id]="'fhir-resolve-' + condition.id" [attr.aria-label]="'Resolve ' + condition.display" [attr.aria-disabled]="changeBlock() !== null ? 'true' : null" [attr.title]="resolveTitle(condition)" (click)="resolveCondition(condition)">Resolve</button>
                 }
               </li>
             }
@@ -190,7 +195,7 @@
            button is blocked for the same reasons as replace and delete, since the guard is the same. -->
       <div class="fhir-edit-condition" id="fhir-condition" role="group" aria-labelledby="fhir-condition-title" [formGroup]="conditionForm">
         <h3 class="fhir-subtitle" id="fhir-condition-title">Add a condition</h3>
-        <p class="fhir-edit-lead">{{ CONDITION_LEAD }}</p>
+        <p class="fhir-edit-lead">{{ CONDITION_LEAD }} Each active condition on the card has a Resolve action when the patient is yours.</p>
         <div class="fhir-edit-condition-row">
           <div class="field">
             <label class="field-label" for="fhir-condition-code">Condition <span class="fhir-optional">(SNOMED CT)</span></label>

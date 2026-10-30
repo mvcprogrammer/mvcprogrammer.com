@@ -18,9 +18,9 @@ fhir/
   src/app/app.config.ts         Router, global error listeners, and provideSite() with the API base and the site URL.
   src/app/app.routes.ts         "" is the explorer page; everything else is NotFound.
   src/app/pages/                Explorer (the one page; starts the engagement tracker) and NotFound.
-  src/app/components/           The explorer (search, summary, the edit panel for the four patient writes and the condition
-                                add, the log), the header (brand back to the site, theme toggle), footer, icon and sprite,
-                                social links.
+  src/app/components/           The explorer (search, summary with a Resolve action per condition of an own patient, the edit
+                                panel for the four patient writes and the condition add, the log), the header (brand back to
+                                the site, theme toggle), footer, icon and sprite, social links.
   src/app/configurations/       SiteOptions and its injection token.
   src/app/content/              The condition pick list: the ten SNOMED CT conditions the select offers, a mirror of the function's.
   src/app/interfaces/           FhirClient, DemoSession (the session token and idempotency keys), and EngagementTracker: abstract
@@ -82,6 +82,12 @@ top of the card's active chips and bumps the count, a 200 means the patient alre
 changes nothing, and a 422 (off the list, or ten active already) shows as the status. The card is never
 re-read after a write: the browser and CloudFront may hold the old summary for a while, and the write
 result is the record as the sandbox stored it.
+
+On the card, every active condition of a patient this session created carries a Resolve action (the
+seeded patient and other sessions' patients show none). It sends `POST /api/fhir/patients/{id}/conditions/{conditionId}/resolve`
+with no body; a 204 moves the chip under the resolved count without a re-read, and a 404 (the condition
+is gone or not that patient's) shows as the status. The action is blocked, not disabled, while a write
+is in flight, like the verbs.
 
 The dev server has no `/api`, so the capability check fails and the explorer says so in its log.
 Serve the build output behind the real CloudFront behaviors (or any host that proxies `/api/fhir`)

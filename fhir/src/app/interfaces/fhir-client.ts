@@ -42,4 +42,7 @@ export abstract class FhirClient {
 
   /** POST /api/fhir/patients/{id}/conditions: 201 for a new condition, 200 when the patient already has it active. */
   abstract addCondition(patientId: string, input: ConditionInput): Promise<FhirResponse<ConditionWriteResult>>;
+
+  /** POST /api/fhir/patients/{id}/conditions/{conditionId}/resolve, no body: 204, again for a condition already resolved. */
+  abstract resolveCondition(patientId: string, conditionId: string): Promise<FhirResponse<null>>;
 }

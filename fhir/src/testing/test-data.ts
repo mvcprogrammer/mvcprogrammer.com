@@ -82,8 +82,8 @@ export function createPatientSummary(overrides: Partial<PatientSummary> = {}): P
     },
     counts: { conditions: 2, encounters: 31, observations: 240 },
     conditions: {
-      active: [{ display: 'Essential hypertension (disorder)', code: '59621000', system: 'http://snomed.info/sct', systemLabel: 'SNOMED CT', clinicalStatus: ClinicalStatus.Active, onsetDate: '2010-05-01' }],
-      resolved: [{ display: 'Acute bronchitis (disorder)', code: '10509002', systemLabel: 'SNOMED CT', clinicalStatus: ClinicalStatus.Resolved }],
+      active: [{ id: 'c-hyp', display: 'Essential hypertension (disorder)', code: '59621000', system: 'http://snomed.info/sct', systemLabel: 'SNOMED CT', clinicalStatus: ClinicalStatus.Active, onsetDate: '2010-05-01' }],
+      resolved: [{ id: 'c-bron', display: 'Acute bronchitis (disorder)', code: '10509002', systemLabel: 'SNOMED CT', clinicalStatus: ClinicalStatus.Resolved }],
     },
     vitals: [
       { date: '2026-03-31T10:47:00Z', name: 'Blood pressure', loincCode: '85354-9', components: [{ name: 'Systolic', loincCode: '8480-6', value: 108, unit: 'mm[Hg]' }, { name: 'Diastolic', loincCode: '8462-4', value: 82, unit: 'mm[Hg]' }] },
