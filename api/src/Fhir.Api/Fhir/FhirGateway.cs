@@ -158,18 +158,45 @@ public sealed class FhirGateway : IFhirGateway
         var url = Url(typeof(T).Name);
         using var client = CreateClient();
         var watch = Stopwatch.StartNew();
+        string? matchedId;
         try
         {
-            var stored = await client.ConditionalCreateAsync(resource, ifNoneExist, cancellationToken)
-                ?? throw new UpstreamUnavailableException($"{Host} answered the create without the resource.");
+            var stored = await client.ConditionalCreateAsync(resource, ifNoneExist, cancellationToken);
             var status = StatusOf(client);
-            trace.Add(new UpstreamRequest("POST", url, status, watch.ElapsedMilliseconds, 1, 1), truncated: false);
-            return new WriteResult<T>(stored, Created: status == (int)HttpStatusCode.Created);
+            if (stored is not null)
+            {
+                trace.Add(new UpstreamRequest("POST", url, status, watch.ElapsedMilliseconds, 1, 1), truncated: false);
+                return new WriteResult<T>(stored, Created: status == (int)HttpStatusCode.Created);
+            }
+
+            // A matched If-None-Exist comes back from HAPI as 200 with no body and the existing
+            // resource's Location (even with Prefer: return=representation), so it is read next.
+            matchedId = status == (int)HttpStatusCode.OK ? IdFromLocation<T>(client.LastResult?.Location) : null;
+            trace.Add(new UpstreamRequest("POST", url, status, watch.ElapsedMilliseconds, 0, 1), truncated: false);
+            if (matchedId is null)
+            {
+                throw new UpstreamUnavailableException($"{Host} answered the create without the resource.");
+            }
         }
         catch (Exception ex) when (ex is not UpstreamUnavailableException)
         {
             throw Translate(ex, url, cancellationToken, "POST");
         }
+
+        return new WriteResult<T>(await ReadAsync<T>(matchedId, trace, cancellationToken), Created: false);
+    }
+
+    /// <summary>The logical id in a Location such as https://host/base/Condition/361079/_history/1, or null when it names another type or nothing.</summary>
+    internal static string? IdFromLocation<T>(string? location) where T : Resource
+    {
+        if (string.IsNullOrWhiteSpace(location))
+        {
+            return null;
+        }
+
+        var segments = location.Split('/', StringSplitOptions.RemoveEmptyEntries);
+        var type = Array.LastIndexOf(segments, typeof(T).Name);
+        return type >= 0 && type + 1 < segments.Length ? segments[type + 1] : null;
     }
 
     public async Task<T> UpdateAsync<T>(T resource, TraceBuilder trace, CancellationToken cancellationToken) where T : Resource, new()
