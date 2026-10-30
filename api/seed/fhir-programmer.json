@@ -18,7 +18,7 @@
               ]
             },
             "system": "https://mvcprogrammer.com/fhir/mrn",
-            "value": "MVC-0001"
+            "value": "mvcprogrammer.com"
           }
         ],
         "name": [
