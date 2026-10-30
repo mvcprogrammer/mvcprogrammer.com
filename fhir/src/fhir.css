@@ -139,6 +139,28 @@ app-not-found {
   color: var(--accent);
 }
 
+/* The condition row under the verbs: the select grows, the button sits on its baseline. */
+.fhir-edit-condition {
+  margin-top: 1.25rem;
+  padding-top: 1rem;
+  border-top: 1px solid var(--border);
+}
+
+.fhir-edit-condition .fhir-subtitle {
+  margin-top: 0;
+}
+
+.fhir-edit-condition-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: 0.75rem 1rem;
+}
+
+.fhir-edit-condition-row .field {
+  flex: 1 1 18rem;
+}
+
 /* A blocked verb is aria-disabled rather than disabled, so it keeps its hover (the reason is its title) and focus. */
 .fhir-edit .button[aria-disabled="true"] {
   opacity: 0.5;

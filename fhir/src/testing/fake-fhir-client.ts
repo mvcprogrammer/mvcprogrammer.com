@@ -1,13 +1,15 @@
 import { FhirClient } from '../app/interfaces/fhir-client';
 import { CapabilitySubset } from '../app/models/capability-subset';
+import { ConditionWriteResult } from '../app/models/condition-write-result';
 import { FhirResponse } from '../app/models/fhir-response';
 import { PatientSearchResult } from '../app/models/patient-search-result';
 import { PatientSummary } from '../app/models/patient-summary';
 import { PatientWriteResult } from '../app/models/patient-write-result';
+import { ConditionInput } from '../app/requests/condition-input';
 import { PatientInput } from '../app/requests/patient-input';
 import { PatientPatchOperation } from '../app/requests/patient-patch-operation';
 import { PatientSearchRequest } from '../app/requests/patient-search-request';
-import { createCapabilitySubset, createFhirResponse, createPatientSearchResult, createPatientSummary, createPatientWriteResult } from './test-data';
+import { createCapabilitySubset, createConditionWriteResult, createFhirResponse, createPatientSearchResult, createPatientSummary, createPatientWriteResult } from './test-data';
 
 /** Scriptable FhirClient. Each method runs the function a test assigns and records its arguments. */
 export class FakeFhirClient extends FhirClient {
@@ -34,6 +36,9 @@ export class FakeFhirClient extends FhirClient {
 
   /** Ids passed to deletePatient(), in call order. */
   readonly deletes: string[] = [];
+
+  /** Ids and inputs passed to addCondition(), in call order. */
+  readonly conditionAdds: { id: string; input: ConditionInput }[] = [];
 
   /** Behaviour of searchPatients(). */
   onSearchPatients: (request: PatientSearchRequest) => Promise<FhirResponse<PatientSearchResult>> = () =>
@@ -63,6 +68,10 @@ export class FakeFhirClient extends FhirClient {
 
   /** Behaviour of deletePatient(): a 204. */
   onDeletePatient: (id: string) => Promise<FhirResponse<null>> = () => Promise.resolve(createFhirResponse(null, { status: 204, xCache: null, etag: null, contentType: null }));
+
+  /** Behaviour of addCondition(): a 201 with the listed condition for the code. */
+  onAddCondition: (id: string, input: ConditionInput) => Promise<FhirResponse<ConditionWriteResult>> = (id, input) =>
+    Promise.resolve(createFhirResponse(createConditionWriteResult(input.code, id), { status: 201, xCache: null, etag: null }));
 
   override searchPatients(request: PatientSearchRequest): Promise<FhirResponse<PatientSearchResult>> {
     this.searches.push(request);
@@ -102,5 +111,10 @@ export class FakeFhirClient extends FhirClient {
   override deletePatient(patientId: string): Promise<FhirResponse<null>> {
     this.deletes.push(patientId);
     return this.onDeletePatient(patientId);
+  }
+
+  override addCondition(patientId: string, input: ConditionInput): Promise<FhirResponse<ConditionWriteResult>> {
+    this.conditionAdds.push({ id: patientId, input });
+    return this.onAddCondition(patientId, input);
   }
 }

@@ -134,7 +134,8 @@
   </div>
 
   <!-- Edit: the write side. One form for the five fields a demo patient has; create is the submit,
-       replace, patch, and delete act on the selected patient when this session created it. -->
+       replace, patch, and delete act on the selected patient when this session created it, and so does
+       the condition row under the verbs: a select of ten listed conditions and an Add button. -->
   <section class="fhir-panel fhir-edit" aria-labelledby="fhir-edit-title">
     <h2 class="fhir-panel-title" id="fhir-edit-title">Create or change a demo patient</h2>
     <p class="fhir-edit-lead">{{ EDIT_LEAD }}</p>
@@ -185,9 +186,26 @@
         <button class="button button-secondary" type="button" id="fhir-patch" [attr.aria-disabled]="patchBlock() !== null ? 'true' : null" [attr.title]="patchBlock()" (click)="patch()">Patch changes</button>
         <button class="button button-secondary" type="button" id="fhir-delete" [attr.aria-disabled]="changeBlock() !== null ? 'true' : null" [attr.title]="changeBlock()" (click)="remove()">Delete</button>
       </div>
+      <!-- Conditions: the first write on a clinical resource. The select mirrors the function's pick list; the
+           button is blocked for the same reasons as replace and delete, since the guard is the same. -->
+      <div class="fhir-edit-condition" id="fhir-condition" role="group" aria-labelledby="fhir-condition-title" [formGroup]="conditionForm">
+        <h3 class="fhir-subtitle" id="fhir-condition-title">Add a condition</h3>
+        <p class="fhir-edit-lead">{{ CONDITION_LEAD }}</p>
+        <div class="fhir-edit-condition-row">
+          <div class="field">
+            <label class="field-label" for="fhir-condition-code">Condition <span class="fhir-optional">(SNOMED CT)</span></label>
+            <select id="fhir-condition-code" formControlName="code">
+              @for (condition of CONDITIONS; track condition.code) {
+                <option [value]="condition.code">{{ condition.display }} · {{ condition.code }}</option>
+              }
+            </select>
+          </div>
+          <button class="button button-secondary" type="button" id="fhir-add-condition" [attr.aria-disabled]="changeBlock() !== null ? 'true' : null" [attr.title]="changeBlock()" (click)="addCondition()">Add condition</button>
+        </div>
+      </div>
       <p [class]="editStatusClass()" id="fhir-edit-status" role="status" aria-live="polite">
         @if (editStatusText() === '') {
-          Create sends <code>POST /api/fhir/patients</code> with <code>Idempotency-Key</code>; replace, patch, and delete send <code>PUT</code>, <code>PATCH</code> (JSON Patch), and <code>DELETE</code> to <code>/api/fhir/patients/&lbrace;id&rbrace;</code>. Every write carries <code>X-Demo-Session</code>.
+          Create sends <code>POST /api/fhir/patients</code> with <code>Idempotency-Key</code>; replace, patch, and delete send <code>PUT</code>, <code>PATCH</code> (JSON Patch), and <code>DELETE</code> to <code>/api/fhir/patients/&lbrace;id&rbrace;</code>; add sends <code>POST</code> to <code>&hellip;/&lbrace;id&rbrace;/conditions</code>. Every write carries <code>X-Demo-Session</code>.
         } @else {
           {{ editStatusText() }}
         }

@@ -1,11 +1,13 @@
 import { ChangeDetectionStrategy, Component, ElementRef, OnDestroy, OnInit, PendingTasks, afterRenderEffect, computed, inject, signal, viewChild } from '@angular/core';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
+import { CONDITION_PICK_LIST } from '../../content/condition-pick-list';
 import { Sex } from '../../enumerations/sex';
 import { FhirProblemError } from '../../exceptions/fhir-problem-error';
 import { notBlank } from '../../validators/not-blank';
 import { DemoSession } from '../../interfaces/demo-session';
 import { FhirClient } from '../../interfaces/fhir-client';
 import { ConditionItem } from '../../models/condition-item';
+import { ConditionWriteResult } from '../../models/condition-write-result';
 import { PatientDemographics } from '../../models/patient-demographics';
 import { FhirResponse } from '../../models/fhir-response';
 import { LogLine } from '../../models/log-line';
@@ -31,8 +33,8 @@ const EDIT_FIELDS: readonly PatientPatchPath[] = ['/familyName', '/givenName', '
 
 /**
  * The FHIR R4 patient explorer, the one page of fhir.mvcprogrammer.com: search, the patient list, the
- * summary card, the edit panel (create, replace, patch, delete under the demo guard), and the "under
- * the hood" log. The first request to /api/fhir (the capability check) happens when the page renders.
+ * summary card, the edit panel (create, replace, patch, delete, and add a condition, under the demo
+ * guard), and the "under the hood" log. The first request to /api/fhir (the capability check) happens when the page renders.
  */
 @Component({
   selector: 'app-fhir-explorer',
@@ -78,6 +80,7 @@ export class FhirExplorer implements OnInit, OnDestroy {
   static readonly BLOCK_SEED_MESSAGE = 'The seeded demo patient is read-only. Create a patient of your own and change that.';
   static readonly BLOCK_OTHER_MESSAGE = 'This patient was not created in this session, so it cannot be changed here. Create a patient of your own.';
   static readonly BLOCK_WRITING_MESSAGE = 'A write is in flight; wait for it to finish.';
+  static readonly CONDITION_LEAD = 'Add one of ten listed conditions to a patient created in this session. The function owns the list; a condition the patient already has active comes back as already there.';
 
   protected readonly form = inject(FormBuilder).nonNullable.group({
     family: [FhirExplorer.FALLBACK_FAMILIES[0], [notBlank, Validators.maxLength(60)]],
@@ -86,6 +89,10 @@ export class FhirExplorer implements OnInit, OnDestroy {
   });
 
   protected readonly EDIT_LEAD = FhirExplorer.EDIT_LEAD;
+  protected readonly CONDITION_LEAD = FhirExplorer.CONDITION_LEAD;
+
+  /** The ten conditions the select offers, a mirror of the function's list. */
+  protected readonly CONDITIONS = CONDITION_PICK_LIST;
 
   /** What a new patient starts as, so Create works without typing and the result names the site. */
   static readonly NEW_PATIENT: Readonly<Record<'familyName' | 'givenName' | 'mrn', string>> = { familyName: 'Patient', givenName: 'Demo', mrn: 'mvcprogrammer.com' };
@@ -96,6 +103,11 @@ export class FhirExplorer implements OnInit, OnDestroy {
     sex: [''],
     birthDate: ['', [Validators.pattern(/^\d{4}-\d{2}-\d{2}$/)]],
     mrn: [FhirExplorer.NEW_PATIENT.mrn, [Validators.maxLength(40), Validators.pattern(/^[A-Za-z0-9\-.]*$/)]],
+  });
+
+  /** The condition to add: one of the ten codes; the first is selected to start with. */
+  protected readonly conditionForm = inject(FormBuilder).nonNullable.group({
+    code: [CONDITION_PICK_LIST[0].code],
   });
 
   /** True once a write found the edit form invalid; its errors show from then on. */
@@ -398,6 +410,21 @@ export class FhirExplorer implements OnInit, OnDestroy {
     void this.pendingTasks.run(() => this.patchPatient(id, FhirExplorer.patchOperations(loaded, input)));
   }
 
+  /** POST the selected condition to the selected patient. */
+  protected addCondition(): void {
+    if (this.sayWhyBlocked(this.changeBlock())) {
+      return;
+    }
+
+    const id = this.changeableId();
+    const code = this.conditionForm.getRawValue().code;
+    if (id === null) {
+      return;
+    }
+
+    void this.pendingTasks.run(() => this.postCondition(id, code));
+  }
+
   /** DELETE the selected patient. */
   protected remove(): void {
     if (this.sayWhyBlocked(this.changeBlock())) {
@@ -551,6 +578,58 @@ export class FhirExplorer implements OnInit, OnDestroy {
     } finally {
       this.writing.set(false);
     }
+  }
+
+  private async postCondition(id: string, code: string): Promise<void> {
+    const path = `/patients/${encodeURIComponent(id)}/conditions`;
+    const display = CONDITION_PICK_LIST.find((c) => c.code === code)?.display ?? code;
+    this.writing.set(true);
+    this.setEditStatus('Adding…', '');
+    this.write(`→ POST ${FhirExplorer.API}${path} · X-Demo-Session ${this.session.token}`, 'request');
+    this.write(`  code ${code} (${display}, SNOMED CT)`, 'detail');
+
+    try {
+      const response = await this.client.addCondition(id, { code });
+      if (this.destroyed) {
+        return;
+      }
+
+      this.afterConditionAdd(id, path, response);
+    } catch (error: unknown) {
+      this.failWrite(path, error);
+    } finally {
+      this.writing.set(false);
+    }
+  }
+
+  /**
+   * Logs an add and puts the condition it returned on the summary card: a new chip at the top of the
+   * active list on a 201, nothing new on a 200 (the patient already had it). The summary is not
+   * re-read, for the same reason as a patient change.
+   */
+  private afterConditionAdd(id: string, path: string, response: FhirResponse<ConditionWriteResult>): void {
+    const result = response.body;
+    const condition = result.condition;
+    const created = response.status === 201;
+    const name = `Condition/${condition.id ?? '?'}`;
+    this.writeResponse(path, response);
+    this.writeTrace(result.trace, response);
+    this.write(`  ${created ? 'added' : 'already there, returned'} ${name} · mapped to ConditionWriteResult; the card follows it (a cached summary may lag for a few minutes)`, 'detail');
+    this.showDto('ConditionWriteResult', result);
+    this.summary.update((summary) => {
+      if (summary === null || summary.patient.id !== id) {
+        return summary;
+      }
+
+      // The returned condition goes first; a chip the card already had for it (same id) is replaced, not doubled.
+      const others = summary.conditions.active.filter((c) => c.id === undefined || c.id !== condition.id);
+      return {
+        ...summary,
+        counts: { ...summary.counts, conditions: summary.counts.conditions + (created ? 1 : 0) },
+        conditions: { ...summary.conditions, active: [condition, ...others] },
+      };
+    });
+    this.setEditStatus(created ? `Added ${condition.display} (${name}) to Patient/${id}.` : `Patient/${id} already has ${condition.display} active (${name}); nothing was added.`, 'is-ok');
   }
 
   /**

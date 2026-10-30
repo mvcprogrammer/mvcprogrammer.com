@@ -7,7 +7,7 @@ import { DemoSession } from '../interfaces/demo-session';
 import { HttpFhirClient } from './http-fhir-client';
 import { FakeDemoSession } from '../../testing/fake-demo-session';
 import { TEST_SITE_OPTIONS } from '../../testing/site-testing';
-import { createCapabilitySubset, createPatientSearchResult, createPatientSummary, createPatientWriteResult } from '../../testing/test-data';
+import { createCapabilitySubset, createConditionWriteResult, createPatientSearchResult, createPatientSummary, createPatientWriteResult } from '../../testing/test-data';
 
 describe('HttpFhirClient', () => {
   let client: HttpFhirClient;
@@ -215,6 +215,51 @@ describe('HttpFhirClient', () => {
       expect(error).toBeInstanceOf(FhirProblemError);
       expect((error as FhirProblemError).status).toBe(400);
       expect((error as FhirProblemError).errors).toEqual({ familyName: ['required'] });
+    });
+  });
+
+  describe('addCondition', () => {
+    it('should POST the code to the conditions path with the session header and the body hash, and map a 201', async () => {
+      // Arrange
+      const result = createConditionWriteResult('59621000', 'mine-1');
+
+      // Act
+      const pending = client.addCondition('mine-1', { code: '59621000' });
+      await settle();
+      const request = http.expectOne('api/fhir/patients/mine-1/conditions');
+      request.flush(result, { status: 201, statusText: 'Created', headers: { 'cache-control': 'no-store', location: '/api/fhir/patients/mine-1/summary' } });
+
+      // Assert
+      expect(request.request.method).toBe('POST');
+      expect(request.request.headers.get('X-Demo-Session')).toBe(FakeDemoSession.TOKEN);
+      expect(request.request.headers.has('Idempotency-Key')).toBe(false);
+      expect(request.request.headers.get('Content-Type')).toBe('application/json');
+      expect(request.request.body).toBe('{"code":"59621000"}');
+      expect(request.request.headers.get('x-amz-content-sha256')).toBe(await HttpFhirClient.sha256('{"code":"59621000"}'));
+      const response = await pending;
+      expect(response.status).toBe(201);
+      expect(response.body).toEqual(result);
+    });
+
+    it('should escape the patient id, map a 200 for a repeat, and reject a 422 with the problem the function sent', async () => {
+      // Act
+      const repeated = client.addCondition('a/b', { code: '59621000' });
+      await settle();
+      http.expectOne('api/fhir/patients/a%2Fb/conditions').flush(createConditionWriteResult('59621000', 'a/b'), { status: 200, statusText: 'OK' });
+      const rejected = client.addCondition('mine-1', { code: '123456' });
+      await settle();
+      http.expectOne('api/fhir/patients/mine-1/conditions').flush(
+        { type: 'https://mvcprogrammer.com/api/problems/condition-rejected', title: 'Condition rejected', status: 422, detail: "Code '123456' is not on the pick list; send one of the 10 SNOMED CT codes the operation documents." },
+        { status: 422, statusText: 'Unprocessable Content' },
+      );
+
+      // Assert
+      expect((await repeated).status).toBe(200);
+      const error = await rejected.catch((e: unknown) => e);
+      expect(error).toBeInstanceOf(FhirProblemError);
+      expect((error as FhirProblemError).status).toBe(422);
+      expect((error as FhirProblemError).title).toBe('Condition rejected');
+      expect((error as FhirProblemError).message).toBe("Code '123456' is not on the pick list; send one of the 10 SNOMED CT codes the operation documents.");
     });
   });
 
