@@ -87,12 +87,15 @@ export class FhirExplorer implements OnInit, OnDestroy {
 
   protected readonly EDIT_LEAD = FhirExplorer.EDIT_LEAD;
 
+  /** What a new patient starts as, so Create works without typing and the result names the site. */
+  static readonly NEW_PATIENT: Readonly<Record<'familyName' | 'givenName' | 'mrn', string>> = { familyName: 'Patient', givenName: 'Demo', mrn: 'mvcprogrammer.com' };
+
   protected readonly editForm = inject(FormBuilder).nonNullable.group({
-    familyName: ['', [notBlank, Validators.maxLength(60)]],
-    givenName: ['', [Validators.maxLength(60)]],
+    familyName: [FhirExplorer.NEW_PATIENT.familyName, [notBlank, Validators.maxLength(60)]],
+    givenName: [FhirExplorer.NEW_PATIENT.givenName, [Validators.maxLength(60)]],
     sex: [''],
     birthDate: ['', [Validators.pattern(/^\d{4}-\d{2}-\d{2}$/)]],
-    mrn: ['', [Validators.maxLength(40), Validators.pattern(/^[A-Za-z0-9\-.]*$/)]],
+    mrn: [FhirExplorer.NEW_PATIENT.mrn, [Validators.maxLength(40), Validators.pattern(/^[A-Za-z0-9\-.]*$/)]],
   });
 
   /** True once a write found the edit form invalid; its errors show from then on. */

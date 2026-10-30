@@ -67,7 +67,9 @@ a UUID kept in `sessionStorage` for the life of the tab), a create carries an id
 explorer reuses until the create succeeds, and a patch is built as a JSON Patch of the fields that
 changed since the patient was loaded, each guarded by a `test` of the old value. The function decides
 what is allowed: the seeded patient is read-only, and only a patient this session created can be
-replaced, patched, or deleted. The panel says which case the selected patient is.
+replaced, patched, or deleted. The panel says which case the selected patient is. With nothing selected the
+form holds the new-patient defaults (family name Patient, given name Demo, MRN mvcprogrammer.com), so Create
+works without typing; loading a patient replaces them with that patient's own values.
 
 The dev server has no `/api`, so the capability check fails and the explorer says so in its log.
 Serve the build output behind the real CloudFront behaviors (or any host that proxies `/api/fhir`)

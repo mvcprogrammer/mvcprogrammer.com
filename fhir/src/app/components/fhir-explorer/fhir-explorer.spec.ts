@@ -458,13 +458,17 @@ describe('FhirExplorer', () => {
   });
 
   describe('edit panel', () => {
-    it('should start with nothing selected and the form empty, create enabled, the other verbs disabled', async () => {
+    it('should start with nothing selected and the form holding the new-patient defaults, create enabled, the other verbs disabled', async () => {
       // Act
       await render();
 
       // Assert
       expect(target().textContent).toBe(FhirExplorer.EDIT_NONE_MESSAGE);
-      expect(editField('familyName').value).toBe('');
+      expect(editField('familyName').value).toBe('Patient');
+      expect(editField('givenName').value).toBe('Demo');
+      expect(editField('mrn').value).toBe('mvcprogrammer.com');
+      expect((host.querySelector('#fhir-edit-sex') as HTMLSelectElement).value).toBe('');
+      expect(editField('birthDate').value).toBe('');
       expect(blocked('fhir-create')).toBe(false);
       expect(blocked('fhir-replace')).toBe(true);
       expect(blocked('fhir-patch')).toBe(true);
@@ -516,9 +520,24 @@ describe('FhirExplorer', () => {
       expect(blocked('fhir-patch')).toBe(true);
     });
 
+    it('should create with the defaults untouched', async () => {
+      // Arrange
+      await render();
+      client.onCreatePatient = (input) => Promise.resolve(createFhirResponse(createPatientWriteResult(input), { status: 201, xCache: null, etag: null }));
+
+      // Act
+      editSubmit();
+      await fixture.whenStable();
+
+      // Assert
+      const create = client.creates[0];
+      expect(create.input).toEqual({ familyName: 'Patient', givenName: 'Demo', mrn: 'mvcprogrammer.com' });
+    });
+
     it('should refuse to create without a family name or with a bad MRN, without calling the API', async () => {
       // Arrange
       await render();
+      type(editField('familyName'), '');
       type(editField('mrn'), 'has space');
 
       // Act
