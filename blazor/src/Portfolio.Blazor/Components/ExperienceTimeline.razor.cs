@@ -17,10 +17,10 @@ public sealed partial class ExperienceTimeline : IDisposable
     private const int VISIBLE_CHIPS = 12;
 
     /// <summary>Chips named here lead the row in this order, regardless of position count.</summary>
-    private static readonly string[] PINNED_SKILLS = ["ASP.NET Web API", "C#", "Claude Pair Programming", "Angular", "React"];
+    private static readonly string[] _pinnedSkills = ["ASP.NET Web API", "C#", "Claude Pair Programming", "Angular", "React"];
 
     /// <summary>Chips named here go to the end of the row.</summary>
-    private static readonly string[] DEMOTED_SKILLS = ["CloudWatch"];
+    private static readonly string[] _demotedSkills = ["CloudWatch"];
 
     private readonly CancellationTokenSource _cts = new();
     private IReadOnlyList<Position> _positions = [];
@@ -81,9 +81,9 @@ public sealed partial class ExperienceTimeline : IDisposable
 
     private static IReadOnlyList<Skill> OrderChips(IReadOnlyList<Skill> skills)
     {
-        var pinned = PINNED_SKILLS.SelectMany(name => skills.Where(s => string.Equals(s.Name, name, StringComparison.Ordinal)));
-        var demoted = DEMOTED_SKILLS.SelectMany(name => skills.Where(s => string.Equals(s.Name, name, StringComparison.Ordinal)));
-        var rest = skills.Where(s => !PINNED_SKILLS.Contains(s.Name, StringComparer.Ordinal) && !DEMOTED_SKILLS.Contains(s.Name, StringComparer.Ordinal));
+        var pinned = _pinnedSkills.SelectMany(name => skills.Where(s => string.Equals(s.Name, name, StringComparison.Ordinal)));
+        var demoted = _demotedSkills.SelectMany(name => skills.Where(s => string.Equals(s.Name, name, StringComparison.Ordinal)));
+        var rest = skills.Where(s => !_pinnedSkills.Contains(s.Name, StringComparer.Ordinal) && !_demotedSkills.Contains(s.Name, StringComparer.Ordinal));
         return [.. pinned, .. rest, .. demoted];
     }
 

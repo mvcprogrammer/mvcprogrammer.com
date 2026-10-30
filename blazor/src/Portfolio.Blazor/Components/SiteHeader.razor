@@ -12,7 +12,7 @@
                     <button class="edition-toggle" type="button" aria-haspopup="true" aria-expanded="@(_editionsOpen ? "true" : "false")"
                             aria-controls="edition-menu" @onclick="ToggleEditions" @ref="_editionToggle">@CurrentEdition.Label</button>
                     <ul class="edition-menu" id="edition-menu" role="list" aria-label="Editions of this site">
-                        @foreach (var edition in EDITIONS)
+                        @foreach (var edition in _editions)
                         {
                             <li>
                                 <a class="edition-link" href="@edition.Href" aria-current="@(edition.Key == CURRENT_EDITION ? "true" : null)">@edition.Label</a>
@@ -37,7 +37,7 @@
 
         <nav class="site-nav @(_menuOpen ? "is-open" : null)" id="primary-nav" aria-label="Primary">
             <ul class="nav-list" role="list">
-                @foreach (var link in SECTION_LINKS)
+                @foreach (var link in _sectionLinks)
                 {
                     <li>
                         <a class="nav-link" href="#@link.Id" aria-current="@(IsCurrent(link.Id) ? "true" : null)" @onclick="() => CloseMenu(false)">@link.Label</a>

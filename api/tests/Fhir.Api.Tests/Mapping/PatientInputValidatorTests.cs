@@ -5,7 +5,7 @@ namespace Fhir.Api.Tests.Mapping;
 
 public sealed class PatientInputValidatorTests
 {
-    private static readonly DateOnly TODAY = new(2026, 10, 30);
+    private static readonly DateOnly _today = new(2026, 10, 30);
 
     #region Validate Tests
 
@@ -14,7 +14,7 @@ public sealed class PatientInputValidatorTests
     public void Validate_ShouldAcceptAValidInput()
     {
         // Act
-        var errors = PatientInputValidator.Validate(new PatientInput("Dickens", "Charles", Sex.Male, "1979-04-12", "MVC-0042"), TODAY);
+        var errors = PatientInputValidator.Validate(new PatientInput("Dickens", "Charles", Sex.Male, "1979-04-12", "MVC-0042"), _today);
 
         // Assert
         Assert.Empty(errors);
@@ -32,7 +32,7 @@ public sealed class PatientInputValidatorTests
     public void Validate_ShouldReportEachRuleUnderItsField(string family, string? given, string? birthDate, string? mrn, string? field)
     {
         // Act
-        var errors = PatientInputValidator.Validate(new PatientInput(family, given, null, birthDate, mrn), TODAY);
+        var errors = PatientInputValidator.Validate(new PatientInput(family, given, null, birthDate, mrn), _today);
 
         // Assert
         if (field is null)
@@ -54,7 +54,7 @@ public sealed class PatientInputValidatorTests
         var long61 = new string('x', 61);
 
         // Act
-        var errors = PatientInputValidator.Validate(new PatientInput(long61, long61, null, null, null), TODAY);
+        var errors = PatientInputValidator.Validate(new PatientInput(long61, long61, null, null, null), _today);
 
         // Assert
         Assert.Equal(["familyName", "givenName"], errors.Keys.Order());
@@ -65,7 +65,7 @@ public sealed class PatientInputValidatorTests
     public void Validate_ShouldReportAMissingBody()
     {
         // Act
-        var errors = PatientInputValidator.Validate(null, TODAY);
+        var errors = PatientInputValidator.Validate(null, _today);
 
         // Assert
         Assert.Equal("body", Assert.Single(errors.Keys));

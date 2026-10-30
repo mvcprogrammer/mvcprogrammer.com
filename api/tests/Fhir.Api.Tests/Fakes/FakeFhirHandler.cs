@@ -13,7 +13,7 @@ namespace Fhir.Api.Tests.Fakes;
 /// </summary>
 public sealed class FakeFhirHandler : HttpMessageHandler
 {
-    private static readonly JsonSerializerOptions FHIR_JSON = new JsonSerializerOptions().ForFhir(ModelInfo.ModelInspector);
+    private static readonly JsonSerializerOptions _fhirJson = new JsonSerializerOptions().ForFhir(ModelInfo.ModelInspector);
 
     private readonly List<(HttpMethod? Method, string Match, Func<HttpRequestMessage, int, CancellationToken, Task<HttpResponseMessage>> Respond)> _routes = [];
     private readonly List<Uri> _requests = [];
@@ -94,7 +94,7 @@ public sealed class FakeFhirHandler : HttpMessageHandler
     public static HttpResponseMessage Json(Resource resource, HttpStatusCode status = HttpStatusCode.OK) =>
         new(status)
         {
-            Content = new StringContent(JsonSerializer.Serialize(resource, FHIR_JSON), System.Text.Encoding.UTF8, "application/fhir+json"),
+            Content = new StringContent(JsonSerializer.Serialize(resource, _fhirJson), System.Text.Encoding.UTF8, "application/fhir+json"),
         };
 
     public static OperationOutcome Outcome(string text) => new()

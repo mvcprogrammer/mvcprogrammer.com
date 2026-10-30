@@ -8,7 +8,7 @@ namespace Fhir.Api.Tests.Mapping;
 
 public sealed class PatientMapperTests
 {
-    private static readonly DateOnly TODAY = new(2026, 10, 20);
+    private static readonly DateOnly _today = new(2026, 10, 20);
 
     [Fact]
     public void Prefers_the_official_name_over_the_first()
@@ -39,7 +39,7 @@ public sealed class PatientMapperTests
 
         patient.Name.Add(name);
 
-        var demographics = PatientMapper.ToDemographics(patient, TODAY);
+        var demographics = PatientMapper.ToDemographics(patient, _today);
 
         Assert.Equal(display, demographics.Name);
         Assert.Equal(initials, demographics.Initials);
@@ -66,7 +66,7 @@ public sealed class PatientMapperTests
         var patient = Fixtures.Patient(birthDate: fhirDate);
 
         var item = PatientMapper.ToListItem(patient);
-        var demographics = PatientMapper.ToDemographics(patient, TODAY);
+        var demographics = PatientMapper.ToDemographics(patient, _today);
 
         Assert.Equal(birthDate, item.BirthDate);
         Assert.Equal(year, item.BirthYear);
@@ -91,7 +91,7 @@ public sealed class PatientMapperTests
         patient.Identifier.Add(new Identifier { System = "urn:ssn", Value = "999-99-9999", Type = new CodeableConcept(Fixtures.V2_0203, "SS") });
         patient.Identifier.Add(new Identifier { System = "urn:mrn", Value = "MRN-7", Type = new CodeableConcept(Fixtures.V2_0203, "MR") });
 
-        var demographics = PatientMapper.ToDemographics(patient, TODAY);
+        var demographics = PatientMapper.ToDemographics(patient, _today);
 
         Assert.Equal("MRN-7", demographics.Mrn);
         Assert.Equal(2, demographics.Identifiers.Count);
@@ -104,7 +104,7 @@ public sealed class PatientMapperTests
     [Fact]
     public void Has_no_mrn_without_identifiers()
     {
-        var demographics = PatientMapper.ToDemographics(Fixtures.Patient(mrn: null), TODAY);
+        var demographics = PatientMapper.ToDemographics(Fixtures.Patient(mrn: null), _today);
 
         Assert.Null(demographics.Mrn);
         Assert.Empty(demographics.Identifiers);

@@ -13,7 +13,7 @@ public static class VitalSignMapper
     private const string LOINC = "http://loinc.org";
 
     /// <summary>LOINC code to the name the page shows. Order is irrelevant; results sort by date.</summary>
-    private static readonly IReadOnlyDictionary<string, string> VITALS = new Dictionary<string, string>(StringComparer.Ordinal)
+    private static readonly IReadOnlyDictionary<string, string> _vitals = new Dictionary<string, string>(StringComparer.Ordinal)
     {
         ["85354-9"] = "Blood pressure",
         ["8867-4"] = "Heart rate",
@@ -26,13 +26,13 @@ public static class VitalSignMapper
         ["39156-5"] = "Body mass index",
     };
 
-    private static readonly IReadOnlyDictionary<string, string> COMPONENTS = new Dictionary<string, string>(StringComparer.Ordinal)
+    private static readonly IReadOnlyDictionary<string, string> _components = new Dictionary<string, string>(StringComparer.Ordinal)
     {
         ["8480-6"] = "Systolic",
         ["8462-4"] = "Diastolic",
     };
 
-    private static readonly string[] COMPONENT_ORDER = ["8480-6", "8462-4"];
+    private static readonly string[] _componentOrder = ["8480-6", "8462-4"];
 
     /// <summary>Keeps the observations with a known LOINC code and a usable value, newest first, at most <paramref name="max"/>.</summary>
     public static IReadOnlyList<VitalSign> Select(IEnumerable<Observation> observations, int max)
@@ -52,7 +52,7 @@ public static class VitalSignMapper
     {
         ArgumentNullException.ThrowIfNull(observation);
         var code = LoincOf(observation.Code);
-        if (code is null || !VITALS.TryGetValue(code, out var name))
+        if (code is null || !_vitals.TryGetValue(code, out var name))
         {
             return null;
         }
@@ -71,9 +71,9 @@ public static class VitalSignMapper
         // Systolic before diastolic whatever order the sandbox sent them in, so the page can print 120/80.
         var components = observation.Component
             .Select(c => (Code: LoincOf(c.Code), Quantity: c.Value as Quantity))
-            .Where(c => c.Code is not null && COMPONENTS.ContainsKey(c.Code) && c.Quantity?.Value is not null)
-            .OrderBy(c => Array.IndexOf(COMPONENT_ORDER, c.Code!))
-            .Select(c => new VitalComponent(COMPONENTS[c.Code!], c.Code!, c.Quantity!.Value!.Value, UnitOf(c.Quantity)))
+            .Where(c => c.Code is not null && _components.ContainsKey(c.Code) && c.Quantity?.Value is not null)
+            .OrderBy(c => Array.IndexOf(_componentOrder, c.Code!))
+            .Select(c => new VitalComponent(_components[c.Code!], c.Code!, c.Quantity!.Value!.Value, UnitOf(c.Quantity)))
             .ToArray();
         return components.Length == 0 ? null : new VitalSign(date, name, code, null, null, components);
     }

@@ -7,12 +7,12 @@ namespace Fhir.Api.Tests.Http;
 
 public sealed class RateLimiterTests
 {
-    private static readonly DateTimeOffset START = new(2026, 10, 20, 12, 0, 0, TimeSpan.Zero);
+    private static readonly DateTimeOffset _start = new(2026, 10, 20, 12, 0, 0, TimeSpan.Zero);
 
     [Fact]
     public void Allows_the_budget_then_refuses_with_time_until_the_window_frees()
     {
-        var clock = new FakeTimeProvider(START);
+        var clock = new FakeTimeProvider(_start);
         var limiter = Create(clock, budget: 3, windowSeconds: 600);
 
         Assert.True(limiter.TryAcquire("203.0.113.7", out _));
@@ -28,7 +28,7 @@ public sealed class RateLimiterTests
     [Fact]
     public void Frees_the_budget_as_stamps_leave_the_window()
     {
-        var clock = new FakeTimeProvider(START);
+        var clock = new FakeTimeProvider(_start);
         var limiter = Create(clock, budget: 1, windowSeconds: 60);
 
         Assert.True(limiter.TryAcquire("a", out _));
@@ -42,7 +42,7 @@ public sealed class RateLimiterTests
     [Fact]
     public void Budgets_are_per_address()
     {
-        var limiter = Create(new FakeTimeProvider(START), budget: 1, windowSeconds: 60);
+        var limiter = Create(new FakeTimeProvider(_start), budget: 1, windowSeconds: 60);
 
         Assert.True(limiter.TryAcquire("a", out _));
         Assert.True(limiter.TryAcquire("b", out _));
@@ -52,7 +52,7 @@ public sealed class RateLimiterTests
     [Fact]
     public void Rejects_a_blank_address()
     {
-        var limiter = Create(new FakeTimeProvider(START), budget: 1, windowSeconds: 60);
+        var limiter = Create(new FakeTimeProvider(_start), budget: 1, windowSeconds: 60);
 
         Assert.Throws<ArgumentException>(() => limiter.TryAcquire(" ", out _));
     }

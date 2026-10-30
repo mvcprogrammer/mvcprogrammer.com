@@ -18,7 +18,7 @@ public static class NoStoreJson
         }
 
         context.Response.StatusCode = statusCode;
-        var body = JsonSerializer.SerializeToUtf8Bytes(value, ApiJson.OPTIONS);
+        var body = JsonSerializer.SerializeToUtf8Bytes(value, ApiJson.Options);
         return Results.Bytes(body, "application/json; charset=utf-8");
     }
 

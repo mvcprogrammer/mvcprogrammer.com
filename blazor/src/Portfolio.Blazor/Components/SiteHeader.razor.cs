@@ -6,11 +6,11 @@ namespace Portfolio.Blazor.Components;
 /// <summary>Code-behind for the site header: menu and edition-list state, the theme toggle, scroll shadow, and the current-section highlight.</summary>
 public sealed partial class SiteHeader : IAsyncDisposable
 {
-    /// <summary>The key of the edition this app is; its entry in <see cref="EDITIONS"/> is marked current.</summary>
+    /// <summary>The key of the edition this app is; its entry in <see cref="_editions"/> is marked current.</summary>
     private const string CURRENT_EDITION = "blazor";
 
     /// <summary>The four editions of the site, in the order the edition menu lists them.</summary>
-    private static readonly Edition[] EDITIONS =
+    private static readonly Edition[] _editions =
     [
         new("js", "JS Edition", "https://mvcprogrammer.com/"),
         new("angular", "Angular Edition", "https://angular.mvcprogrammer.com/"),
@@ -18,7 +18,7 @@ public sealed partial class SiteHeader : IAsyncDisposable
         new("blazor", "Blazor Edition", "https://blazor.mvcprogrammer.com/"),
     ];
 
-    private static readonly SectionLink[] SECTION_LINKS =
+    private static readonly SectionLink[] _sectionLinks =
     [
         new("about", "About"),
         new("services", "Employers"),
@@ -130,7 +130,7 @@ public sealed partial class SiteHeader : IAsyncDisposable
             _self = DotNetObjectReference.Create(this);
             _module = await Js.InvokeAsync<IJSObjectReference>("import", "./js/site.js");
             _headerWatch = await _module.InvokeAsync<IJSObjectReference>("watchHeader", _self);
-            _sectionWatch = await _module.InvokeAsync<IJSObjectReference?>("observeSections", _self, SECTION_LINKS.Select(l => l.Id).ToArray());
+            _sectionWatch = await _module.InvokeAsync<IJSObjectReference?>("observeSections", _self, _sectionLinks.Select(l => l.Id).ToArray());
         }
 
         // The document-level listeners exist only while the menu is open.
@@ -171,7 +171,7 @@ public sealed partial class SiteHeader : IAsyncDisposable
 
     private bool IsCurrent(string sectionId) => string.Equals(_current, sectionId, StringComparison.Ordinal);
 
-    private static Edition CurrentEdition => EDITIONS.First(e => e.Key == CURRENT_EDITION);
+    private static Edition CurrentEdition => _editions.First(e => e.Key == CURRENT_EDITION);
 
     private void ToggleMenu() => _menuOpen = !_menuOpen;
 

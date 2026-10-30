@@ -15,7 +15,7 @@ public static class ConditionMapper
     private const string CLINICAL_STATUS_SYSTEM = "http://terminology.hl7.org/CodeSystem/condition-clinical";
 
     /// <summary>clinicalStatus codes that count as active. Everything else (inactive, remission, resolved) is resolved; a missing status is shown as unknown and kept with the active set so it is not hidden.</summary>
-    private static readonly HashSet<string> ACTIVE_STATUSES = new(StringComparer.Ordinal) { "active", "recurrence", "relapse" };
+    private static readonly HashSet<string> _activeStatuses = new(StringComparer.Ordinal) { "active", "recurrence", "relapse" };
 
     public static Conditions Split(IEnumerable<Condition> conditions)
     {
@@ -42,7 +42,7 @@ public static class ConditionMapper
     }
 
     internal static bool IsActive(ConditionItem item) =>
-        item.ClinicalStatus == "unknown" || ACTIVE_STATUSES.Contains(item.ClinicalStatus);
+        item.ClinicalStatus == "unknown" || _activeStatuses.Contains(item.ClinicalStatus);
 
     internal static string ClinicalStatusOf(Condition condition)
     {
