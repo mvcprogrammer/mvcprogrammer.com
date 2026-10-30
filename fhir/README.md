@@ -69,7 +69,8 @@ changed since the patient was loaded, each guarded by a `test` of the old value.
 what is allowed: the seeded patient is read-only, and only a patient this session created can be
 replaced, patched, or deleted. The panel says which case the selected patient is. With nothing selected the
 form holds the new-patient defaults (family name Patient, given name Demo, MRN mvcprogrammer.com), so Create
-works without typing; loading a patient replaces them with that patient's own values.
+works without typing. Selecting a patient this session created replaces them with its fields; selecting a
+read-only patient (the seeded one, or another session's) leaves them in place, since the form can only create.
 
 The dev server has no `/api`, so the capability check fails and the explorer says so in its log.
 Serve the build output behind the real CloudFront behaviors (or any host that proxies `/api/fhir`)
