@@ -45,6 +45,60 @@ public sealed class ConditionInputMapperTests
 
     #endregion
 
+    #region ToResolved Tests
+
+    /// <summary>The resolved copy keeps the id, the code, and the subject, and changes only the status and the abatement.</summary>
+    [Fact]
+    public void ToResolved_ShouldKeepEverythingButStatusAndAbatement()
+    {
+        // Arrange
+        var stored = ConditionInputMapper.ToNewCondition(_hypertension, "1842", new DateOnly(2026, 10, 1));
+        stored.Id = "9f1c";
+
+        // Act
+        var resolved = ConditionInputMapper.ToResolved(stored, _today);
+
+        // Assert
+        Assert.Equal("9f1c", resolved.Id);
+        Assert.Equal("resolved", ConditionMapper.ClinicalStatusOf(resolved));
+        Assert.Equal("2026-10-30", ((FhirDateTime)resolved.Abatement!).Value);
+        Assert.Equal("Patient/1842", resolved.Subject.Reference);
+        Assert.Equal("59621000", resolved.Code?.Coding[0].Code);
+        Assert.Equal("2026-10-01", resolved.RecordedDate);
+        // The stored resource is not touched; the caller may still compare against it.
+        Assert.Equal("active", ConditionMapper.ClinicalStatusOf(stored));
+        Assert.Null(stored.Abatement);
+    }
+
+    #endregion
+
+    #region References Tests
+
+    /// <summary>Relative, absolute, and versioned references to the patient match; another patient, another type, a blank, and no subject do not.</summary>
+    [Theory]
+    [InlineData("Patient/1842", true)]
+    [InlineData("https://hapi.fhir.org/baseR4/Patient/1842", true)]
+    [InlineData("Patient/1842/_history/2", true)]
+    [InlineData("Patient/9999", false)]
+    [InlineData("Group/1842", false)]
+    [InlineData("Patient/18420", false)]
+    [InlineData("", false)]
+    [InlineData(null, false)]
+    public void References_ShouldMatchOnlyThePatientItself(string? reference, bool expected)
+    {
+        // Arrange
+        var condition = new Condition();
+        if (reference is not null)
+        {
+            condition.Subject = new ResourceReference(reference);
+        }
+
+        // Act & Assert
+        Assert.Equal(expected, ConditionInputMapper.References(condition, "1842"));
+    }
+
+    #endregion
+
     #region ActiveConditionsQuery Tests
 
     /// <summary>The cap counts active conditions of the patient and nothing else.</summary>

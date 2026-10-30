@@ -30,6 +30,14 @@ public sealed class SessionCapExceededException(int cap)
     public int Cap { get; } = cap;
 }
 
+/// <summary>No such condition on a patient this session created: the condition may not exist, may have been wiped, or may reference another patient. Same answer in every case.</summary>
+public sealed class WritableConditionNotFoundException(string patientId, string conditionId)
+    : Exception($"Patient '{patientId}' created by this session has no Condition with id '{conditionId}'. It may have been wiped.")
+{
+    public string PatientId { get; } = patientId;
+    public string ConditionId { get; } = conditionId;
+}
+
 /// <summary>A well-formed condition the function will not record: the code is off the pick list, or the patient holds its cap of active conditions. Nothing was written.</summary>
 public sealed class ConditionRejectedException(ConditionRejection reason, string message) : Exception(message)
 {

@@ -135,6 +135,11 @@ public sealed class WriteProblemFilter(IOptions<FhirOptions> options) : IEndpoin
         {
             return Problems.RateLimited(context.HttpContext, ex.Message, options.Value.RateLimitWindowSeconds);
         }
+        catch (WritableConditionNotFoundException ex)
+        {
+            context.HttpContext.Response.Headers.CacheControl = "no-store";
+            return Problems.NotFound(context.HttpContext, "Condition not found", ex.Message);
+        }
         catch (ConditionRejectedException ex)
         {
             return Problems.Unprocessable(context.HttpContext, "condition-rejected", "Condition rejected", ex.Message);
