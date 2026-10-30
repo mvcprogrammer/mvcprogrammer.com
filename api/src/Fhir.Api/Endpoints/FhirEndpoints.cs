@@ -33,7 +33,7 @@ public static partial class FhirEndpoints
     private const string JSON_PATCH_MEDIA_TYPE = "application/json-patch+json";
 
     /// <summary>Firely's System.Text.Json serializer for R4 POCOs, pretty-printed for the raw-bundle toggle.</summary>
-    private static readonly JsonSerializerOptions FHIR_JSON = new JsonSerializerOptions().ForFhir(ModelInfo.ModelInspector).Pretty();
+    private static readonly JsonSerializerOptions _fhirJson = new JsonSerializerOptions().ForFhir(ModelInfo.ModelInspector).Pretty();
 
     public static RouteGroupBuilder MapFhir(this RouteGroupBuilder api)
     {
@@ -109,7 +109,7 @@ public static partial class FhirEndpoints
         }
 
         var bundle = await service.RawAsync(patientId, cancellationToken);
-        var body = JsonSerializer.SerializeToUtf8Bytes(bundle, FHIR_JSON);
+        var body = JsonSerializer.SerializeToUtf8Bytes(bundle, _fhirJson);
         return CacheableJson.Bytes(context, body, "application/fhir+json; charset=utf-8", CACHE_CONTROL);
     }
 
@@ -226,7 +226,7 @@ public static partial class FhirEndpoints
 
         try
         {
-            var value = await JsonSerializer.DeserializeAsync<T>(context.Request.Body, ApiJson.OPTIONS, cancellationToken);
+            var value = await JsonSerializer.DeserializeAsync<T>(context.Request.Body, ApiJson.Options, cancellationToken);
             if (value is null)
             {
                 errors["body"] = ["A JSON body is required."];

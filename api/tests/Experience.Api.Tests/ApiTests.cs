@@ -28,7 +28,7 @@ public class ApiTests : IClassFixture<WebApplicationFactory<Program>>
         Assert.NotNull(response.Headers.ETag);
         Assert.Equal(CacheableJson.CACHE_CONTROL, response.Headers.CacheControl?.ToString());
 
-        var list = await response.Content.ReadFromJsonAsync<PositionList>(ApiJson.OPTIONS, Ct);
+        var list = await response.Content.ReadFromJsonAsync<PositionList>(ApiJson.Options, Ct);
         Assert.NotNull(list);
         Assert.Equal(list.Items.Count, list.Count);
         Assert.Equal(list.Items.OrderByDescending(p => p.StartDate, StringComparer.Ordinal).Select(p => p.Id), list.Items.Select(p => p.Id));
@@ -53,7 +53,7 @@ public class ApiTests : IClassFixture<WebApplicationFactory<Program>>
     [Fact]
     public async Task Filters_by_skill_and_echoes_the_filter()
     {
-        var list = await _client.GetFromJsonAsync<PositionList>("/api/experience?skill=rabbitmq", ApiJson.OPTIONS, Ct);
+        var list = await _client.GetFromJsonAsync<PositionList>("/api/experience?skill=rabbitmq", ApiJson.Options, Ct);
 
         Assert.NotNull(list);
         Assert.Equal("rabbitmq", list.Filter?.Skill);
@@ -64,7 +64,7 @@ public class ApiTests : IClassFixture<WebApplicationFactory<Program>>
     [Fact]
     public async Task Unknown_skill_is_an_empty_list_not_an_error()
     {
-        var list = await _client.GetFromJsonAsync<PositionList>("/api/experience?skill=cobol", ApiJson.OPTIONS, Ct);
+        var list = await _client.GetFromJsonAsync<PositionList>("/api/experience?skill=cobol", ApiJson.Options, Ct);
 
         Assert.NotNull(list);
         Assert.Empty(list.Items);
@@ -81,7 +81,7 @@ public class ApiTests : IClassFixture<WebApplicationFactory<Program>>
     [Fact]
     public async Task Gets_one_position_by_id()
     {
-        var position = await _client.GetFromJsonAsync<Position>("/api/experience/advancedmd", ApiJson.OPTIONS, Ct);
+        var position = await _client.GetFromJsonAsync<Position>("/api/experience/advancedmd", ApiJson.Options, Ct);
 
         Assert.NotNull(position);
         Assert.Equal("AdvancedMD", position.Organization);
@@ -100,7 +100,7 @@ public class ApiTests : IClassFixture<WebApplicationFactory<Program>>
     [Fact]
     public async Task Lists_skills_by_count_with_position_ids()
     {
-        var skills = await _client.GetFromJsonAsync<SkillList>("/api/skills", ApiJson.OPTIONS, Ct);
+        var skills = await _client.GetFromJsonAsync<SkillList>("/api/skills", ApiJson.Options, Ct);
 
         Assert.NotNull(skills);
         Assert.Equal(skills.Items.Count, skills.Count);
@@ -116,7 +116,7 @@ public class ApiTests : IClassFixture<WebApplicationFactory<Program>>
 
         Assert.Equal(HttpStatusCode.OK, response.StatusCode);
         Assert.True(response.Headers.CacheControl?.NoStore);
-        var health = await response.Content.ReadFromJsonAsync<Health>(ApiJson.OPTIONS, Ct);
+        var health = await response.Content.ReadFromJsonAsync<Health>(ApiJson.Options, Ct);
         Assert.Equal("ok", health?.Status);
     }
 
@@ -129,7 +129,7 @@ public class ApiTests : IClassFixture<WebApplicationFactory<Program>>
         var request = new HttpRequestMessage(new HttpMethod(method), path);
         if (method != "DELETE")
         {
-            request.Content = JsonContent.Create(new PositionInput("T", "O", "2026-01", null, WorkMode.Remote, "Remote", ["h"], ["C#"]), options: ApiJson.OPTIONS);
+            request.Content = JsonContent.Create(new PositionInput("T", "O", "2026-01", null, WorkMode.Remote, "Remote", ["h"], ["C#"]), options: ApiJson.Options);
         }
 
         var response = await _client.SendAsync(request, Ct);

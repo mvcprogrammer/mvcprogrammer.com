@@ -6,7 +6,7 @@ namespace Fhir.Api.Tests.Mapping;
 
 public sealed class PatientPatchApplierTests
 {
-    private static readonly PatientInput INPUT = new("Dickens", "Charles", Sex.Male, "1979-04-12", "MVC-0042");
+    private static readonly PatientInput _input = new("Dickens", "Charles", Sex.Male, "1979-04-12", "MVC-0042");
 
     private static PatientPatchOperation Op(string op, string path, string? value = null, string? from = null) => new(op, path, from, value);
 
@@ -29,7 +29,7 @@ public sealed class PatientPatchApplierTests
         };
 
         // Act
-        var result = PatientPatchApplier.Apply(INPUT, operations);
+        var result = PatientPatchApplier.Apply(_input, operations);
 
         // Assert
         Assert.Equal(new PatientInput("Chuck", "MVC-0043", Sex.Female, "1979-04-12", null), result);
@@ -40,10 +40,10 @@ public sealed class PatientPatchApplierTests
     public void Apply_ShouldLeaveTheInputUntouched()
     {
         // Act
-        PatientPatchApplier.Apply(INPUT, [Op("remove", "/givenName")]);
+        PatientPatchApplier.Apply(_input, [Op("remove", "/givenName")]);
 
         // Assert
-        Assert.Equal("Charles", INPUT.GivenName);
+        Assert.Equal("Charles", _input.GivenName);
     }
 
     /// <summary>An operation that cannot be applied names its index and leaves nothing half-applied.</summary>
@@ -61,7 +61,7 @@ public sealed class PatientPatchApplierTests
         var operations = new[] { Op(op, path, value, from) };
 
         // Act
-        var ex = Assert.Throws<PatchConflictException>(() => PatientPatchApplier.Apply(INPUT, operations));
+        var ex = Assert.Throws<PatchConflictException>(() => PatientPatchApplier.Apply(_input, operations));
 
         // Assert
         Assert.Equal(index, ex.OperationIndex);
@@ -76,7 +76,7 @@ public sealed class PatientPatchApplierTests
         var operations = new[] { Op("replace", "/givenName", "Chuck"), Op("test", "/givenName", "Charles") };
 
         // Act
-        var ex = Assert.Throws<PatchConflictException>(() => PatientPatchApplier.Apply(INPUT, operations));
+        var ex = Assert.Throws<PatchConflictException>(() => PatientPatchApplier.Apply(_input, operations));
 
         // Assert
         Assert.Equal(1, ex.OperationIndex);

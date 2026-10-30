@@ -13,9 +13,9 @@ namespace Fhir.Api.Mapping;
 public static class PatientPatchApplier
 {
     /// <summary>The paths a patch may touch, as openapi.yaml lists them.</summary>
-    public static readonly IReadOnlyList<string> PATHS = ["/familyName", "/givenName", "/sex", "/birthDate", "/mrn"];
+    public static IReadOnlyList<string> Paths { get; } = ["/familyName", "/givenName", "/sex", "/birthDate", "/mrn"];
 
-    private static readonly IReadOnlyList<string> OPS = ["add", "remove", "replace", "move", "copy", "test"];
+    private static readonly IReadOnlyList<string> _ops = ["add", "remove", "replace", "move", "copy", "test"];
 
     public const int MAX_OPERATIONS = 20;
 
@@ -29,12 +29,12 @@ public static class PatientPatchApplier
         for (var i = 0; i < operations.Count; i++)
         {
             var op = operations[i];
-            if (!OPS.Contains(op.Op, StringComparer.Ordinal))
+            if (!_ops.Contains(op.Op, StringComparer.Ordinal))
             {
                 throw new PatchConflictException(i, $"Operation {i} ('{op.Op}') is not an RFC 6902 operation; the patient was not changed.");
             }
 
-            if (!PATHS.Contains(op.Path, StringComparer.Ordinal))
+            if (!Paths.Contains(op.Path, StringComparer.Ordinal))
             {
                 throw new PatchConflictException(i, $"Operation {i} ('{op.Op}' on {op.Path}) names a path that is not a PatientInput property; the patient was not changed.");
             }
@@ -53,7 +53,7 @@ public static class PatientPatchApplier
     }
 
     private static string Source(PatientPatchOperation op, int index) =>
-        op.From is not null && PATHS.Contains(op.From, StringComparer.Ordinal)
+        op.From is not null && Paths.Contains(op.From, StringComparer.Ordinal)
             ? op.From
             : throw new PatchConflictException(index, $"Operation {index} ('{op.Op}') needs 'from' naming a PatientInput property; the patient was not changed.");
 

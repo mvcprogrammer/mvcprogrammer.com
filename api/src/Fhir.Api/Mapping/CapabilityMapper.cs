@@ -8,7 +8,7 @@ namespace Fhir.Api.Mapping;
 public static class CapabilityMapper
 {
     /// <summary>Resource type to the search parameters the explorer uses on it.</summary>
-    internal static readonly IReadOnlyList<(string Type, string[] Params)> REQUIRED =
+    internal static readonly IReadOnlyList<(string Type, string[] Params)> _required =
     [
         ("Patient", ["family", "birthdate", "identifier"]),
         ("Condition", ["patient"]),
@@ -26,7 +26,7 @@ public static class CapabilityMapper
             .SelectMany(r => r.Resource)
             .ToArray();
 
-        var resources = REQUIRED.Select(required =>
+        var resources = _required.Select(required =>
         {
             var resource = declared.FirstOrDefault(r => string.Equals(r.Type?.ToString(), required.Type, StringComparison.Ordinal));
             var supported = resource is not null
