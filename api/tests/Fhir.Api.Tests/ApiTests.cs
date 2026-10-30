@@ -865,6 +865,31 @@ public sealed class ApiTests
 
     #endregion
 
+    #region Conditions (stubbed)
+
+    /// <summary>The condition write openapi.yaml 1.4.0 specifies answers 501 with the promised problem until its handler ships, and never reaches the sandbox.</summary>
+    [Fact]
+    public async Task AddCondition_is_a_501_problem_until_built()
+    {
+        // Arrange
+        using var factory = new FhirApiFactory();
+        using var client = factory.CreateClient();
+        using var request = new HttpRequestMessage(HttpMethod.Post, "/api/fhir/patients/1842/conditions");
+        request.Headers.Add(FhirEndpoints.SESSION_HEADER, SESSION);
+        request.Content = new StringContent("{\"code\":\"59621000\"}", System.Text.Encoding.UTF8, "application/json");
+
+        // Act
+        var response = await client.SendAsync(request, Ct);
+
+        // Assert
+        var problem = await AssertProblem(response, HttpStatusCode.NotImplemented, "not-implemented");
+        Assert.Equal("Conditions are specified and arrive with the explorer's next release.", problem.GetProperty("detail").GetString());
+        Assert.Equal("/api/fhir/patients/1842/conditions", problem.GetProperty("instance").GetString());
+        Assert.Empty(factory.Handler.Requests);
+    }
+
+    #endregion
+
     #region Helper Methods
 
     /// <summary>A patient with three conditions (two active, one resolved), vitals across two pages, and counts.</summary>

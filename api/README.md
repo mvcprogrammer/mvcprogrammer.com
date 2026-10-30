@@ -89,8 +89,8 @@ request is answered from the sandbox, mapped at the boundary into the small DTOs
 api/src/Fhir.Api/
   Program.cs                Minimal API host, same shape as the Experience one.
   Configuration/            FhirOptions: base URL, page cap, page sizes, timeouts, retry, rate limit, capability TTL.
-  Endpoints/                /api/fhir/patients (GET, POST), .../{id} (PUT, PATCH, DELETE), .../{id}/summary, .../{id}/raw,
-                            /api/fhir/capability, /api/fhir/health.
+  Endpoints/                /api/fhir/patients (GET, POST), .../{id} (PUT, PATCH, DELETE), .../{id}/conditions (POST, stubbed),
+                            .../{id}/summary, .../{id}/raw, /api/fhir/capability, /api/fhir/health.
   Fhir/                     IFhirGateway over a Firely FhirClient: read, search with paging, _summary=count, metadata;
                             UpstreamNotFound / UpstreamUnavailable / UpstreamTimeout; CapabilityCache.
   Services/                 PatientExplorerService: the Patient first, then four bounded searches concurrently.
@@ -126,6 +126,12 @@ wiped or down. `FHIR_SOURCE_NAME` is the label the trace carries.
   that reaches the sandbox; the patch applier (`PatientPatchApplier`) covers the six RFC 6902
   operations over its five fields in-house, since a general JSON Patch library would need a mutable
   model and brings nothing the five scalar paths need.
+- **Conditions, spec first.** `openapi.yaml` 1.4.0 specifies `POST /fhir/patients/{id}/conditions`,
+  the first write on a clinical resource: the body carries a SNOMED CT code from a pick list of ten
+  the function owns (off the list is 422, as is an eleventh active condition), the create is
+  conditional on patient, code, and active status (a repeat answers 200), and the patient guard above
+  runs first (403 for the seeded patient, 404 for anyone else's). The route exists and answers `501`
+  until the handler lands (#190).
 - **The function is the boundary.** The browser never talks to the sandbox. Resources are parsed
   by the Firely SDK (`Hl7.Fhir.R4`) into typed objects and mapped to DTOs; only the raw-bundle
   endpoint passes FHIR JSON through, as a `collection` Bundle of what the summary fetched.
