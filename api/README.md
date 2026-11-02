@@ -202,10 +202,13 @@ api/src/Hl7.Etl/
                             (insert, claim a batch with SKIP LOCKED, complete, fail, status). Applied by migrate, once each.
   Configurations/           EtlOptions (Options pattern; HL7_ETL_CONNECTION overrides the connection string).
   Databases/                MessageRepository: one Npgsql connection per call, one function per method, typed parameters.
-  Mappers/                  LandedMessageMapper: reader rows to records by ordinal, no reflection.
+  Mappers/                  LandedMessageMapper (reader rows to records by ordinal); MessageMapper, AdmissionMapper, and
+                            ResultMapper (HL7 v2 to FHIR R4, see below); Hl7Values (typed field reads); EtlIdentifiers.
+  Exceptions/               Hl7MappingException: the control id, the location (PID.7, OBX[3].2), and the reason.
   Generators/               SyntheticCohortGenerator (deterministic per seed) and Hl7MessageComposer (HL7-V2 library, v2.5.1).
   Services/                 MigrationService and GenerateService.
-api/tests/Hl7.Etl.Tests/    Generator tests (compose, then parse back) and repository tests against a real Postgres.
+api/tests/Hl7.Etl.Tests/    Generator tests (compose, then parse back), mapper tests (every path, every failure, a Firely
+                            round trip), and repository tests against a real Postgres.
 ```
 
 ## Run it
@@ -236,5 +239,15 @@ and are skipped without it; CI runs them against a Postgres service container.
 - **Deterministic cohort.** The same seed gives the same patients, visits, and values, so a demo reruns
   and a test asserts exact messages. Every observation is LOINC-coded with UCUM units, so the mapper can
   carry both into FHIR unchanged.
+- **The mapping.** ADT^A01 gives a Patient (PID-3 MRN as an identifier typed MR, PID-5 official name,
+  PID-8 sex, PID-7 birth date) and an in-progress Encounter (PV1-2 class as v3 ActCode, PV1-3 ward,
+  PV1-19 visit number as an identifier typed VN, PV1-44 admit time). ORU^R01 gives one Observation per
+  OBX: LOINC code and display from OBX-3, the numeric value with its UCUM unit from OBX-5 and OBX-6,
+  status from OBX-11, time from OBX-14 (OBR-7 when absent), the category from the panel in OBR-4
+  (vital signs or laboratory). Every resource carries an identifier under the ETL system, and
+  encounters and observations reference the patient (and the encounter) by conditional reference,
+  `Patient?identifier=system|mrn`, which the loader resolves in-bundle when both land in one batch. A
+  message that cannot be mapped raises `Hl7MappingException` naming the control id, the field, and the
+  reason; the loader records it against the row and the batch goes on.
 - **HL7-V2 over nHapi.** MIT-licensed, targets .NET 10, parses and composes without a per-version schema;
   nHapi is MPL-2.0 and targets netstandard2.0 with a far larger object model than a demo needs.
