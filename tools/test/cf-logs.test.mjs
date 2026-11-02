@@ -17,6 +17,8 @@ import {
   dayKey,
   dayKeysBetween,
   editionOf,
+  isExperienceApi,
+  isExplorerApi,
   hourOf,
   isVisit,
   newLogCounters,
@@ -146,21 +148,45 @@ test('isVisit needs a page and at least one asset, API call, or ping', () => {
   assert.equal(isVisit(phone), true);
 });
 
-test('selectVisits leaves out bots and the owner and returns the five visits in the fixture', () => {
+test('selectVisits leaves out bots and the owner and returns the six visits in the fixture', () => {
   const visits = selectVisits(parsedRows());
-  assert.equal(visits.length, 5, 'I, A, B, C, D');
+  assert.equal(visits.length, 6, 'I, A, B, J, C, D');
   assert.ok(visits.every((visit) => visit.ip !== OWN_IP));
   assert.ok(visits.every((visit) => !visit.visitor.includes('Googlebot')));
-  assert.deepEqual(visits.map((visit) => visit.day).sort(), ['2026-10-16', '2026-10-17', '2026-10-17', '2026-10-17', '2026-10-17']);
+  assert.deepEqual(visits.map((visit) => visit.day).sort(), ['2026-10-16', '2026-10-17', '2026-10-17', '2026-10-17', '2026-10-17', '2026-10-17']);
 });
 
-test('editionOf maps the four hosts and passes anything else through', () => {
+test('buildSessions counts the patient explorer API calls and the writes among them', () => {
+  const [j] = buildSessions(parsedRows().filter((row) => row.ip === '198.51.100.20'));
+  assert.deepEqual([...j.hosts], ['mvcprogrammer.com', 'fhir.mvcprogrammer.com'], 'the home page, then the explorer on its own host');
+  assert.equal(j.fhirCalls, 3, 'a search, a create, and a delete');
+  assert.equal(j.fhirWrites, 2, 'the create and the delete');
+  assert.equal(j.api, 0, 'the explorer API is not the Experience API');
+  assert.equal(j.loads, 1, 'the load ping came from the explorer host');
+  assert.equal(j.secondsVisible, 40);
+  const [a] = buildSessions(parsedRows().filter((row) => row.ip === '203.0.113.10'));
+  assert.equal(a.fhirCalls, 0, 'scenario A never opened the explorer');
+  assert.equal(a.fhirWrites, 0);
+});
+
+test('editionOf maps the five hosts and passes anything else through', () => {
   assert.equal(editionOf('mvcprogrammer.com'), 'js');
   assert.equal(editionOf('www.mvcprogrammer.com'), 'js');
   assert.equal(editionOf('angular.mvcprogrammer.com'), 'angular');
   assert.equal(editionOf('react.mvcprogrammer.com'), 'react');
   assert.equal(editionOf('blazor.mvcprogrammer.com'), 'blazor');
+  assert.equal(editionOf('fhir.mvcprogrammer.com'), 'fhir', 'the patient explorer is the fifth host');
   assert.equal(editionOf('drm68g34kommd.cloudfront.net'), 'drm68g34kommd.cloudfront.net');
+});
+
+test('isExplorerApi and isExperienceApi tell the two APIs apart by path', () => {
+  assert.equal(isExplorerApi({ path: '/api/fhir/patients' }), true);
+  assert.equal(isExplorerApi({ path: '/api/fhir/patients/1234/conditions' }), true);
+  assert.equal(isExplorerApi({ path: '/api/experience' }), false);
+  assert.equal(isExperienceApi({ path: '/api/experience' }), true);
+  assert.equal(isExperienceApi({ path: '/api/skills' }), true);
+  assert.equal(isExperienceApi({ path: '/api/fhir/patients' }), false);
+  assert.equal(isExperienceApi({ path: '/ping' }), false);
 });
 
 // ---------------------------------------------------------------------------------------------------

@@ -12,7 +12,11 @@ const DAYS = [
     makeVisit({ token: 'a', hour: 10, editions: ['js', 'angular'], referrer: 'www.linkedin.com', loads: 1, screen: 'desktop', scheme: 'dark', sections: ['about', 'portfolio'], seconds: 75, clicks: ['edition/angular/header'], apiCalls: 1, skills: ['Angular'] }),
     makeVisit({ token: 'b', hour: 22, editions: ['react'], country: 'DE', edge: 'FRA', loads: 1, screen: 'phone', scheme: 'light', seconds: 20, clicks: ['github/profile/about'], resumes: ['react'] }),
   ]),
-  makeDay('2026-10-17', [makeVisit({ token: 'a', hour: 9, editions: ['js'], loads: 1, screen: 'desktop', scheme: 'dark', seconds: 5 }), makeVisit({ token: 'c', hour: 14, editions: ['blazor'], country: 'NL', edge: 'AMS' })]),
+  makeDay('2026-10-17', [
+    makeVisit({ token: 'a', hour: 9, editions: ['js'], loads: 1, screen: 'desktop', scheme: 'dark', seconds: 5 }),
+    makeVisit({ token: 'c', hour: 14, editions: ['blazor'], country: 'NL', edge: 'AMS' }),
+    makeVisit({ token: 'd', hour: 15, editions: ['js', 'fhir'], country: 'GB', edge: 'LHR', loads: 1, screen: 'desktop', scheme: 'light', seconds: 40, fhirCalls: 3, fhirWrites: 2 }),
+  ]),
   // 2026-10-18 has no file
 ];
 
@@ -40,13 +44,16 @@ describe('Dashboard', () => {
     // Assert
     expect(client.requested).toEqual(['2026-10-16', '2026-10-17']);
     const tiles = screen.getAllByRole('article');
-    const tileText = (label: string) => tiles.find((tile) => within(tile).queryByText(label) !== null)?.querySelector('.tile-value')?.textContent ?? '';
-    expect(tileText('Visitors')).toContain('3');
-    expect(tileText('Visits')).toContain('4');
-    expect(tileText('Beacon reach')).toContain('75%'); // visit c never sent a ping
-    expect(tileText('Time on page')).toContain('20s'); // median of 5, 20, 75
+    const tileOf = (label: string) => tiles.find((tile) => within(tile).queryByText(label) !== null);
+    const tileText = (label: string) => tileOf(label)?.querySelector('.tile-value')?.textContent ?? '';
+    expect(tileText('Visitors')).toContain('4');
+    expect(tileText('Visits')).toContain('5');
+    expect(tileText('Beacon reach')).toContain('80%'); // visit c never sent a ping
+    expect(tileText('Time on page')).toContain('40s'); // median of 5, 20, 40, 75
     expect(tileText('Edition clicks')).toContain('1');
     expect(tileText('GitHub clicks')).toContain('1');
+    expect(tileText('Patient explorer')).toContain('1');
+    expect(tileOf('Patient explorer')?.getAttribute('title')).toBe('20% of visits opened it; 3 API calls, 2 of them writes');
     expect(tileText('Resume downloads')).toContain('1');
     expect(screen.getByText(/Returning visitors/).textContent).toContain('1');
     expect(screen.getByText(/No file for 5 days/)).toBeTruthy();
@@ -59,9 +66,11 @@ describe('Dashboard', () => {
 
     // Assert
     const editions = screen.getByRole('heading', { name: 'Editions' }).closest('section')!;
-    expect(within(editions).getByRole('button', { name: 'Filter by JS' }).closest('li')?.textContent).toContain('2');
+    expect(within(editions).getByRole('button', { name: 'Filter by JS' }).closest('li')?.textContent).toContain('3');
+    expect(within(editions).getByRole('button', { name: 'Filter by FHIR explorer' }).closest('li')?.textContent).toContain('1');
+    expect(within(editions).queryByText(/Others/)).toBeNull(); // five rows, none folded
     const referrers = screen.getByRole('heading', { name: 'Referrers' }).closest('section')!;
-    expect(within(referrers).getByRole('button', { name: 'Filter by Direct or unknown' }).closest('li')?.textContent).toContain('75%');
+    expect(within(referrers).getByRole('button', { name: 'Filter by Direct or unknown' }).closest('li')?.textContent).toContain('80%');
     const countries = screen.getByRole('heading', { name: 'Countries' }).closest('section')!;
     expect(within(countries).getByRole('button', { name: 'Filter by Germany' })).toBeTruthy();
     const funnel = screen.getByRole('heading', { name: 'Reading funnel' }).closest('section')!;
@@ -130,7 +139,7 @@ describe('Dashboard', () => {
     // Assert
     expect(client.requested).toContain('2026-10-09');
     const visits = screen.getAllByRole('article').find((tile) => within(tile).queryByText('Visits') !== null);
-    expect(visits?.querySelector('.tile-delta')?.textContent).toContain('+300%');
+    expect(visits?.querySelector('.tile-delta')?.textContent).toContain('+400%');
     expect(screen.getByText(/compared with Oct 5 – Oct 11, 2026/)).toBeTruthy();
   });
 
@@ -147,6 +156,20 @@ describe('Dashboard', () => {
 
     // Assert
     expect(setQuery).toHaveBeenCalledWith({ ...query, range: { from: '2026-10-17', to: '2026-10-17' } });
+  });
+
+  it('should narrow every number to the explorer when it is the edition filter', async () => {
+    // Arrange
+    const query: Query = { ...SEVEN_DAYS, segments: [{ dimension: 'edition', value: 'fhir' }] };
+    await renderDashboard(query).view;
+    await waitFor(() => expect(screen.getByText('Visitors', { selector: '.tile-label' })).toBeTruthy());
+
+    // Assert
+    const tiles = screen.getAllByRole('article');
+    const tileText = (label: string) => tiles.find((tile) => within(tile).queryByText(label) !== null)?.querySelector('.tile-value')?.textContent ?? '';
+    expect(tileText('Visits')).toContain('1');
+    expect(tileText('Patient explorer')).toContain('1');
+    expect(screen.getByRole('button', { name: 'Filter by United Kingdom' })).toBeTruthy();
   });
 
   it('should show the error with a retry when a day fails to load', async () => {

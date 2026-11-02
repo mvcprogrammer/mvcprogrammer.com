@@ -52,11 +52,11 @@ test('buildDayFile carries the schema, the day, the zone, and the request totals
 test('buildDayFile lists one record per visit in start order', () => {
   const { rows, visits } = fixtureDay();
   const file = buildDayFile(DAY, rows, visits, SALT);
-  assert.equal(file.visits.length, 4, 'A, B, C, D');
-  assert.deepEqual(file.visits.map((visit) => visit.hour), [10, 10, 22, 23]);
-  assert.equal(new Set(file.visits.map((visit) => visit.token)).size, 2, 'two browsers');
+  assert.equal(file.visits.length, 5, 'A, B, J, C, D');
+  assert.deepEqual(file.visits.map((visit) => visit.hour), [10, 10, 15, 22, 23]);
+  assert.equal(new Set(file.visits.map((visit) => visit.token)).size, 3, 'three browsers');
   assert.equal(file.visits[0].token, file.visits[1].token, 'A and B are the same browser');
-  assert.equal(file.visits[2].token, file.visits[3].token, 'C and D are the same browser');
+  assert.equal(file.visits[3].token, file.visits[4].token, 'C and D are the same browser');
 });
 
 test('visitRecord describes scenario A in full', () => {
@@ -88,16 +88,30 @@ test('visitRecord leaves out what a visit did not do', () => {
   assert.equal(b.sections, undefined);
   assert.equal(b.clicks, undefined);
   assert.equal(b.seconds, 5);
-  const c = visitRecord(sorted[2], SALT);
+  const c = visitRecord(sorted[3], SALT);
   assert.deepEqual(c.editions, ['react']);
   assert.deepEqual(c.resumes, ['react']);
   assert.deepEqual(c.clicks, ['github/profile/about']);
   assert.equal(c.screen, 'phone');
   assert.equal(c.country, 'DE');
-  const d = visitRecord(sorted[3], SALT);
+  assert.equal(c.fhirCalls, undefined, 'no explorer call, no field');
+  assert.equal(c.fhirWrites, undefined);
+  const d = visitRecord(sorted[4], SALT);
   assert.equal(d.loads, undefined, 'D never sent a load ping');
   assert.equal(d.screen, undefined);
   assert.deepEqual(d.sections, ['about'], 'but it did reach a section');
+});
+
+test('visitRecord files the patient explorer as the fifth edition and counts its calls and writes', () => {
+  const { visits } = fixtureDay();
+  const j = visitRecord(visits.sort((x, y) => x.start - y.start)[2], SALT);
+  assert.deepEqual(j.editions, ['js', 'fhir'], 'the home page first, the explorer after it, in display order');
+  assert.equal(j.fhirCalls, 3, 'a search, a create, and a delete');
+  assert.equal(j.fhirWrites, 2, 'the create and the delete');
+  assert.equal(j.apiCalls, undefined, 'the explorer API is not the Experience API');
+  assert.equal(j.country, 'GB');
+  assert.equal(j.seconds, 40);
+  assert.deepEqual(Object.keys(j), ['token', 'hour', 'editions', 'country', 'edge', 'loads', 'screen', 'scheme', 'seconds', 'fhirCalls', 'fhirWrites']);
 });
 
 test('visitRecord never includes an IP address or browser string', () => {

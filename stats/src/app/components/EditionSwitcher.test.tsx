@@ -11,7 +11,7 @@ describe('EditionSwitcher', () => {
 
     // Assert
     const group = screen.getByRole('group', { name: 'Edition' });
-    expect(Array.from(group.querySelectorAll('button')).map((button) => button.textContent)).toEqual(['All', 'JS', 'Angular', 'React', 'Blazor']);
+    expect(Array.from(group.querySelectorAll('button')).map((button) => button.textContent)).toEqual(['All', 'JS', 'Angular', 'React', 'Blazor', 'FHIR explorer']);
     expect(screen.getByRole('button', { name: 'React' }).getAttribute('aria-pressed')).toBe('true');
     expect(screen.getByRole('button', { name: 'All' }).getAttribute('aria-pressed')).toBe('false');
 

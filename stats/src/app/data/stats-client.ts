@@ -1,4 +1,5 @@
 import type { DayKey } from '../dates';
+import { normalizeDayFile } from './normalize';
 import { SCHEMA_VERSION, type DayFile, type StatsIndex } from './types';
 
 /** One day's file, or the reason there is none. */
@@ -52,7 +53,8 @@ export type FetchLike = (input: string, init?: { signal?: AbortSignal }) => Prom
 /**
  * The production client: `baseUrl/index.json` and `baseUrl/days/<day>.json`, with the day files
  * cached in memory for the life of the page. A 404 for a day, or an answer that is not JSON (the
- * hosted distribution's page fallback), is not an error; the day has no file.
+ * hosted distribution's page fallback), is not an error; the day has no file. A day file is
+ * normalized on the way in (see `normalizeDayFile`), so older files read like current ones.
  */
 export function createFetchStatsClient(baseUrl: string, fetchFn: FetchLike = (input, init) => fetch(input, init)): StatsClient {
   const base = baseUrl.endsWith('/') ? baseUrl : `${baseUrl}/`;
@@ -96,7 +98,7 @@ export function createFetchStatsClient(baseUrl: string, fetchFn: FetchLike = (in
             return cached;
           }
           const pending = getJson<DayFile>(`days/${day}.json`).then(
-            (file): DayLoad => ({ day, file }),
+            (file): DayLoad => ({ day, file: file === null ? null : normalizeDayFile(file) }),
             (error: unknown) => {
               cache.delete(day); // a failed fetch is retried next time
               throw error;

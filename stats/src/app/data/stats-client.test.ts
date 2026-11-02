@@ -47,6 +47,21 @@ describe('createFetchStatsClient', () => {
     expect(calls).toEqual(['/data/days/2026-10-16.json', '/data/days/2026-10-17.json', '/data/days/2026-10-18.json']); // the 17th was cached
   });
 
+  it('should normalize an older day file that names the explorer by its host', async () => {
+    // Arrange
+    const visit = { token: 'aaaaaaaaaa', hour: 15, editions: ['js', 'fhir.mvcprogrammer.com'], country: 'GB', edge: 'LHR', fhirCalls: 2 };
+    const fetchFn: FetchLike = async () => jsonResponse(200, { schemaVersion: SCHEMA_VERSION, day: '2026-10-30', timeZone: 'America/New_York', requests: 9, scannerRequests: 1, visits: [visit] });
+    const client = createFetchStatsClient('/data', fetchFn);
+
+    // Act
+    const [load] = await client.loadDays(['2026-10-30']);
+
+    // Assert
+    expect(load?.file?.visits[0]?.editions).toEqual(['js', 'fhir']);
+    expect(load?.file?.visits[0]?.fhirCalls).toBe(2);
+    expect(load?.file?.requests).toBe(9);
+  });
+
   it('should throw HttpStatusError for a server error and retry it on the next call', async () => {
     // Arrange
     let attempts = 0;

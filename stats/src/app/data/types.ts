@@ -3,14 +3,24 @@ import type { DayKey } from '../dates';
 /** The schema this build understands; a file from a newer schema is refused with a message to redeploy. */
 export const SCHEMA_VERSION = 1;
 
-/** The four editions, in display order, as the day files name them. */
-export const EDITIONS = ['js', 'angular', 'react', 'blazor'] as const;
+/**
+ * The four editions and the patient explorer, in display order, as the day files name them. The
+ * explorer is not an edition of the site, but it is the fifth host with its own distribution and
+ * log, and it sits in the same dimension so one switcher and one filter cover every host.
+ */
+export const EDITIONS = ['js', 'angular', 'react', 'blazor', 'fhir'] as const;
 
-/** One of the four editions. */
+/** One of the four editions, or the patient explorer. */
 export type Edition = (typeof EDITIONS)[number];
 
 /** How each edition is named on screen. */
-export const EDITION_LABELS: Readonly<Record<Edition, string>> = { js: 'JS', angular: 'Angular', react: 'React', blazor: 'Blazor' };
+export const EDITION_LABELS: Readonly<Record<Edition, string>> = { js: 'JS', angular: 'Angular', react: 'React', blazor: 'Blazor', fhir: 'FHIR explorer' };
+
+/**
+ * How day files written before the explorer had an id named it: by its host. `normalizeDayFile`
+ * maps these to the id, so the history before 2026-11-02 counts under the same key.
+ */
+export const LEGACY_EDITION_IDS: Readonly<Record<string, Edition>> = { 'fhir.mvcprogrammer.com': 'fhir' };
 
 /** The page's sections in reading order, for the funnel. */
 export const SECTION_ORDER = ['about', 'services', 'portfolio', 'resume', 'contact', 'colophon'] as const;
@@ -41,7 +51,7 @@ export interface VisitRecord {
   readonly token: string;
   /** The local hour the visit started, 0 to 23. */
   readonly hour: number;
-  /** The editions it loaded a page on, in display order. */
+  /** The editions it loaded a page on (the patient explorer is "fhir"), in display order. */
   readonly editions: readonly string[];
   /** Two-letter country of the CloudFront edge that served it, or "??". */
   readonly country: string;
@@ -59,7 +69,11 @@ export interface VisitRecord {
   readonly seconds?: number;
   /** Links followed, as kind/target/place. */
   readonly clicks?: readonly string[];
+  /** Experience API calls. */
   readonly apiCalls?: number;
+  /** Patient explorer API calls, and how many of them were writes (create, replace, patch, delete). */
+  readonly fhirCalls?: number;
+  readonly fhirWrites?: number;
   readonly skills?: readonly string[];
   readonly resumes?: readonly string[];
 }

@@ -27,20 +27,38 @@ export const BOT_PATTERN =
 /** The page's sections in reading order, for the reach table. */
 export const SECTION_ORDER = ['about', 'services', 'portfolio', 'resume', 'contact', 'colophon'];
 
-/** Edition ids in display order, and the host each one is served from. */
-export const EDITION_ORDER = ['js', 'angular', 'react', 'blazor'];
+/**
+ * Edition ids in display order, and the host each one is served from. The patient explorer is not
+ * an edition of the site, but it is the fifth host with its own distribution and log prefix, and the
+ * dashboard files it under the same dimension so one switcher covers every host.
+ */
+export const EDITION_ORDER = ['js', 'angular', 'react', 'blazor', 'fhir'];
 const EDITION_BY_HOST = new Map([
   ['mvcprogrammer.com', 'js'],
   ['www.mvcprogrammer.com', 'js'],
   ['angular.mvcprogrammer.com', 'angular'],
   ['react.mvcprogrammer.com', 'react'],
   ['blazor.mvcprogrammer.com', 'blazor'],
+  ['fhir.mvcprogrammer.com', 'fhir'],
 ]);
 
-/** The edition id for a host header, or the host itself when it is not one of the four. */
+/** The edition id for a host header, or the host itself when it is not one of the five. */
 export function editionOf(host) {
   return EDITION_BY_HOST.get(host) ?? host;
 }
+
+/** True for a request to the patient explorer's API (the FHIR function behind the explorer). */
+export function isExplorerApi(row) {
+  return row.path.startsWith('/api/fhir/');
+}
+
+/** True for a request to the Experience API, the one the editions' timeline and skill filter call. */
+export function isExperienceApi(row) {
+  return row.path.startsWith('/api/experience') || row.path.startsWith('/api/skills');
+}
+
+/** The verbs that change a resource on the explorer's API; a GET is a read. */
+const WRITE_METHODS = new Set(['POST', 'PUT', 'PATCH', 'DELETE']);
 
 // ---------------------------------------------------------------------------------------------------
 // Command line
@@ -323,6 +341,8 @@ export function buildSessions(rows) {
           pages: 0,
           engaged: 0,
           api: 0,
+          fhirCalls: 0,
+          fhirWrites: 0,
           skillClicks: [],
           resumeDownloads: [],
           viewed: new Set(),
@@ -346,8 +366,14 @@ export function buildSessions(rows) {
       if (isAsset(row) || row.path.startsWith('/api/') || row.path === '/ping') {
         current.engaged++;
       }
-      if (row.path.startsWith('/api/experience') || row.path.startsWith('/api/skills')) {
+      if (isExperienceApi(row)) {
         current.api++;
+      }
+      if (isExplorerApi(row)) {
+        current.fhirCalls++;
+        if (WRITE_METHODS.has(row.method)) {
+          current.fhirWrites++;
+        }
       }
       const skill = /(?:^|&)skill=([^&]+)/.exec(row.query);
       if (skill !== null && row.path.startsWith('/api/experience')) {

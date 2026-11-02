@@ -64,7 +64,7 @@ test('buildReport holds counts and day keys only, never a row', () => {
   const report = fixtureReport();
   assert.deepEqual(Object.keys(report), ['schemaVersion', 'generatedAt', 'timeZone', 'window', 'bucket', 'prefixes', 'rows', 'files', 'missingDays', 'index', 'timing']);
   assert.deepEqual(report.window, { days: 3, firstDay: '2026-10-16', lastDay: '2026-10-18', since: '2026-10-16T04:00:00.000Z', parsedFrom: '2026-10-16T03:30:00.000Z' });
-  assert.deepEqual(report.rows, { total: 33, own: 2, scanners: 3, sessions: 7, visits: 5 });
+  assert.deepEqual(report.rows, { total: 42, own: 2, scanners: 3, sessions: 8, visits: 6 });
   assert.deepEqual(report.index, { days: 3, firstDay: '2026-10-15', lastDay: '2026-10-17' });
   const text = JSON.stringify(report);
   assert.ok(!text.includes('203.0.113'), 'no IP address');
@@ -74,13 +74,14 @@ test('buildReport holds counts and day keys only, never a row', () => {
 
 test('dayTotals carries the day file totals plus the beacon and API rows behind them', () => {
   const [day16, day17] = fixtureReport().files;
-  assert.deepEqual(day16, { day: '2026-10-16', requests: 2, scannerRequests: 0, pings: 0, apiRequests: 0, visits: 1, visitors: 1, bytes: 1500 });
-  assert.equal(day17.requests, 28);
+  assert.deepEqual(day16, { day: '2026-10-16', requests: 2, scannerRequests: 0, pings: 0, apiRequests: 0, fhirRequests: 0, visits: 1, visitors: 1, bytes: 1500 });
+  assert.equal(day17.requests, 37);
   assert.equal(day17.scannerRequests, 4, 'two Googlebot lines, one empty user agent, one 404');
-  assert.equal(day17.pings, 10);
-  assert.equal(day17.apiRequests, 1);
-  assert.equal(day17.visits, 4, 'A, B, C, D');
-  assert.equal(day17.visitors, 2, 'two browsers');
+  assert.equal(day17.pings, 12);
+  assert.equal(day17.apiRequests, 1, 'the Experience API alone');
+  assert.equal(day17.fhirRequests, 3, 'the explorer API: a search, a create, and a delete');
+  assert.equal(day17.visits, 5, 'A, B, J, C, D');
+  assert.equal(day17.visitors, 3, 'three browsers');
 });
 
 test('renderReport opens with the run table and the trigger', () => {
@@ -95,15 +96,16 @@ test('renderReport opens with the run table and the trigger', () => {
 
 test('renderReport tallies the log files per prefix with a total row', () => {
   const text = render();
-  assert.ok(text.includes('| `cf/` | 2 | 4.0 KB | 35 | 2 | 0 | 0 | 33 |'));
-  assert.ok(text.includes('| **Total** | 2 | 4.0 KB | 35 | 2 | 0 | 0 | 33 |'));
+  assert.ok(text.includes('| `cf/` | 2 | 4.0 KB | 44 | 2 | 0 | 0 | 42 |'));
+  assert.ok(text.includes('| **Total** | 2 | 4.0 KB | 44 | 2 | 0 | 0 | 42 |'));
 });
 
 test('renderReport shows how the rows were classified and what each day file holds', () => {
   const text = render();
-  assert.ok(text.includes('| Rows in window | Owner (excluded) | Bot browsers | Real browsers | Sessions | Visits |\n| ---: | ---: | ---: | ---: | ---: | ---: |\n| 33 | 2 | 3 | 28 | 7 | 5 |'));
+  assert.ok(text.includes('| Rows in window | Owner (excluded) | Bot browsers | Real browsers | Sessions | Visits |\n| ---: | ---: | ---: | ---: | ---: | ---: |\n| 42 | 2 | 3 | 37 | 8 | 6 |'));
   assert.ok(text.includes('Scanner requests are those from a bot browser string or answered with a 4xx'));
-  assert.ok(text.includes('| `2026-10-17` | 28 | 4 | 10 | 1 | 4 | 2 | 1.5 KB |'));
+  assert.ok(text.includes('| Day | Requests | Scanner requests | Pings | API | FHIR | Visits | Visitors | File |'));
+  assert.ok(text.includes('| `2026-10-17` | 37 | 4 | 12 | 1 | 3 | 5 | 3 | 1.5 KB |'));
   assert.ok(text.includes('Days in the window with no log lines (no file written): `2026-10-18`.'));
   assert.ok(text.includes('The index lists 3 days, `2026-10-15` to `2026-10-17`.'));
 });
