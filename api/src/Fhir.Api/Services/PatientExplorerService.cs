@@ -32,11 +32,19 @@ public sealed class PatientExplorerService : IPatientExplorerService
         _time = time;
     }
 
-    public async Task<PatientSearchResult> SearchAsync(string family, string? birthdate, string? identifier, CancellationToken cancellationToken)
+    public async Task<PatientSearchResult> SearchAsync(string? family, string? birthdate, string? identifier, CancellationToken cancellationToken)
     {
-        ArgumentException.ThrowIfNullOrWhiteSpace(family);
+        if (string.IsNullOrWhiteSpace(family) && string.IsNullOrWhiteSpace(identifier))
+        {
+            throw new ArgumentException("A family name or an identifier is required.", nameof(family));
+        }
 
-        var query = new SearchParams().Add("family", family);
+        var query = new SearchParams();
+        if (family is not null)
+        {
+            query.Add("family", family);
+        }
+
         if (birthdate is not null)
         {
             query.Add("birthdate", birthdate);

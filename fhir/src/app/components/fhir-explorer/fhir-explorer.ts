@@ -4,6 +4,7 @@ import { CONDITION_PICK_LIST } from '../../content/condition-pick-list';
 import { ClinicalStatus } from '../../enumerations/clinical-status';
 import { Sex } from '../../enumerations/sex';
 import { FhirProblemError } from '../../exceptions/fhir-problem-error';
+import { familyOrIdentifier } from '../../validators/family-or-identifier';
 import { notBlank } from '../../validators/not-blank';
 import { DemoSession } from '../../interfaces/demo-session';
 import { FhirClient } from '../../interfaces/fhir-client';
@@ -48,7 +49,14 @@ export class FhirExplorer implements OnInit, OnDestroy {
   /** Base path of the API, for the log and the status line. */
   static readonly API = '/api/fhir';
 
-  /** The prefilled example and the names tried in turn when it returns nothing (the sandbox is wiped now and then). */
+  /**
+   * The MRN every record this demo writes carries (the seeded patient and, by default, every patient created
+   * here), so the form opens on it and the first search lists this demo's records rather than whatever the
+   * shared sandbox holds under a family name.
+   */
+  static readonly DEMO_MRN = 'mvcprogrammer.com';
+
+  /** The family names tried in turn when the demo MRN returns nothing (the sandbox is wiped now and then). */
   static readonly FALLBACK_FAMILIES: readonly string[] = ['Programmer', 'Grant', 'Meridius', 'Deshmukh', 'Smith', 'Johnson', 'Williams'];
 
   /** Lines kept in the log. */
@@ -61,6 +69,7 @@ export class FhirExplorer implements OnInit, OnDestroy {
   static readonly PAGE_CAP = 5;
 
   static readonly FAMILY_REQUIRED_MESSAGE = 'A family name is required.';
+  static readonly SEARCH_REQUIRED_MESSAGE = 'A family name or an identifier is required.';
   static readonly FAMILY_LENGTH_MESSAGE = 'At most 60 characters.';
   static readonly BIRTHDATE_FORMAT_MESSAGE = 'Use the YYYY-MM-DD form.';
   static readonly NO_MATCH_MESSAGE = 'No patients match. Try another family name; the sandbox is wiped now and then.';
@@ -84,11 +93,15 @@ export class FhirExplorer implements OnInit, OnDestroy {
   static readonly BLOCK_WRITING_MESSAGE = 'A write is in flight; wait for it to finish.';
   static readonly CONDITION_LEAD = 'Add one of ten listed conditions to a patient created in this session. The function owns the list; a condition the patient already has active comes back as already there.';
 
-  protected readonly form = inject(FormBuilder).nonNullable.group({
-    family: [FhirExplorer.FALLBACK_FAMILIES[0], [notBlank, Validators.maxLength(60)]],
-    birthdate: ['', [Validators.pattern(/^\d{4}-\d{2}-\d{2}$/)]],
-    identifier: ['', [Validators.maxLength(120)]],
-  });
+  /** The search form: a family name or an identifier (either narrows the search enough), the demo MRN prefilled. */
+  protected readonly form = inject(FormBuilder).nonNullable.group(
+    {
+      family: ['', [Validators.maxLength(60)]],
+      birthdate: ['', [Validators.pattern(/^\d{4}-\d{2}-\d{2}$/)]],
+      identifier: [FhirExplorer.DEMO_MRN, [Validators.maxLength(120)]],
+    },
+    { validators: [familyOrIdentifier] },
+  );
 
   protected readonly EDIT_LEAD = FhirExplorer.EDIT_LEAD;
   protected readonly CONDITION_LEAD = FhirExplorer.CONDITION_LEAD;
@@ -96,8 +109,8 @@ export class FhirExplorer implements OnInit, OnDestroy {
   /** The ten conditions the select offers, a mirror of the function's list. */
   protected readonly CONDITIONS = CONDITION_PICK_LIST;
 
-  /** What a new patient starts as, so Create works without typing and the result names the site. */
-  static readonly NEW_PATIENT: Readonly<Record<'familyName' | 'givenName' | 'mrn', string>> = { familyName: 'Patient', givenName: 'Demo', mrn: 'mvcprogrammer.com' };
+  /** What a new patient starts as, so Create works without typing and the result carries the demo MRN the search opens on. */
+  static readonly NEW_PATIENT: Readonly<Record<'familyName' | 'givenName' | 'mrn', string>> = { familyName: 'Patient', givenName: 'Demo', mrn: FhirExplorer.DEMO_MRN };
 
   protected readonly editForm = inject(FormBuilder).nonNullable.group({
     familyName: [FhirExplorer.NEW_PATIENT.familyName, [notBlank, Validators.maxLength(60)]],
@@ -238,13 +251,17 @@ export class FhirExplorer implements OnInit, OnDestroy {
     this.destroyed = true;
   }
 
+  /** The family field's message: the one-of rule (shown under the family field, the first of the two) or the length cap. */
   protected familyError(): string {
-    const control = this.form.controls.family;
-    if (!this.validated() || control.valid) {
+    if (!this.validated()) {
       return '';
     }
 
-    return control.hasError('required') ? FhirExplorer.FAMILY_REQUIRED_MESSAGE : FhirExplorer.FAMILY_LENGTH_MESSAGE;
+    if (this.form.hasError('familyOrIdentifier')) {
+      return FhirExplorer.SEARCH_REQUIRED_MESSAGE;
+    }
+
+    return this.form.controls.family.invalid ? FhirExplorer.FAMILY_LENGTH_MESSAGE : '';
   }
 
   protected birthdateError(): string {
@@ -310,7 +327,7 @@ export class FhirExplorer implements OnInit, OnDestroy {
     };
   }
 
-  /** Validates, then searches. The prefilled example walks the fallback list when it returns nothing. */
+  /** Validates, then searches. The prefilled demo MRN walks the fallback families when it returns nothing. */
   protected submit(): void {
     if (this.form.invalid) {
       this.validated.set(true);
@@ -321,8 +338,8 @@ export class FhirExplorer implements OnInit, OnDestroy {
     const value = this.form.getRawValue();
     const family = value.family.trim();
     const identifier = value.identifier.trim();
-    const usingTheExample = family === FhirExplorer.FALLBACK_FAMILIES[0] && value.birthdate === '' && identifier === '';
-    void this.pendingTasks.run(() => this.search(family, value.birthdate, identifier, usingTheExample ? 1 : null));
+    const usingTheExample = family === '' && value.birthdate === '' && identifier === FhirExplorer.DEMO_MRN;
+    void this.pendingTasks.run(() => this.search(family, value.birthdate, identifier, usingTheExample ? 0 : null));
   }
 
   protected select(id: string): void {
@@ -829,10 +846,29 @@ export class FhirExplorer implements OnInit, OnDestroy {
     };
   }
 
+  /** The query string of a search, the given parameters only, in the order the API documents them. */
+  static searchQuery(family: string, birthdate: string, identifier: string): string {
+    const parts: string[] = [];
+    if (family !== '') {
+      parts.push(`family=${encodeURIComponent(family)}`);
+    }
+
+    if (birthdate !== '') {
+      parts.push(`birthdate=${encodeURIComponent(birthdate)}`);
+    }
+
+    if (identifier !== '') {
+      parts.push(`identifier=${encodeURIComponent(identifier)}`);
+    }
+
+    return parts.join('&');
+  }
+
   private async search(family: string, birthdate: string, identifier: string, fallbackIndex: number | null): Promise<void> {
     this.searching.set(true);
     this.setStatus('Searching…', '');
-    const path = `/patients?family=${encodeURIComponent(family)}` + (birthdate ? `&birthdate=${encodeURIComponent(birthdate)}` : '') + (identifier ? `&identifier=${encodeURIComponent(identifier)}` : '');
+    const path = `/patients?${FhirExplorer.searchQuery(family, birthdate, identifier)}`;
+    const described = family ? `“${family}”` : `identifier “${identifier}”`;
     this.write(`→ GET ${FhirExplorer.API}${path}`, 'request');
 
     try {
@@ -847,11 +883,12 @@ export class FhirExplorer implements OnInit, OnDestroy {
       this.write(`  mapped to PatientSearchResult: ${result.count} ${result.count === 1 ? 'item' : 'items'}${result.trace.truncated ? ' (one page; more matches exist)' : ''}`, 'detail');
       this.showDto('PatientSearchResult', result);
 
-      // The prefilled example may have been wiped from the sandbox; walk the fallback list once, without extra inputs.
-      if (result.count === 0 && !birthdate && !identifier && fallbackIndex !== null && fallbackIndex < FhirExplorer.FALLBACK_FAMILIES.length) {
+      // The demo's records may have been wiped from the sandbox; walk the fallback families once, by family name alone.
+      if (result.count === 0 && fallbackIndex !== null && fallbackIndex < FhirExplorer.FALLBACK_FAMILIES.length) {
         const next = FhirExplorer.FALLBACK_FAMILIES[fallbackIndex];
-        this.write(`  nothing for "${family}"; the sandbox may have been wiped, trying "${next}"`, 'note');
+        this.write(`  nothing for ${described}; the sandbox may have been wiped, trying "${next}"`, 'note');
         this.form.controls.family.setValue(next);
+        this.form.controls.identifier.setValue('');
         this.searching.set(false);
         await this.search(next, '', '', fallbackIndex + 1);
         return;
@@ -860,7 +897,7 @@ export class FhirExplorer implements OnInit, OnDestroy {
       this.patients.set(result.items);
       this.countLabel.set(result.count === 0 ? '(0)' : `(${result.count}${result.total !== undefined && result.total > result.count ? ` of ${result.total}` : ''})`);
       this.listMessage.set(FhirExplorer.NO_MATCH_MESSAGE);
-      this.setStatus(result.count === 0 ? 'No matches.' : `${result.count} ${result.count === 1 ? 'patient' : 'patients'} for “${family}”; the first is selected.`, 'is-ok');
+      this.setStatus(result.count === 0 ? 'No matches.' : `${result.count} ${result.count === 1 ? 'patient' : 'patients'} for ${described}; the first is selected.`, 'is-ok');
       if (result.items.length > 0) {
         await this.loadSummary(result.items[0].id);
       } else {

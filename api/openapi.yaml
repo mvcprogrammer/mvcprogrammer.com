@@ -2,7 +2,7 @@ openapi: 3.1.0
 
 info:
   title: mvcprogrammer.com API
-  version: 1.8.0
+  version: 1.9.0
   summary: "APIs behind mvcprogrammer.com: the Experience section and the FHIR R4 patient explorer."
   description: |
     Two small, public functions served same-origin under `/api`.
@@ -336,13 +336,15 @@ paths:
       summary: Search patients
       description: |
         Runs `GET Patient?family=&birthdate=&identifier=` against the sandbox and maps the
-        first page (`_count=20`) to list items. `family` is required so the search can never
-        enumerate the whole server. `total` is present only when the sandbox reports it.
+        first page (`_count=20`) to list items. At least one of `family` and `identifier` is
+        required (from 1.9.0; before that `family` alone was), so the search can never enumerate
+        the whole server; the explorer opens on the demo MRN `mvcprogrammer.com` with no family
+        name. `total` is present only when the sandbox reports it.
       parameters:
         - name: family
           in: query
-          required: true
-          description: Family name, matched by the sandbox with FHIR string-search semantics (prefix, case-insensitive).
+          required: false
+          description: Family name, matched by the sandbox with FHIR string-search semantics (prefix, case-insensitive). Required when `identifier` is absent.
           schema:
             type: string
             minLength: 1
@@ -358,7 +360,7 @@ paths:
         - name: identifier
           in: query
           required: false
-          description: An identifier value, or `system|value`, matched exactly by the sandbox. Typically an MRN.
+          description: An identifier value, or `system|value`, matched exactly by the sandbox. Typically an MRN. Required when `family` is absent.
           schema:
             type: string
             minLength: 1
@@ -1548,8 +1550,7 @@ components:
 
     SearchQuery:
       type: object
-      description: The search as the function ran it, echoed back.
-      required: [family]
+      description: The search as the function ran it, echoed back; only the parameters that were given.
       additionalProperties: false
       properties:
         family:

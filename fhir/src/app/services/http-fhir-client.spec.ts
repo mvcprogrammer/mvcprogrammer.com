@@ -58,6 +58,15 @@ describe('HttpFhirClient', () => {
       await expect(pending).resolves.toBeTruthy();
     });
 
+    it('should request the identifier alone when the family name is empty', async () => {
+      // Act
+      const pending = client.searchPatients({ family: '', birthdate: '', identifier: 'mvcprogrammer.com' });
+      http.expectOne('api/fhir/patients?identifier=mvcprogrammer.com').flush(createPatientSearchResult());
+
+      // Assert
+      await expect(pending).resolves.toBeTruthy();
+    });
+
     it('should reject with a FhirProblemError carrying the problem detail on an error status', async () => {
       // Act
       const pending = client.searchPatients({ family: 'Programmer', birthdate: '', identifier: '' });

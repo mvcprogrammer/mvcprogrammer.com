@@ -8,13 +8,13 @@
   </div>
   <p class="fhir-lead">A window onto a public FHIR R4 test server seeded with synthetic records. No real patient data is involved, nothing is persisted, and nothing beyond request metadata is logged.</p>
 
-  <!-- Search. The example is prefilled so the first click succeeds; the sandbox is wiped now and
-       then, so the component replaces a family name that returns nothing with the next one in its list. -->
+  <!-- Search. The demo MRN is prefilled so the first click lists this demo's records; the sandbox is wiped
+       now and then, so the component falls back to a walk through its list of family names when it returns nothing. -->
   <form class="fhir-search" [class.is-loading]="searching()" id="fhir-search" role="search" aria-label="Patient search" novalidate [formGroup]="form" (ngSubmit)="submit()">
     <div class="fhir-search-row">
       <div class="field">
-        <label class="field-label" for="fhir-family">Family name <span class="fhir-required" aria-hidden="true">*</span></label>
-        <input id="fhir-family" formControlName="family" type="text" required maxlength="60" autocomplete="off" spellcheck="false" aria-describedby="fhir-family-error"
+        <label class="field-label" for="fhir-family">Family name <span class="fhir-optional">(or an identifier)</span></label>
+        <input id="fhir-family" formControlName="family" type="text" maxlength="60" autocomplete="off" spellcheck="false" aria-describedby="fhir-family-error"
                [class.is-invalid]="familyError() !== ''" [attr.aria-invalid]="familyError() !== '' ? 'true' : null">
         <p class="field-error" id="fhir-family-error" aria-live="polite">{{ familyError() }}</p>
       </div>
@@ -25,7 +25,7 @@
         <p class="field-error" id="fhir-birthdate-error" aria-live="polite">{{ birthdateError() }}</p>
       </div>
       <div class="field">
-        <label class="field-label" for="fhir-identifier">Identifier <span class="fhir-optional">(MRN, optional)</span></label>
+        <label class="field-label" for="fhir-identifier">Identifier <span class="fhir-optional">(MRN)</span></label>
         <input id="fhir-identifier" formControlName="identifier" type="text" maxlength="120" autocomplete="off" spellcheck="false" placeholder="12345 or system|value">
         <p class="field-error" aria-live="polite"></p>
       </div>
@@ -35,7 +35,7 @@
     </div>
     <p [class]="statusClass()" id="fhir-status" role="status" aria-live="polite">
       @if (statusText() === '') {
-        Searches <code>GET /api/fhir/patients?family=&hellip;</code>, which runs <code>GET Patient?family=&hellip;</code> on the sandbox.
+        Searches <code>GET /api/fhir/patients?identifier=&hellip;</code> (or <code>?family=&hellip;</code>), which runs the same <code>GET Patient?&hellip;</code> on the sandbox.
       } @else {
         {{ statusText() }}
       }

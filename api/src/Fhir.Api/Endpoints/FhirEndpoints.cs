@@ -74,9 +74,18 @@ public static partial class FhirEndpoints
         string? identifier,
         CancellationToken cancellationToken)
     {
-        if (string.IsNullOrWhiteSpace(family) || family.Length > MAX_FAMILY_LENGTH)
+        // One of the two narrows the search; either alone is enough, so the explorer can open on the demo MRN
+        // without a family name, and neither is a 400 so a search can never enumerate the whole sandbox.
+        var hasFamily = !string.IsNullOrWhiteSpace(family);
+        var hasIdentifier = !string.IsNullOrWhiteSpace(identifier);
+        if (!hasFamily && !hasIdentifier)
         {
-            return Problems.InvalidParameter(context, $"'family' is required and must be between 1 and {MAX_FAMILY_LENGTH} characters.");
+            return Problems.InvalidParameter(context, "'family' or 'identifier' is required.");
+        }
+
+        if (hasFamily && family!.Length > MAX_FAMILY_LENGTH)
+        {
+            return Problems.InvalidParameter(context, $"'family' must be between 1 and {MAX_FAMILY_LENGTH} characters.");
         }
 
         if (birthdate is not null && !DateOnly.TryParseExact(birthdate, "yyyy-MM-dd", CultureInfo.InvariantCulture, DateTimeStyles.None, out _))
@@ -89,7 +98,7 @@ public static partial class FhirEndpoints
             return Problems.InvalidParameter(context, $"'identifier' must be between 1 and {MAX_IDENTIFIER_LENGTH} characters.");
         }
 
-        var result = await service.SearchAsync(family.Trim(), birthdate, identifier, cancellationToken);
+        var result = await service.SearchAsync(hasFamily ? family!.Trim() : null, birthdate, identifier, cancellationToken);
         return CacheableJson.Ok(context, result, CACHE_CONTROL);
     }
 

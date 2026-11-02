@@ -109,7 +109,8 @@ api/src/Fhir.Api/
 ```bash
 # From the repo root. Reads the public HAPI sandbox; no AWS credentials needed.
 API_VERSION=1.0.0 dotnet run --project api/src/Fhir.Api
-curl -s "http://localhost:5000/api/fhir/patients?family=Smith" | jq '.count, .items[0], .trace'
+curl -s "http://localhost:5000/api/fhir/patients?identifier=mvcprogrammer.com" | jq '.count, .items[0], .trace'   # this demo's records, the explorer's default
+curl -s "http://localhost:5000/api/fhir/patients?family=Smith" | jq '.count, .items[0], .trace'                  # family or identifier, at least one
 curl -s http://localhost:5000/api/fhir/patients/<id>/summary | jq '.patient, .counts, .trace.totalDurationMs'
 curl -s http://localhost:5000/api/fhir/capability | jq .ok
 
