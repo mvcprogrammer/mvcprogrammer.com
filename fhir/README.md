@@ -97,6 +97,11 @@ to list every record carrying the demo MRN. When the prefilled search returns no
 the sandbox is wiped, the explorer clears the identifier and walks its list of family names, starting with
 `Programmer` alone. A search the visitor typed never falls back.
 
+A system alone, `system|` with nothing after the bar, lists every patient carrying an identifier in that
+system. The HL7 ETL (`api/src/Hl7.Etl`, see the API README) stamps everything it loads with
+`https://mvcprogrammer.com/fhir/etl`, so `https://mvcprogrammer.com/fhir/etl|` in the Identifier field with
+the family name cleared lists its whole cohort.
+
 The dev server has no `/api`, so the capability check fails and the explorer says so in its log.
 Serve the build output behind the real CloudFront behaviors (or any host that proxies `/api/fhir`)
 to search.
