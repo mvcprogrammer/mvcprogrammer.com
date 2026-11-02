@@ -161,6 +161,22 @@ jobs:
   api:
     name: Experience and FHIR APIs
     runs-on: ubuntu-24.04
+    # The HL7 ETL's repository tests run against a real Postgres, as the coding standard asks of
+    # data-access code; the image is pinned by digest like the actions are by SHA.
+    services:
+      postgres:
+        image: postgres:17.11@sha256:3b0cda93be7c8dba2ed484d19393d93845dc3dafb88973e248ba8e6d99d784e1
+        env:
+          POSTGRES_USER: etl
+          POSTGRES_PASSWORD: etl
+          POSTGRES_DB: hl7_etl_test
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U etl -d hl7_etl_test"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
     steps:
       - name: Check out
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
@@ -180,6 +196,11 @@ jobs:
 
       - name: Test the FHIR API
         run: dotnet test --project api/tests/Fhir.Api.Tests -c Release
+
+      - name: Test the HL7 ETL
+        run: dotnet test --project api/tests/Hl7.Etl.Tests -c Release
+        env:
+          HL7_ETL_TEST_CONNECTION: Host=localhost;Username=etl;Password=etl;Database=hl7_etl_test
 
   # One check for the ruleset to require. It runs whatever happened above and fails when any suite did.
   ci:
