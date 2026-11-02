@@ -4,6 +4,8 @@
 //
 //   dotnet run --project api/src/Hl7.Etl -- migrate                       # create or update the hl7 schema
 //   dotnet run --project api/src/Hl7.Etl -- generate --patients 25 [--seed 1]   # land a synthetic cohort
+//   dotnet run --project api/src/Hl7.Etl -- load [--batch-size 25] [--max-batches 100]   # map and bulk-load the sandbox
+//   dotnet run --project api/src/Hl7.Etl -- requeue                       # replay the feed: prove the load is idempotent
 //   dotnet run --project api/src/Hl7.Etl -- status                        # pending, claimed, processed, failed
 //
 // The connection string comes from HL7_ETL_CONNECTION (default Host=localhost;Database=hl7_etl).
@@ -35,6 +37,8 @@ try
     {
         "migrate" => await MigrateAsync(),
         "generate" => await GenerateAsync(),
+        "load" => await LoadAsync(),
+        "requeue" => await RequeueAsync(),
         "status" => await StatusAsync(),
         _ => Help(),
     };
@@ -61,6 +65,23 @@ async Task<int> GenerateAsync()
     return 0;
 }
 
+async Task<int> LoadAsync()
+{
+    var options = host.Services.GetRequiredService<Microsoft.Extensions.Options.IOptions<Hl7.Etl.Configurations.EtlOptions>>().Value;
+    var batchSize = IntArg("--batch-size") ?? options.BatchSize;
+    var maxBatches = IntArg("--max-batches") ?? 100;
+    var summary = await host.Services.GetRequiredService<LoadService>().RunAsync(batchSize, maxBatches, cancellation.Token);
+    Console.WriteLine($"{summary.Batches} batches, {summary.Messages} messages: {summary.Mapped} mapped, {summary.MappingFailures} could not be mapped; {summary.Created} resources created, {summary.AlreadyPresent} already present; {summary.FailedBatches} batches failed; {summary.Elapsed.TotalSeconds:0.0} s.");
+    return summary.FailedBatches == 0 && summary.MappingFailures == 0 ? 0 : 1;
+}
+
+async Task<int> RequeueAsync()
+{
+    var requeued = await host.Services.GetRequiredService<IMessageRepository>().RequeueAsync(cancellation.Token);
+    Console.WriteLine($"{requeued} messages requeued.");
+    return 0;
+}
+
 async Task<int> StatusAsync()
 {
     var status = await host.Services.GetRequiredService<IMessageRepository>().StatusAsync(cancellation.Token);
@@ -70,7 +91,7 @@ async Task<int> StatusAsync()
 
 int Help()
 {
-    Console.WriteLine("Commands: migrate | generate [--patients N] [--seed S] | status");
+    Console.WriteLine("Commands: migrate | generate [--patients N] [--seed S] | load [--batch-size N] [--max-batches M] | requeue | status");
     return command == "help" ? 0 : 2;
 }
 

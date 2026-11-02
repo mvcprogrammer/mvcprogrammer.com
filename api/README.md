@@ -197,16 +197,19 @@ with them.
 
 ```
 api/src/Hl7.Etl/
-  Program.cs                The commands: migrate, generate, status (load arrives with slice 3).
+  Program.cs                The commands: migrate, generate, load, requeue, status.
   Sql/                      The hl7 schema: the messages landing table and the functions the repository calls
-                            (insert, claim a batch with SKIP LOCKED, complete, fail, status). Applied by migrate, once each.
+                            (insert, claim a batch with SKIP LOCKED, complete, fail, requeue, status). Applied by migrate, once each.
   Configurations/           EtlOptions (Options pattern; HL7_ETL_CONNECTION overrides the connection string).
   Databases/                MessageRepository: one Npgsql connection per call, one function per method, typed parameters.
   Mappers/                  LandedMessageMapper (reader rows to records by ordinal); MessageMapper, AdmissionMapper, and
-                            ResultMapper (HL7 v2 to FHIR R4, see below); Hl7Values (typed field reads); EtlIdentifiers.
-  Exceptions/               Hl7MappingException: the control id, the location (PID.7, OBX[3].2), and the reason.
+                            ResultMapper (HL7 v2 to FHIR R4, see below); Hl7Values (typed field reads); EtlIdentifiers;
+                            BundleBuilder (one transaction bundle per batch, conditional creates, in-bundle references).
+  Exceptions/               Hl7MappingException (the control id, the location such as PID.7 or OBX[3].2, and the reason) and
+                            BundleRejectedException (the status and the OperationOutcome text).
+  Services/                 MigrationService, GenerateService, LoadService (the loader), HttpBundleClient (the resilient
+                            HttpClient that posts bundles and looks identifiers up).
   Generators/               SyntheticCohortGenerator (deterministic per seed) and Hl7MessageComposer (HL7-V2 library, v2.5.1).
-  Services/                 MigrationService and GenerateService.
 api/tests/Hl7.Etl.Tests/    Generator tests (compose, then parse back), mapper tests (every path, every failure, a Firely
                             round trip), and repository tests against a real Postgres.
 ```
@@ -217,6 +220,8 @@ api/tests/Hl7.Etl.Tests/    Generator tests (compose, then parse back), mapper t
 brew install postgresql@17 && brew services start postgresql@17 && createdb hl7_etl   # once, on a Mac
 dotnet run --project api/src/Hl7.Etl -- migrate                   # create or update the hl7 schema; idempotent
 dotnet run --project api/src/Hl7.Etl -- generate --patients 25    # land 25 admissions and about 40 results; a rerun lands nothing
+dotnet run --project api/src/Hl7.Etl -- load                      # parse and bulk-load the sandbox, one transaction bundle per batch
+dotnet run --project api/src/Hl7.Etl -- requeue                   # put every processed message back, then load again: nothing duplicates
 dotnet run --project api/src/Hl7.Etl -- status                    # pending, claimed, processed, failed
 
 HL7_ETL_TEST_CONNECTION="Host=localhost;Database=hl7_etl_test" dotnet test --project api/tests/Hl7.Etl.Tests
@@ -249,5 +254,16 @@ and are skipped without it; CI runs them against a Postgres service container.
   `Patient?identifier=system|mrn`, which the loader resolves in-bundle when both land in one batch. A
   message that cannot be mapped raises `Hl7MappingException` naming the control id, the field, and the
   reason; the loader records it against the row and the batch goes on.
+- **The load.** A batch of claimed messages becomes one transaction bundle; every entry is a conditional
+  create (`ifNoneExist` on the ETL identifier), so a rerun matches instead of duplicating and the whole
+  feed can be replayed: `requeue` then `load` reports every resource as already present. The public
+  sandbox refuses conditional references (`Patient?identifier=...`) inside a bundle, so references to a
+  patient or encounter in the same batch become in-bundle `urn:uuid` references, and references to one
+  loaded by an earlier batch are resolved to `Patient/{id}` by one identifier lookup per batch; a message
+  whose target is not on the server yet is set aside and retried later. The bundle goes through
+  `IHttpClientFactory` with the standard resilience handler (attempt and total timeouts, retries with
+  jitter; safe because the bundle is idempotent). A batch the server rejects, or that times out, is marked
+  failed with the reason and keeps its claim, so the same run does not spin on it; the next run after the
+  stale-claim window retries it. The landing table is the only record of progress.
 - **HL7-V2 over nHapi.** MIT-licensed, targets .NET 10, parses and composes without a per-version schema;
   nHapi is MPL-2.0 and targets netstandard2.0 with a far larger object model than a demo needs.

@@ -20,6 +20,7 @@ public sealed class MessageRepository : IMessageRepository
     private const string COMPLETE_CALL = "SELECT hl7.messages_complete($1, $2)";
     private const string FAIL_CALL = "SELECT hl7.messages_fail($1, $2)";
     private const string STATUS_CALL = "SELECT * FROM hl7.messages_status()";
+    private const string REQUEUE_CALL = "SELECT hl7.messages_requeue()";
 
     private readonly NpgsqlDataSource _dataSource;
 
@@ -83,6 +84,15 @@ public sealed class MessageRepository : IMessageRepository
         await using var command = new NpgsqlCommand(STATUS_CALL, connection) { CommandTimeout = COMMAND_TIMEOUT_SECONDS };
         await using var reader = await command.ExecuteReaderAsync(cancellationToken);
         return await LandedMessageMapper.ReadStatusAsync(reader, cancellationToken);
+    }
+
+    /// <inheritdoc />
+    public async Task<int> RequeueAsync(CancellationToken cancellationToken)
+    {
+        await using var connection = await _dataSource.OpenConnectionAsync(cancellationToken);
+        await using var command = new NpgsqlCommand(REQUEUE_CALL, connection) { CommandTimeout = COMMAND_TIMEOUT_SECONDS };
+        var result = await command.ExecuteScalarAsync(cancellationToken);
+        return result is int requeued ? requeued : 0;
     }
 
     private async Task<int> MarkAsync(IReadOnlyList<long> messageIds, string text, bool complete, CancellationToken cancellationToken)

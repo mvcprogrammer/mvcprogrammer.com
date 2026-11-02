@@ -14,9 +14,12 @@ public interface IMessageRepository
     /// <summary>Marks a batch processed with the FHIR server's id for the transaction response. Returns the rows updated.</summary>
     Task<int> CompleteAsync(IReadOnlyList<long> messageIds, string fhirBundleId, CancellationToken cancellationToken);
 
-    /// <summary>Marks a batch failed with the reason and releases the claim. Returns the rows updated.</summary>
+    /// <summary>Marks a batch failed with the reason, keeping the claim so the batch is retried only after the stale window. Returns the rows updated.</summary>
     Task<int> FailAsync(IReadOnlyList<long> messageIds, string error, CancellationToken cancellationToken);
 
     /// <summary>The counts of the landing table.</summary>
     Task<LandingStatus> StatusAsync(CancellationToken cancellationToken);
+
+    /// <summary>Puts every processed message back in the queue, to replay the feed. Returns the rows requeued.</summary>
+    Task<int> RequeueAsync(CancellationToken cancellationToken);
 }
