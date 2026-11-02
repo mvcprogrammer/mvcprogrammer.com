@@ -18,11 +18,11 @@ describe('Nexus', () => {
     expect(details.querySelectorAll('ol li')).toHaveLength(5);
     expect(host.querySelectorAll('#jd-matrix-table tbody tr')).toHaveLength(23);
     expect(host.querySelectorAll('#jd-gaps-table tbody tr')).toHaveLength(8);
-    expect(host.querySelectorAll('.jd-grade.is-yes')).toHaveLength(10);
-    expect(host.querySelectorAll('.jd-grade.is-near')).toHaveLength(8);
+    expect(host.querySelectorAll('.jd-grade.is-yes')).toHaveLength(11);
+    expect(host.querySelectorAll('.jd-grade.is-near')).toHaveLength(7);
     expect(host.querySelectorAll('.jd-grade.is-no')).toHaveLength(5);
-    expect(host.querySelectorAll('.jd-case')).toHaveLength(4);
-    expect(host.querySelectorAll('.jd-case .jd-takeaway strong')).toHaveLength(4);
+    expect(host.querySelectorAll('.jd-case')).toHaveLength(5);
+    expect(host.querySelectorAll('.jd-case .jd-takeaway strong')).toHaveLength(5);
     expect(host.querySelectorAll('.jd-points li > strong').length).toBeGreaterThanOrEqual(16);
     expect(document.querySelector('meta[name="robots"]')?.getAttribute('content')).toBe('noindex, nofollow');
 
