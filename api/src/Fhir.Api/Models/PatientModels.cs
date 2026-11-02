@@ -13,7 +13,7 @@ public enum Sex
 
 /// <summary>The search as the function ran it, echoed back. Mirrors SearchQuery in openapi.yaml.</summary>
 public sealed record SearchQuery(
-    string Family,
+    [property: JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)] string? Family,
     [property: JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)] string? Birthdate,
     [property: JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)] string? Identifier);
 

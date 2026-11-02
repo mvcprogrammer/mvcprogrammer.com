@@ -32,14 +32,16 @@ describe('FhirExplorer', () => {
   });
 
   describe('ngOnInit', () => {
-    it('should check the capability once, log the sandbox, and prefill the example without searching', async () => {
+    it('should check the capability once, log the sandbox, and prefill the demo MRN without searching', async () => {
       // Act
       await render();
 
       // Assert
       expect(client.capabilityCalls).toBe(1);
       expect(client.searches).toEqual([]);
-      expect(family().value).toBe('Programmer');
+      expect(family().value).toBe('');
+      expect(identifier().value).toBe('mvcprogrammer.com');
+      expect(family().hasAttribute('required')).toBe(false);
       expect(host.querySelector('[data-fhir-source]')?.textContent).toBe('HAPI sandbox');
       const log = logText();
       expect(log).toContain('→ GET /api/fhir/capability');
@@ -88,7 +90,7 @@ describe('FhirExplorer', () => {
   });
 
   describe('submit', () => {
-    it('should search the prefilled example, list the match, select it, and render the summary', async () => {
+    it('should search the prefilled demo MRN, list the match, select it, and render the summary', async () => {
       // Arrange
       await render();
 
@@ -97,9 +99,9 @@ describe('FhirExplorer', () => {
       await fixture.whenStable();
 
       // Assert
-      expect(client.searches).toEqual([{ family: 'Programmer', birthdate: '', identifier: '' }]);
+      expect(client.searches).toEqual([{ family: '', birthdate: '', identifier: 'mvcprogrammer.com' }]);
       expect(client.summaryCalls).toEqual(['78785']);
-      expect(status().textContent?.trim()).toBe('1 patient for “Programmer”; the first is selected.');
+      expect(status().textContent?.trim()).toBe('1 patient for identifier “mvcprogrammer.com”; the first is selected.');
       expect(status().classList.contains('is-ok')).toBe(true);
       expect(host.querySelector('#fhir-count')?.textContent).toBe('(1)');
       const rows = host.querySelectorAll<HTMLButtonElement>('.fhir-patient');
@@ -194,7 +196,7 @@ describe('FhirExplorer', () => {
 
       // Assert
       const log = logText();
-      expect(log).toContain('→ GET /api/fhir/patients?family=Programmer');
+      expect(log).toContain('→ GET /api/fhir/patients?identifier=mvcprogrammer.com');
       expect(log).toContain('← 200 /patients in 120 ms · X-Cache: Miss from cloudfront · ETag "abc123"');
       expect(log).toContain('↳ GET https://hapi.fhir.org/baseR4/Patient?family=Programmer');
       expect(log).toContain('200 · 110 ms · 1 entry · 1 page');
@@ -228,12 +230,13 @@ describe('FhirExplorer', () => {
       // Act
       type(family(), 'Nobody');
       type(host.querySelector<HTMLInputElement>('#fhir-birthdate') as HTMLInputElement, '1979-04-12');
-      type(host.querySelector<HTMLInputElement>('#fhir-identifier') as HTMLInputElement, ' 12345 ');
+      type(identifier(), ' 12345 ');
       submit();
       await fixture.whenStable();
 
       // Assert
       expect(client.searches).toEqual([{ family: 'Nobody', birthdate: '1979-04-12', identifier: '12345' }]);
+      expect(logText()).toContain('→ GET /api/fhir/patients?family=Nobody&birthdate=1979-04-12&identifier=12345');
       expect(status().textContent?.trim()).toBe('No matches.');
       expect(host.querySelector('#fhir-count')?.textContent).toBe('(0)');
       expect(host.querySelector<HTMLElement>('#fhir-list-empty')?.hidden).toBe(false);
@@ -242,7 +245,7 @@ describe('FhirExplorer', () => {
       expect(client.summaryCalls).toEqual([]);
     });
 
-    it('should walk the fallback families when the example returns nothing, and stop at the first hit', async () => {
+    it('should walk the fallback families when the demo MRN returns nothing, and stop at the first hit', async () => {
       // Arrange
       await render();
       client.onSearchPatients = (request) =>
@@ -253,11 +256,34 @@ describe('FhirExplorer', () => {
       await fixture.whenStable();
 
       // Assert
-      expect(client.searches.map((search) => search.family)).toEqual(['Programmer', 'Grant', 'Meridius']);
+      expect(client.searches).toEqual([
+        { family: '', birthdate: '', identifier: 'mvcprogrammer.com' },
+        { family: 'Programmer', birthdate: '', identifier: '' },
+        { family: 'Grant', birthdate: '', identifier: '' },
+        { family: 'Meridius', birthdate: '', identifier: '' },
+      ]);
       expect(family().value).toBe('Meridius');
-      expect(logText()).toContain('nothing for "Programmer"; the sandbox may have been wiped, trying "Grant"');
+      expect(identifier().value).toBe('');
+      expect(logText()).toContain('nothing for identifier “mvcprogrammer.com”; the sandbox may have been wiped, trying "Programmer"');
+      expect(logText()).toContain('nothing for “Programmer”; the sandbox may have been wiped, trying "Grant"');
       expect(status().textContent?.trim()).toBe('1 patient for “Meridius”; the first is selected.');
       expect(client.summaryCalls).toEqual(['9']);
+    });
+
+    it('should search by family name alone once the identifier is cleared, with the fallback off', async () => {
+      // Arrange
+      await render();
+      client.onSearchPatients = () => Promise.resolve(createFhirResponse(createEmptyPatientSearchResult()));
+
+      // Act
+      type(family(), 'Grant');
+      type(identifier(), '');
+      submit();
+      await fixture.whenStable();
+
+      // Assert
+      expect(client.searches).toEqual([{ family: 'Grant', birthdate: '', identifier: '' }]);
+      expect(status().textContent?.trim()).toBe('No matches.');
     });
 
     it('should show the total when the sandbox reports more matches than the page', async () => {
@@ -306,19 +332,20 @@ describe('FhirExplorer', () => {
       expect(logText()).toContain('← network error');
     });
 
-    it('should require a family name and reject a malformed birth date without searching', async () => {
+    it('should require a family name or an identifier and reject a malformed birth date without searching', async () => {
       // Arrange
       await render();
 
       // Act. A date input drops a malformed value before the form sees it, so the control is set directly.
       type(family(), '   ');
+      type(identifier(), ' ');
       fixture.componentInstance['form'].controls.birthdate.setValue('1979-4-1');
       submit();
       await fixture.whenStable();
 
       // Assert
       expect(client.searches).toEqual([]);
-      expect(host.querySelector('#fhir-family-error')?.textContent).toBe(FhirExplorer.FAMILY_REQUIRED_MESSAGE);
+      expect(host.querySelector('#fhir-family-error')?.textContent).toBe(FhirExplorer.SEARCH_REQUIRED_MESSAGE);
       expect(family().classList.contains('is-invalid')).toBe(true);
       expect(family().getAttribute('aria-invalid')).toBe('true');
       expect(host.querySelector('#fhir-birthdate-error')?.textContent).toBe(FhirExplorer.BIRTHDATE_FORMAT_MESSAGE);
@@ -1117,6 +1144,10 @@ describe('FhirExplorer', () => {
 
   function family(): HTMLInputElement {
     return host.querySelector('#fhir-family') as HTMLInputElement;
+  }
+
+  function identifier(): HTMLInputElement {
+    return host.querySelector('#fhir-identifier') as HTMLInputElement;
   }
 
   function status(): HTMLElement {

@@ -32,7 +32,7 @@ fhir/
                                 operation, and ConditionInput among them.
   src/app/enumerations/         ClinicalStatus and Sex.
   src/app/exceptions/           FhirProblemError, built from an RFC 9457 problem response.
-  src/app/validators/           notBlank, for the family-name field.
+  src/app/validators/           notBlank, for the edit form's family name; familyOrIdentifier, the search form's one-of rule.
   src/testing/                  Fakes, fixtures, and helpers shared by the specs.
 ```
 
@@ -88,6 +88,13 @@ seeded patient and other sessions' patients show none). It sends `POST /api/fhir
 with no body; a 204 moves the chip under the resolved count without a re-read, and a 404 (the condition
 is gone or not that patient's) shows as the status. The action is blocked, not disabled, while a write
 is in flight, like the verbs.
+
+The search form opens with the Identifier field set to `mvcprogrammer.com`, the MRN the seeded patient
+carries and every patient created here gets by default, so the first Search lists this demo's records
+rather than whatever the shared sandbox holds under a family name. A family name or an identifier is
+enough on its own (the function requires one of the two, from 1.9.0); when the demo MRN returns nothing,
+which happens after the sandbox is wiped, the explorer clears it and walks its list of family names
+instead, starting with Programmer. A search the visitor typed never falls back.
 
 The dev server has no `/api`, so the capability check fails and the explorer says so in its log.
 Serve the build output behind the real CloudFront behaviors (or any host that proxies `/api/fhir`)

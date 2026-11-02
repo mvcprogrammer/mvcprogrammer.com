@@ -46,16 +46,21 @@ export class HttpFhirClient extends FhirClient {
 
   /** @inheritdoc */
   override searchPatients(request: PatientSearchRequest): Promise<FhirResponse<PatientSearchResult>> {
-    let path = `${this.options.fhirApiBase}/patients?family=${encodeURIComponent(request.family)}`;
+    // Only the parameters given, in the order the API documents them; a family name or an identifier is always present.
+    const parts: string[] = [];
+    if (request.family !== '') {
+      parts.push(`family=${encodeURIComponent(request.family)}`);
+    }
+
     if (request.birthdate !== '') {
-      path += `&birthdate=${encodeURIComponent(request.birthdate)}`;
+      parts.push(`birthdate=${encodeURIComponent(request.birthdate)}`);
     }
 
     if (request.identifier !== '') {
-      path += `&identifier=${encodeURIComponent(request.identifier)}`;
+      parts.push(`identifier=${encodeURIComponent(request.identifier)}`);
     }
 
-    return this.getJson<PatientSearchResult>(path);
+    return this.getJson<PatientSearchResult>(`${this.options.fhirApiBase}/patients?${parts.join('&')}`);
   }
 
   /** @inheritdoc */

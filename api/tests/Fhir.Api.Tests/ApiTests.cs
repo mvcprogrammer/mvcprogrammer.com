@@ -103,9 +103,28 @@ public sealed class ApiTests
         Assert.False(result.Trace.Truncated);
     }
 
+    [Fact]
+    public async Task Search_by_identifier_alone_sends_no_family_to_the_sandbox()
+    {
+        using var factory = new FhirApiFactory();
+        factory.Handler.On("/Patient?", Fixtures.Searchset([Fixtures.Patient("1842")], total: 1));
+        using var client = factory.CreateClient();
+
+        var result = await client.GetFromJsonAsync<PatientSearchResult>("/api/fhir/patients?identifier=mvcprogrammer.com", ApiJson.Options, Ct);
+
+        Assert.NotNull(result);
+        Assert.Equal(1, result.Count);
+        Assert.Null(result.Query.Family);
+        Assert.Equal("mvcprogrammer.com", result.Query.Identifier);
+        var sent = Assert.Single(factory.Handler.Requests).PathAndQuery;
+        Assert.Contains("identifier=mvcprogrammer.com", sent, StringComparison.Ordinal);
+        Assert.DoesNotContain("family=", sent, StringComparison.Ordinal);
+    }
+
     [Theory]
-    [InlineData("/api/fhir/patients", "'family' is required")]
-    [InlineData("/api/fhir/patients?family=", "'family' is required")]
+    [InlineData("/api/fhir/patients", "'family' or 'identifier' is required")]
+    [InlineData("/api/fhir/patients?family=", "'family' or 'identifier' is required")]
+    [InlineData("/api/fhir/patients?family=%20&identifier=", "'family' or 'identifier' is required")]
     [InlineData("/api/fhir/patients?family=Dickens&birthdate=1979-4-12", "'birthdate' must be a date")]
     [InlineData("/api/fhir/patients?family=Dickens&identifier=", "'identifier' must be between")]
     public async Task Bad_search_parameters_are_400_problems(string path, string detailStart)
@@ -128,7 +147,20 @@ public sealed class ApiTests
 
         var response = await client.GetAsync("/api/fhir/patients?family=" + new string('x', 61), Ct);
 
+        var problem = await AssertProblem(response, HttpStatusCode.BadRequest, "invalid-parameter");
+        Assert.StartsWith("'family' must be between", problem.GetProperty("detail").GetString());
+    }
+
+    [Fact]
+    public async Task Overlong_family_is_a_400_problem_even_with_an_identifier()
+    {
+        using var factory = new FhirApiFactory();
+        using var client = factory.CreateClient();
+
+        var response = await client.GetAsync("/api/fhir/patients?identifier=12345&family=" + new string('x', 61), Ct);
+
         await AssertProblem(response, HttpStatusCode.BadRequest, "invalid-parameter");
+        Assert.Empty(factory.Handler.Requests);
     }
 
     [Fact]
