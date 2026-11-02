@@ -8,8 +8,8 @@
   </div>
   <p class="fhir-lead">A window onto a public FHIR R4 test server seeded with synthetic records. No real patient data is involved, nothing is persisted, and nothing beyond request metadata is logged.</p>
 
-  <!-- Search. The demo MRN is prefilled so the first click lists this demo's records; the sandbox is wiped
-       now and then, so the component falls back to a walk through its list of family names when it returns nothing. -->
+  <!-- Search. The seeded patient's family name and the demo MRN are prefilled so the first click pins that patient; the
+       sandbox is wiped now and then, so the component falls back to a walk through its list of family names when it returns nothing. -->
   <form class="fhir-search" [class.is-loading]="searching()" id="fhir-search" role="search" aria-label="Patient search" novalidate [formGroup]="form" (ngSubmit)="submit()">
     <div class="fhir-search-row">
       <div class="field">
@@ -35,7 +35,7 @@
     </div>
     <p [class]="statusClass()" id="fhir-status" role="status" aria-live="polite">
       @if (statusText() === '') {
-        Searches <code>GET /api/fhir/patients?identifier=&hellip;</code> (or <code>?family=&hellip;</code>), which runs the same <code>GET Patient?&hellip;</code> on the sandbox.
+        Searches <code>GET /api/fhir/patients?family=&hellip;&amp;identifier=&hellip;</code> (either alone will do), which runs the same <code>GET Patient?&hellip;</code> on the sandbox.
       } @else {
         {{ statusText() }}
       }

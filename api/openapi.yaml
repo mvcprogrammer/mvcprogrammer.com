@@ -338,8 +338,8 @@ paths:
         Runs `GET Patient?family=&birthdate=&identifier=` against the sandbox and maps the
         first page (`_count=20`) to list items. At least one of `family` and `identifier` is
         required (from 1.9.0; before that `family` alone was), so the search can never enumerate
-        the whole server; the explorer opens on the demo MRN `mvcprogrammer.com` with no family
-        name. `total` is present only when the sandbox reports it.
+        the whole server; the explorer opens on the seeded patient's family name with the demo MRN
+        `mvcprogrammer.com` beside it. `total` is present only when the sandbox reports it.
       parameters:
         - name: family
           in: query

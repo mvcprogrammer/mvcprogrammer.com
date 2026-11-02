@@ -32,14 +32,14 @@ describe('FhirExplorer', () => {
   });
 
   describe('ngOnInit', () => {
-    it('should check the capability once, log the sandbox, and prefill the demo MRN without searching', async () => {
+    it('should check the capability once, log the sandbox, and prefill the seeded name and the demo MRN without searching', async () => {
       // Act
       await render();
 
       // Assert
       expect(client.capabilityCalls).toBe(1);
       expect(client.searches).toEqual([]);
-      expect(family().value).toBe('');
+      expect(family().value).toBe('Programmer');
       expect(identifier().value).toBe('mvcprogrammer.com');
       expect(family().hasAttribute('required')).toBe(false);
       expect(host.querySelector('[data-fhir-source]')?.textContent).toBe('HAPI sandbox');
@@ -90,7 +90,7 @@ describe('FhirExplorer', () => {
   });
 
   describe('submit', () => {
-    it('should search the prefilled demo MRN, list the match, select it, and render the summary', async () => {
+    it('should search the prefilled name and demo MRN, list the match, select it, and render the summary', async () => {
       // Arrange
       await render();
 
@@ -99,9 +99,9 @@ describe('FhirExplorer', () => {
       await fixture.whenStable();
 
       // Assert
-      expect(client.searches).toEqual([{ family: '', birthdate: '', identifier: 'mvcprogrammer.com' }]);
+      expect(client.searches).toEqual([{ family: 'Programmer', birthdate: '', identifier: 'mvcprogrammer.com' }]);
       expect(client.summaryCalls).toEqual(['78785']);
-      expect(status().textContent?.trim()).toBe('1 patient for identifier “mvcprogrammer.com”; the first is selected.');
+      expect(status().textContent?.trim()).toBe('1 patient for “Programmer” with identifier “mvcprogrammer.com”; the first is selected.');
       expect(status().classList.contains('is-ok')).toBe(true);
       expect(host.querySelector('#fhir-count')?.textContent).toBe('(1)');
       const rows = host.querySelectorAll<HTMLButtonElement>('.fhir-patient');
@@ -196,7 +196,7 @@ describe('FhirExplorer', () => {
 
       // Assert
       const log = logText();
-      expect(log).toContain('→ GET /api/fhir/patients?identifier=mvcprogrammer.com');
+      expect(log).toContain('→ GET /api/fhir/patients?family=Programmer&identifier=mvcprogrammer.com');
       expect(log).toContain('← 200 /patients in 120 ms · X-Cache: Miss from cloudfront · ETag "abc123"');
       expect(log).toContain('↳ GET https://hapi.fhir.org/baseR4/Patient?family=Programmer');
       expect(log).toContain('200 · 110 ms · 1 entry · 1 page');
@@ -245,7 +245,7 @@ describe('FhirExplorer', () => {
       expect(client.summaryCalls).toEqual([]);
     });
 
-    it('should walk the fallback families when the demo MRN returns nothing, and stop at the first hit', async () => {
+    it('should walk the fallback families, Programmer alone first, when the prefilled search returns nothing, and stop at the first hit', async () => {
       // Arrange
       await render();
       client.onSearchPatients = (request) =>
@@ -257,14 +257,14 @@ describe('FhirExplorer', () => {
 
       // Assert
       expect(client.searches).toEqual([
-        { family: '', birthdate: '', identifier: 'mvcprogrammer.com' },
+        { family: 'Programmer', birthdate: '', identifier: 'mvcprogrammer.com' },
         { family: 'Programmer', birthdate: '', identifier: '' },
         { family: 'Grant', birthdate: '', identifier: '' },
         { family: 'Meridius', birthdate: '', identifier: '' },
       ]);
       expect(family().value).toBe('Meridius');
       expect(identifier().value).toBe('');
-      expect(logText()).toContain('nothing for identifier “mvcprogrammer.com”; the sandbox may have been wiped, trying "Programmer"');
+      expect(logText()).toContain('nothing for “Programmer” with identifier “mvcprogrammer.com”; the sandbox may have been wiped, trying "Programmer"');
       expect(logText()).toContain('nothing for “Programmer”; the sandbox may have been wiped, trying "Grant"');
       expect(status().textContent?.trim()).toBe('1 patient for “Meridius”; the first is selected.');
       expect(client.summaryCalls).toEqual(['9']);
@@ -283,6 +283,22 @@ describe('FhirExplorer', () => {
 
       // Assert
       expect(client.searches).toEqual([{ family: 'Grant', birthdate: '', identifier: '' }]);
+      expect(status().textContent?.trim()).toBe('No matches.');
+    });
+
+    it('should search by the identifier alone once the family name is cleared, with the fallback off', async () => {
+      // Arrange
+      await render();
+      client.onSearchPatients = () => Promise.resolve(createFhirResponse(createEmptyPatientSearchResult()));
+
+      // Act
+      type(family(), '');
+      submit();
+      await fixture.whenStable();
+
+      // Assert
+      expect(client.searches).toEqual([{ family: '', birthdate: '', identifier: 'mvcprogrammer.com' }]);
+      expect(logText()).toContain('→ GET /api/fhir/patients?identifier=mvcprogrammer.com');
       expect(status().textContent?.trim()).toBe('No matches.');
     });
 
