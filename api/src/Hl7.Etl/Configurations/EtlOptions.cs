@@ -42,7 +42,7 @@ public sealed class EtlOptions
     [Range(1_000, 300_000)]
     public int TotalTimeoutMs { get; set; } = 90_000;
 
-    /// <summary>Retries after the first attempt. A transaction bundle of conditional creates is idempotent, so retrying is safe.</summary>
-    [Range(0, 5)]
+    /// <summary>Retries after the first attempt (the resilience handler requires at least one). A transaction bundle of conditional creates is idempotent, so retrying is safe.</summary>
+    [Range(1, 5)]
     public int RetryCount { get; set; } = 2;
 }

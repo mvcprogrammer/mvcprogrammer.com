@@ -100,7 +100,7 @@ AS $$
     SELECT count(*)::integer FROM done;
 $$;
 
--- Marks a batch failed with the reason, releasing the claim so the next run tries again. Returns the rows updated.
+-- Marks a batch failed with the reason. Returns the rows updated. (003 changes it to keep the claim.)
 CREATE OR REPLACE FUNCTION hl7.messages_fail(p_message_ids bigint[], p_error text)
 RETURNS integer
 LANGUAGE sql
