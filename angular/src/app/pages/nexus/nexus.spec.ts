@@ -16,6 +16,10 @@ describe('Nexus', () => {
     const details = host.querySelector('details#jd-reading') as HTMLDetailsElement;
     expect(details.open).toBe(false);
     expect(details.querySelectorAll('ol li')).toHaveLength(5);
+    const demo = host.querySelector('details#jd-demo') as HTMLDetailsElement;
+    expect(demo.open).toBe(false);
+    expect(demo.querySelectorAll('ol li')).toHaveLength(7);
+    expect(demo.querySelector('a[href$="HL7-ETL-DEMO.pdf"]')).not.toBeNull();
     expect(host.querySelectorAll('#jd-matrix-table tbody tr')).toHaveLength(23);
     expect(host.querySelectorAll('#jd-gaps-table tbody tr')).toHaveLength(8);
     expect(host.querySelectorAll('.jd-grade.is-yes')).toHaveLength(11);

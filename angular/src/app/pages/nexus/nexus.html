@@ -18,8 +18,22 @@
       <p>The repository is public: <a href="https://github.com/mvcprogrammer/mvcprogrammer.com" target="_blank" rel="noopener">github.com/mvcprogrammer/mvcprogrammer.com</a>, 285 commits since 2026-10-06, 170 pull requests. The grades below are mine; the links let you check them.</p>
     </details>
 
+    <details class="jd-details" id="jd-demo">
+      <summary class="jd-summary">The HL7 ETL demo (an eight-minute outline)</summary>
+      <p>HL7 v2 messages land in Postgres integration tables, a .NET loader maps them to FHIR R4 and bulk-loads the public sandbox, and the explorer reads the result back. Four terminal commands, one browser tab, synthetic data only. The full runbook with every command is <a href="https://github.com/mvcprogrammer/mvcprogrammer.com/blob/main/docs/HL7-ETL-DEMO.pdf" target="_blank" rel="noopener">docs/HL7-ETL-DEMO.pdf</a>.</p>
+      <ol class="jd-list">
+        <li><strong>Frame it</strong> (30 s). The integration-engine job every health system runs, built end to end on this stack in a day: <a href="https://github.com/mvcprogrammer/mvcprogrammer.com/tree/main/api/src/Hl7.Etl" target="_blank" rel="noopener">api/src/Hl7.Etl</a>.</li>
+        <li><strong>Show the landing tables</strong> (1 min). <code>status</code>, then the message counts by type and one raw ORU message: MSH, PID with the MRN, OBR, and OBX lines with LOINC codes and UCUM units. Every message is a row, unique on its control id, so a redelivery lands once: <a href="https://github.com/mvcprogrammer/mvcprogrammer.com/blob/main/api/src/Hl7.Etl/Sql/001_landing.sql" target="_blank" rel="noopener">Sql/001_landing.sql</a>.</li>
+        <li><strong>Show that landing is idempotent</strong> (30 s). <code>generate</code> again: 0 landed, 67 had already landed.</li>
+        <li><strong>Replay the load</strong> (2 min). <code>requeue</code>, then <code>load</code>: one transaction bundle per batch, every entry a conditional create, and the summary reads 0 created, 268 already present. The property a real engine needs after a crash or a redelivery: <a href="https://github.com/mvcprogrammer/mvcprogrammer.com/blob/main/api/src/Hl7.Etl/Services/LoadService.cs" target="_blank" rel="noopener">Services/LoadService.cs</a>.</li>
+        <li><strong>Read it back</strong> (2 min). In <a href="https://fhir.mvcprogrammer.com/" target="_blank" rel="noopener">the explorer</a>, family name blank and <code>https://mvcprogrammer.com/fhir/etl|</code> in the Identifier field lists the cohort; pick a patient and show the encounter and the vital signs. The explorer did not change for this.</li>
+        <li><strong>Code tour</strong> (2 min). The schema, <a href="https://github.com/mvcprogrammer/mvcprogrammer.com/blob/main/api/src/Hl7.Etl/Mappers/AdmissionMapper.cs" target="_blank" rel="noopener">AdmissionMapper.cs</a> or <a href="https://github.com/mvcprogrammer/mvcprogrammer.com/blob/main/api/src/Hl7.Etl/Mappers/ResultMapper.cs" target="_blank" rel="noopener">ResultMapper.cs</a>, the loader, and <a href="https://github.com/mvcprogrammer/mvcprogrammer.com/pull/223" target="_blank" rel="noopener">PR #223</a>: the public server refused conditional references and a failed batch was being re-claimed in the same run, both found by running it for real and fixed with tests the same afternoon.</li>
+        <li><strong>Close</strong> (30 s). The production version of this shape is the most recent position on the resume, on SQL Server at enterprise scale; here it is Postgres, a public sandbox, and a public repository with <a href="https://github.com/mvcprogrammer/mvcprogrammer.com/issues/216" target="_blank" rel="noopener">epic #216</a>: four slices, four reviewed pull requests, 43 tests.</li>
+      </ol>
+    </details>
+
     <h2 id="jd-matrix">Requirements matrix</h2>
-    <p>Ten of the twenty-three lines are demonstrated in the repository, eight have an adjacent equivalent on a different vendor or at a smaller scale, and five are not here. The required lines come first, then the preferred ones, then the lines from the day-to-day duties that the first two groups do not already cover.</p>
+    <p>Eleven of the twenty-three lines are demonstrated in the repository, seven have an adjacent equivalent on a different vendor or at a smaller scale, and five are not here. The required lines come first, then the preferred ones, then the lines from the day-to-day duties that the first two groups do not already cover.</p>
     <div class="jd-table-wrap">
       <table class="jd-table" id="jd-matrix-table">
         <thead><tr><th scope="col">JD requirement</th><th scope="col">Evidence in the repository</th><th scope="col">Grade</th></tr></thead>
