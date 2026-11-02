@@ -8,6 +8,9 @@ behaviors under `/api`, both specified in the one `openapi.yaml` before any code
 - **FHIR API** (`/api/fhir/*`): the function behind the [patient explorer](https://fhir.mvcprogrammer.com/),
   a facade over a public FHIR R4 sandbox of synthetic records. See [FHIR API](#fhir-api) below.
 
+Beside them, one tool that is not a function: the **HL7 ETL** (`api/src/Hl7.Etl`), a console that lands
+HL7 v2 messages in Postgres and loads them into the same sandbox as FHIR R4. See [HL7 ETL](#hl7-etl).
+
 # Experience API
 
 It exists to be read as much as to be run. The contract came first, the code follows it, and
@@ -180,3 +183,58 @@ wiped or down. `FHIR_SOURCE_NAME` is the label the trace carries.
   including a hang, a 503, and a non-FHIR body, so the real resilience pipeline runs in the tests.
 
 Deployment and the CloudFront wiring are in [docs/DEPLOY.md](../docs/DEPLOY.md), section FHIR API.
+
+# HL7 ETL
+
+The integration-engine job every health system runs, shown end to end on this stack: HL7 v2 messages
+(ADT^A01 admissions, ORU^R01 results) land in Postgres integration tables, a .NET console parses them
+into FHIR R4 resources and bulk-loads the public HAPI sandbox through transaction bundles, and the
+[patient explorer](https://fhir.mvcprogrammer.com/) lists what landed. Synthetic data only: the cohort is
+generated in the repo, nothing real passes through. Built as an epic of four slices; this section grows
+with them.
+
+## Layout
+
+```
+api/src/Hl7.Etl/
+  Program.cs                The commands: migrate, generate, status (load arrives with slice 3).
+  Sql/                      The hl7 schema: the messages landing table and the functions the repository calls
+                            (insert, claim a batch with SKIP LOCKED, complete, fail, status). Applied by migrate, once each.
+  Configurations/           EtlOptions (Options pattern; HL7_ETL_CONNECTION overrides the connection string).
+  Databases/                MessageRepository: one Npgsql connection per call, one function per method, typed parameters.
+  Mappers/                  LandedMessageMapper: reader rows to records by ordinal, no reflection.
+  Generators/               SyntheticCohortGenerator (deterministic per seed) and Hl7MessageComposer (HL7-V2 library, v2.5.1).
+  Services/                 MigrationService and GenerateService.
+api/tests/Hl7.Etl.Tests/    Generator tests (compose, then parse back) and repository tests against a real Postgres.
+```
+
+## Run it
+
+```bash
+brew install postgresql@17 && brew services start postgresql@17 && createdb hl7_etl   # once, on a Mac
+dotnet run --project api/src/Hl7.Etl -- migrate                   # create or update the hl7 schema; idempotent
+dotnet run --project api/src/Hl7.Etl -- generate --patients 25    # land 25 admissions and about 40 results; a rerun lands nothing
+dotnet run --project api/src/Hl7.Etl -- status                    # pending, claimed, processed, failed
+
+HL7_ETL_TEST_CONNECTION="Host=localhost;Database=hl7_etl_test" dotnet test --project api/tests/Hl7.Etl.Tests
+```
+
+The connection string defaults to `Host=localhost;Database=hl7_etl`; `HL7_ETL_CONNECTION` overrides it. The
+repository tests drop and recreate the `hl7` schema of the database named by `HL7_ETL_TEST_CONNECTION`
+and are skipped without it; CI runs them against a Postgres service container.
+
+## Design notes
+
+- **Postgres functions as the data path.** The application holds no SQL of its own beyond the one-line
+  function calls and the migrator's bootstrap: the Postgres equivalent of the stored-procedure path in the
+  coding standard. A Postgres procedure cannot return rows, so these are functions selected from.
+- **Land once, claim in batches.** MSH-10 (the message control id) is unique, so a redelivered message
+  lands once and `generate` is idempotent. `messages_claim` takes pending rows in arrival order with
+  `FOR UPDATE SKIP LOCKED`, stamps the claim and the attempt, and treats a claim older than the stale
+  window as abandoned; `complete` and `fail` settle a batch in place. The landing table is the only record
+  of progress.
+- **Deterministic cohort.** The same seed gives the same patients, visits, and values, so a demo reruns
+  and a test asserts exact messages. Every observation is LOINC-coded with UCUM units, so the mapper can
+  carry both into FHIR unchanged.
+- **HL7-V2 over nHapi.** MIT-licensed, targets .NET 10, parses and composes without a per-version schema;
+  nHapi is MPL-2.0 and targets netstandard2.0 with a far larger object model than a demo needs.
