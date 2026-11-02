@@ -9,7 +9,8 @@ behaviors under `/api`, both specified in the one `openapi.yaml` before any code
   a facade over a public FHIR R4 sandbox of synthetic records. See [FHIR API](#fhir-api) below.
 
 Beside them, one tool that is not a function: the **HL7 ETL** (`api/src/Hl7.Etl`), a console that lands
-HL7 v2 messages in Postgres and loads them into the same sandbox as FHIR R4. See [HL7 ETL](#hl7-etl).
+HL7 v2 messages in Postgres and loads them into the same sandbox as FHIR R4. See [HL7 ETL](#hl7-etl) and
+the demo runbook, [docs/HL7-ETL-DEMO.pdf](../docs/HL7-ETL-DEMO.pdf).
 
 # Experience API
 
@@ -190,8 +191,9 @@ The integration-engine job every health system runs, shown end to end on this st
 (ADT^A01 admissions, ORU^R01 results) land in Postgres integration tables, a .NET console parses them
 into FHIR R4 resources and bulk-loads the public HAPI sandbox through transaction bundles, and the
 [patient explorer](https://fhir.mvcprogrammer.com/) lists what landed. Synthetic data only: the cohort is
-generated in the repo, nothing real passes through. Built as an epic of four slices; this section grows
-with them.
+generated in the repo, nothing real passes through. Built as an epic of four slices. The step-by-step demo,
+with the commands and what to say at each, is [docs/HL7-ETL-DEMO.pdf](../docs/HL7-ETL-DEMO.pdf) (built by
+`docs/pdf/build_hl7_demo.py`).
 
 ## Layout
 
