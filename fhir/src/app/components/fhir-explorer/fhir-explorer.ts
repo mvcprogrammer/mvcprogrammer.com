@@ -51,12 +51,12 @@ export class FhirExplorer implements OnInit, OnDestroy {
 
   /**
    * The MRN every record this demo writes carries (the seeded patient and, by default, every patient created
-   * here), so the form opens on it and the first search lists this demo's records rather than whatever the
-   * shared sandbox holds under a family name.
+   * here). Prefilled beside the seeded patient's family name, so the first search pins that patient even
+   * when the shared sandbox holds other patients under the same name.
    */
   static readonly DEMO_MRN = 'mvcprogrammer.com';
 
-  /** The family names tried in turn when the demo MRN returns nothing (the sandbox is wiped now and then). */
+  /** The prefilled family name, and the names tried in turn when the prefilled search returns nothing (the sandbox is wiped now and then). */
   static readonly FALLBACK_FAMILIES: readonly string[] = ['Programmer', 'Grant', 'Meridius', 'Deshmukh', 'Smith', 'Johnson', 'Williams'];
 
   /** Lines kept in the log. */
@@ -93,10 +93,10 @@ export class FhirExplorer implements OnInit, OnDestroy {
   static readonly BLOCK_WRITING_MESSAGE = 'A write is in flight; wait for it to finish.';
   static readonly CONDITION_LEAD = 'Add one of ten listed conditions to a patient created in this session. The function owns the list; a condition the patient already has active comes back as already there.';
 
-  /** The search form: a family name or an identifier (either narrows the search enough), the demo MRN prefilled. */
+  /** The search form: a family name or an identifier (either narrows the search enough); the seeded patient's name and the demo MRN prefilled. */
   protected readonly form = inject(FormBuilder).nonNullable.group(
     {
-      family: ['', [Validators.maxLength(60)]],
+      family: [FhirExplorer.FALLBACK_FAMILIES[0], [Validators.maxLength(60)]],
       birthdate: ['', [Validators.pattern(/^\d{4}-\d{2}-\d{2}$/)]],
       identifier: [FhirExplorer.DEMO_MRN, [Validators.maxLength(120)]],
     },
@@ -327,7 +327,7 @@ export class FhirExplorer implements OnInit, OnDestroy {
     };
   }
 
-  /** Validates, then searches. The prefilled demo MRN walks the fallback families when it returns nothing. */
+  /** Validates, then searches. The prefilled search walks the fallback families, by name alone, when it returns nothing. */
   protected submit(): void {
     if (this.form.invalid) {
       this.validated.set(true);
@@ -338,7 +338,7 @@ export class FhirExplorer implements OnInit, OnDestroy {
     const value = this.form.getRawValue();
     const family = value.family.trim();
     const identifier = value.identifier.trim();
-    const usingTheExample = family === '' && value.birthdate === '' && identifier === FhirExplorer.DEMO_MRN;
+    const usingTheExample = family === FhirExplorer.FALLBACK_FAMILIES[0] && value.birthdate === '' && identifier === FhirExplorer.DEMO_MRN;
     void this.pendingTasks.run(() => this.search(family, value.birthdate, identifier, usingTheExample ? 0 : null));
   }
 
@@ -868,7 +868,7 @@ export class FhirExplorer implements OnInit, OnDestroy {
     this.searching.set(true);
     this.setStatus('Searching…', '');
     const path = `/patients?${FhirExplorer.searchQuery(family, birthdate, identifier)}`;
-    const described = family ? `“${family}”` : `identifier “${identifier}”`;
+    const described = family && identifier ? `“${family}” with identifier “${identifier}”` : family ? `“${family}”` : `identifier “${identifier}”`;
     this.write(`→ GET ${FhirExplorer.API}${path}`, 'request');
 
     try {
