@@ -38,6 +38,31 @@ describe('aggregate', () => {
     expect(summary.byHour[10]).toBe(2);
   });
 
+  it('should count the patient explorer as a fifth edition with its API calls and writes', () => {
+    // Arrange: one visit opened the explorer from the home page and wrote twice, one never opened it
+    const visits = [makeVisit({ token: 'e', editions: ['js', 'fhir'], fhirCalls: 3, fhirWrites: 2 }), makeVisit({ token: 'f', editions: ['fhir'], fhirCalls: 1 }), makeVisit({ token: 'g', editions: ['react'], apiCalls: 1 })];
+
+    // Act
+    const summary = summarize(visits);
+
+    // Assert
+    expect(summary.byEdition).toEqual({ js: 1, react: 1, fhir: 2 });
+    expect(Object.keys(summary.byEdition)).toEqual(['js', 'react', 'fhir']); // the explorer is last in display order
+    expect(summary.explorerVisits).toBe(2);
+    expect(summary.explorerCalls).toBe(4);
+    expect(summary.explorerWrites).toBe(2);
+    expect(summary.apiLoads).toBe(1); // the explorer API is not the Experience API
+    expect(matches(visits[0]!, [{ dimension: 'edition', value: 'fhir' }])).toBe(true);
+    expect(matches(visits[2]!, [{ dimension: 'edition', value: 'fhir' }])).toBe(false);
+  });
+
+  it('should report zero explorer figures when no visit opened it', () => {
+    const summary = summarize(VISITS);
+    expect(summary.explorerVisits).toBe(0);
+    expect(summary.explorerCalls).toBe(0);
+    expect(summary.explorerWrites).toBe(0);
+  });
+
   it('should leave a retired section out of the funnel', () => {
     // Arrange: a day file written before the Freelance section was removed still lists it
     const visits = [makeVisit({ token: 'c', loads: 1, sections: ['about', 'freelance', 'portfolio'] })];

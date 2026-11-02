@@ -25,7 +25,7 @@ function seeded(seed: number): () => number {
   };
 }
 
-const EDITION_WEIGHTS: ReadonlyArray<[string, number]> = [['js', 0.4], ['react', 0.3], ['angular', 0.17], ['blazor', 0.13]];
+const EDITION_WEIGHTS: ReadonlyArray<[string, number]> = [['js', 0.38], ['react', 0.28], ['angular', 0.16], ['blazor', 0.12], ['fhir', 0.06]];
 const REFERRERS: ReadonlyArray<[string | undefined, number]> = [[undefined, 0.75], ['www.linkedin.com', 0.12], ['www.google.com', 0.08], ['github.com', 0.05]];
 const COUNTRIES: ReadonlyArray<[[string, string], number]> = [[['US', 'IAD'], 0.5], [['DE', 'FRA'], 0.2], [['NL', 'AMS'], 0.1], [['GB', 'LHR'], 0.1], [['CA', 'YUL'], 0.1]];
 const SECTIONS = ['about', 'services', 'portfolio', 'resume', 'contact', 'colophon'];
@@ -67,6 +67,7 @@ export function generateDays(from: DayKey, to: DayKey, seed = 7): DayFile[] {
         ...(ranScript && random() < 0.12 ? { clicks: [`edition/${pick(random, [['angular', 0.4], ['react', 0.4], ['blazor', 0.2]])}/${pick(random, [['header', 0.6], ['about', 0.3], ['hero', 0.1]])}`] } : {}),
         ...(ranScript && random() < 0.08 ? { clicks: [`github/${random() < 0.6 ? 'profile' : 'mvcprogrammer.com'}/about`] } : {}),
         ...(random() < 0.5 ? { apiCalls: 1 } : {}),
+        ...(edition === 'fhir' ? { fhirCalls: 1 + Math.floor(random() * 4), ...(random() < 0.4 ? { fhirWrites: 1 } : {}) } : {}),
         ...(random() < 0.05 ? { resumes: [edition === 'js' ? 'vanilla' : edition] } : {}),
       };
       visits.push(visit);

@@ -2,8 +2,10 @@
 
 A private page at [stats.mvcprogrammer.com](https://stats.mvcprogrammer.com) that turns the
 CloudFront access logs and the first-party engagement beacon into headline numbers, a daily chart,
-and breakdowns by edition, referrer, screen, country, section reached, time on page, and the links
-that matter. It is a React 19 + Vite app with Chart.js, built the way the React edition in
+and breakdowns by edition (the patient explorer at fhir.mvcprogrammer.com counts as a fifth host),
+referrer, screen, country, section reached, time on page, and the links that matter, plus how many
+visits opened the explorer and what they did on its API. It is a React 19 + Vite app with Chart.js,
+built the way the React edition in
 `../react` is built (TypeScript strict, no CSS-in-JS, no `style` attributes, bundles under
 `bundles/`, Vitest with Testing Library), and it reads static JSON day files, so there is no server
 and no database.
@@ -17,8 +19,11 @@ CloudFront logs (S3)  ──►  tools/stats-export.mjs  ──►  data/index.j
 
 `tools/stats-export.mjs` at the repository root writes one JSON file per calendar day (in
 `America/New_York`) with the day's request totals and one small record per visit: a salted visitor
-token, the local hour, the editions loaded, the referrer host, the country of the serving edge, and
-what the beacon reported (screen, color scheme, sections reached, seconds visible, links clicked).
+token, the local hour, the editions loaded (`fhir` for the explorer), the referrer host, the country
+of the serving edge, what the beacon reported (screen, color scheme, sections reached, seconds
+visible, links clicked), and the Experience API and explorer API activity (`apiCalls`; `fhirCalls`
+with the `fhirWrites` among them). Day files written before the explorer had an id name it by its
+host; `src/app/data/normalize.ts` maps those to `fhir` as they load, so the history counts.
 The app fetches the days in the chosen range in parallel, applies the filters, and computes every
 number on the page from those records, so any combination of filters is exact, unique visitors
 inside a filter included. The schema is documented in the exporter and typed in
@@ -39,7 +44,7 @@ stats/
                                 SegmentChips, Updated, TimeSeriesChart, DonutPanel, HourChart, TimeOnPageChart,
                                 ScannerPanel, and the loading, empty, and error states.
   src/app/aggregation/          Pure functions: filter visits by segments, summarize, build the daily or weekly series.
-  src/app/data/                 The day-file and index types and the fetch client with its cache.
+  src/app/data/                 The day-file and index types, the fetch client with its cache, and the normalization of older files.
   src/app/query/                The query (range, compare, segments) and its round trip through the URL.
   src/app/charts/               Chart.js registration and the hook that reads chart colors from the stylesheet tokens.
   src/app/formatters/           Numbers, percentages, durations, day labels, relative times, flags, country names.

@@ -139,7 +139,8 @@ export function Dashboard({ client, index, query, setQuery, today }: DashboardPr
   const tile = (current: number, previous: number) => ({ delta: hasPrevious ? formatDelta(delta(current, previous)) : null, direction: hasPrevious ? direction(delta(current, previous)) : ('flat' as const) });
 
   const editionSegment = segmentOn(query, 'edition')?.value;
-  const editions = topRows(summary.byEdition, summary.visits, 4, (key) => EDITION_LABELS[key as Edition] ?? key);
+  // Five rows: the four editions and the patient explorer, so none of them ever folds into Others.
+  const editions = topRows(summary.byEdition, summary.visits, 5, (key) => EDITION_LABELS[key as Edition] ?? key);
   const referrers = topRows(summary.byReferrer, summary.visits, 10, (key) => (key === DIRECT ? 'Direct or unknown' : key));
   const countries = topRows(summary.byCountry, summary.visits, 10, countryName, flagOf);
   const funnel: BarRow[] = Object.entries(summary.sectionReach).map(([key, count]) => ({ key, label: SECTION_LABELS[key] ?? key, count, share: share(count, summary.engaged) }));
@@ -225,6 +226,13 @@ export function Dashboard({ client, index, query, setQuery, today }: DashboardPr
           hint={`${formatNumber(summary.githubProfileClicks)} to the profile, ${formatNumber(summary.githubRepoClicks)} to repositories`}
           {...tile(summary.githubClickVisits, prev.githubClickVisits)}
         />
+        <KpiTile
+          label="Patient explorer"
+          value={formatNumber(summary.explorerVisits)}
+          spark={sparkline(series, (p) => p.explorerVisits)}
+          hint={`${formatPercent(share(summary.explorerVisits, summary.visits))} of visits opened it; ${formatNumber(summary.explorerCalls)} API calls, ${formatNumber(summary.explorerWrites)} of them writes`}
+          {...tile(summary.explorerVisits, prev.explorerVisits)}
+        />
         {resumeTotal > 0 && (
           <KpiTile
             label="Resume downloads"
@@ -255,7 +263,7 @@ export function Dashboard({ client, index, query, setQuery, today }: DashboardPr
       </Panel>
 
       <div className="panel-grid">
-        <Panel title="Editions" note="visits that loaded each" empty={summary.visits === 0 ? 'No visits in this range' : null}>
+        <Panel title="Editions" note="visits that loaded each; the patient explorer is its own host" empty={summary.visits === 0 ? 'No visits in this range' : null}>
           <Bars rows={editions.rows} onSelect={(key) => select('edition', key)} selectedKey={editionSegment} />
         </Panel>
         <Panel title="Referrers" note="share of visits" empty={summary.visits === 0 ? 'No visits in this range' : null}>

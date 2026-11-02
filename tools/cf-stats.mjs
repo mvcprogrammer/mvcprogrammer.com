@@ -3,9 +3,10 @@
 // Visitor and engagement figures from the CloudFront access logs. Downloads the log files for the
 // window with the AWS CLI (aws s3 sync, so a second run only fetches what is new), parses the gzipped
 // W3C lines, drops scanners and known crawlers, and prints per-day visits, unique visitors,
-// referrers, regions, and what the engagement beacon (GET /ping, see main.js) recorded: how many
-// real browsers loaded the page and on what kind of screen, which sections visitors reached, which
-// edition and profile links they clicked, and how long the page stayed visible. No dependencies
+// referrers, regions, the patient explorer's visits and API calls, and what the engagement beacon
+// (GET /ping, see main.js) recorded: how many real browsers loaded the page and on what kind of
+// screen, which sections visitors reached, which edition and profile links they clicked, and how
+// long the page stayed visible. No dependencies
 // beyond Node 22+. The parsing and session rules live in tools/lib/cf-logs.mjs, shared with
 // tools/stats-export.mjs, which writes the same figures as day files for the dashboard.
 //
@@ -24,6 +25,7 @@ import {
   classifyRows,
   dayKey,
   dayKeysBetween,
+  editionOf,
   headerComment,
   loadRows,
   parseCommonArgs,
@@ -92,9 +94,11 @@ function report(rows, visits, since, options, excluded) {
     return;
   }
 
-  console.log(`By edition:${top(visits.flatMap((visit) => [...visit.hosts]), 5)}.`);
+  console.log(`By edition (fhir is the patient explorer):${top(visits.flatMap((visit) => [...visit.hosts].map(editionOf)), 5)}.`);
 
   console.log(`Loaded the Experience API: ${percent(visits.filter((visit) => visit.api > 0).length, visits.length)} of visits.`);
+  const explorer = visits.filter((visit) => [...visit.hosts].some((host) => editionOf(host) === 'fhir'));
+  console.log(`Patient explorer: ${explorer.length} visits (${percent(explorer.length, visits.length)}), ${sum(visits, (visit) => visit.fhirCalls)} API calls, ${sum(visits, (visit) => visit.fhirWrites)} writes.`);
   const clicks = visits.flatMap((visit) => visit.skillClicks);
   console.log(`Skill filter clicks: ${clicks.length} in ${visits.filter((visit) => visit.skillClicks.length > 0).length} visits${top(clicks, 5)}.`);
 

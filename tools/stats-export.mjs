@@ -3,9 +3,10 @@
 // Writes the day files the visitor dashboard (stats/) reads: one JSON file per calendar day in the
 // site's time zone under <out>/days/YYYY-MM-DD.json, plus <out>/index.json listing the days that
 // exist. A day file holds the day's request totals and one small record per visit: a salted visitor
-// token, the local hour, the editions loaded, the referrer host, the country of the serving edge,
-// and what the beacon reported (screen, color scheme, sections reached, seconds visible, links
-// clicked), plus Experience API and resume activity. The dashboard filters and sums these in the
+// token, the local hour, the editions loaded (the patient explorer counts as a fifth, "fhir"), the
+// referrer host, the country of the serving edge, and what the beacon reported (screen, color
+// scheme, sections reached, seconds visible, links clicked), plus Experience API, patient explorer
+// API (calls and writes), and resume activity. The dashboard filters and sums these in the
 // browser, so no server is involved and no IP address or browser string leaves the logs; beacon and
 // query values are reduced to the vocabulary the page sends, so a hand-made request cannot plant text.
 // The parsing and the definition of a visit are shared with tools/cf-stats.mjs through
@@ -43,6 +44,8 @@ import {
   editionOf,
   headerComment,
   hourOf,
+  isExperienceApi,
+  isExplorerApi,
   isVisit,
   loadRows,
   parseCommonArgs,
@@ -53,7 +56,10 @@ import {
 } from './lib/cf-logs.mjs';
 import { countryOfEdge } from './lib/edge-locations.mjs';
 
-/** Bumped whenever a day file's shape changes in a way the dashboard must know about. */
+/**
+ * Bumped whenever a day file's shape changes in a way the dashboard must know about. A new optional
+ * field (fhirCalls and fhirWrites, 2026-11-02) is not such a change: an older dashboard ignores it.
+ */
 export const SCHEMA_VERSION = 1;
 
 /** The beacon values the page can send; anything else came from a hand-made request and is reduced to "?" or dropped. */
@@ -187,7 +193,8 @@ export function dayTotals(file, rows, bytes) {
     requests: file.requests,
     scannerRequests: file.scannerRequests,
     pings: rows.filter((row) => row.path === '/ping').length,
-    apiRequests: rows.filter((row) => row.path.startsWith('/api/')).length,
+    apiRequests: rows.filter(isExperienceApi).length,
+    fhirRequests: rows.filter(isExplorerApi).length,
     visits: file.visits.length,
     visitors: new Set(file.visits.map((visit) => visit.token)).size,
     bytes,
@@ -250,6 +257,12 @@ export function visitRecord(visit, salt) {
   if (visit.api > 0) {
     record.apiCalls = visit.api;
   }
+  if (visit.fhirCalls > 0) {
+    record.fhirCalls = visit.fhirCalls;
+  }
+  if (visit.fhirWrites > 0) {
+    record.fhirWrites = visit.fhirWrites;
+  }
   const skills = visit.skillClicks.map(clean).filter((skill) => skill !== '?');
   if (skills.length > 0) {
     record.skills = skills;
@@ -287,7 +300,7 @@ export function token(visitor, salt) {
   return createHash('sha256').update(`${salt}\n${visitor}`).digest('hex').slice(0, 10);
 }
 
-/** The editions a visit loaded a page on, in display order; a visit that moved between editions counts in each. */
+/** The editions (the explorer included) a visit loaded a page on, in display order; a visit that moved between hosts counts in each. */
 function editionsOf(visit) {
   const editions = [...visit.hosts].map(editionOf);
   return [...EDITION_ORDER.filter((edition) => editions.includes(edition)), ...editions.filter((edition) => !EDITION_ORDER.includes(edition)).sort()];

@@ -2,7 +2,7 @@
   "schemaVersion": 1,
   "day": "2026-10-17",
   "timeZone": "America/New_York",
-  "requests": 28,
+  "requests": 37,
   "scannerRequests": 4,
   "visits": [
     {
@@ -43,6 +43,22 @@
       "screen": "desktop",
       "scheme": "dark",
       "seconds": 5
+    },
+    {
+      "token": "2ffb1ce8f5",
+      "hour": 15,
+      "editions": [
+        "js",
+        "fhir"
+      ],
+      "country": "GB",
+      "edge": "LHR",
+      "loads": 1,
+      "screen": "desktop",
+      "scheme": "light",
+      "seconds": 40,
+      "fhirCalls": 3,
+      "fhirWrites": 2
     },
     {
       "token": "37653da2b1",

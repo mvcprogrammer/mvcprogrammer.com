@@ -48,6 +48,7 @@ describe('SegmentChips', () => {
 
   it('should label values the way a reader says them', () => {
     expect(segmentValueLabel({ dimension: 'edition', value: 'js' })).toBe('JS');
+    expect(segmentValueLabel({ dimension: 'edition', value: 'fhir' })).toBe('FHIR explorer');
     expect(segmentValueLabel({ dimension: 'country', value: 'NL' })).toBe('Netherlands');
     expect(segmentValueLabel({ dimension: 'scheme', value: 'dark' })).toBe('Dark');
     expect(segmentValueLabel({ dimension: 'referrer', value: '(direct)' })).toBe('(direct)');

@@ -14,6 +14,8 @@ export interface SeriesPoint {
   /** Median seconds visible, or null when nothing was reported. */
   readonly medianSeconds: number | null;
   readonly editionClicks: number;
+  /** Visits that loaded the patient explorer. */
+  readonly explorerVisits: number;
   readonly requests: number;
   readonly scannerRequests: number;
   /** True when no file exists for the day (or for any day of the week). */
@@ -40,6 +42,7 @@ function point(key: DayKey, days: readonly DayVisits[]): SeriesPoint {
     beaconReach: summary.visits === 0 ? null : summary.beaconReached / summary.visits,
     medianSeconds: quantile(summary.seconds, 0.5),
     editionClicks: summary.editionClickVisits,
+    explorerVisits: summary.explorerVisits,
     requests: days.reduce((total, day) => total + (day.file?.requests ?? 0), 0),
     scannerRequests: days.reduce((total, day) => total + (day.file?.scannerRequests ?? 0), 0),
     missing: days.some((day) => day.file === null),

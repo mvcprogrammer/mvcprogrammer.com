@@ -40,12 +40,15 @@ if os.path.exists(shot):
 story += [
     p("1. What it is and what it is not", "h1"),
     p("The site has no third-party analytics, by design and by the promise on its privacy page. What it has is a line in "
-      "the CloudFront access log for every request to all four editions, and a first-party beacon (" + c("GET /ping")
+      "the CloudFront access log for every request to all four editions and the patient explorer, and a first-party beacon (" + c("GET /ping")
       + ") that adds the page load with the screen class and color scheme, the sections a visitor reached, the "
       "edition and profile links they followed, and how long the page stayed visible. " + c("tools/cf-stats.mjs")
       + " has printed a text report from those logs since October 2026. The dashboard shows the same figures as a page: "
       "headline tiles with deltas and sparklines, a daily chart, and breakdowns by edition, referrer, screen, country, "
       "section, time on page, and click, with a date range, a previous-period comparison, and click-to-filter segments. "
+      "The patient explorer at fhir.mvcprogrammer.com is not an edition, but it is the fifth host with its own log, so it "
+      "sits in the edition dimension as a fifth value and has a tile of its own for the visits that opened it and the calls "
+      "and writes they made on its API. "
       "It is private, behind a sign-in, and reads static JSON files; there is no server, no database, and no cookie on "
       "the public site."),
     p("Non-goals", "h2"),
@@ -87,7 +90,7 @@ story += [
     p("3. How the data flows", "h1"),
     *code_block([
         "CloudFront logs (S3)   -->  tools/stats-export.mjs    -->  stats/data/index.json       -->  the page",
-        "four prefixes, gzipped      parse, drop scanners,          days/YYYY-MM-DD.json             fetch the range,",
+        "five prefixes, gzipped      parse, drop scanners,          days/YYYY-MM-DD.json             fetch the range,",
         "W3C lines                   build visits, salt tokens      one record per visit, no IPs     filter, sum, draw",
     ]),
     p("The day file", "h2"),
@@ -101,7 +104,7 @@ story += [
         [
             [c("token"), "A salted SHA-256 of the IP address and browser string, cut to ten hex digits. The same browser gets the same token every day; nothing can be recovered from it. The salt is a repository secret."],
             [c("hour"), "The local hour the visit started."],
-            [c("editions"), "The editions it loaded a page on, in display order; a visit that moved between editions lists each."],
+            [c("editions"), "The editions it loaded a page on, in display order, the patient explorer as " + c("fhir") + "; a visit that moved between hosts lists each. Files written before the explorer had an id name it by its host; the page maps those to the id as it reads them."],
             [c("referrer"), "The external referrer host; absent for a direct visit."],
             [c("country, edge"), "The two-letter country of the CloudFront edge that served it (" + c("tools/lib/edge-locations.mjs") + ") and the edge code. Served from, not located in."],
             [c("loads, screen, scheme"), "From the load ping; absent when the script never ran."],
@@ -109,6 +112,7 @@ story += [
             [c("seconds"), "The largest seconds-visible value the leave ping reported."],
             [c("clicks"), "The edition, GitHub, and profile links followed, as " + c("kind/target/place") + "."],
             [c("apiCalls, skills, resumes"), "Experience API calls, skill-filter clicks by skill, resume downloads by edition tag."],
+            [c("fhirCalls, fhirWrites"), "Calls to the patient explorer's API, and how many of them were writes (POST, PUT, PATCH, DELETE). Absent when the visit never called it."],
         ],
         [1.6 * inch, 5.4 * inch],
     ),
@@ -127,6 +131,7 @@ story += [
             ["Time on page", "The largest leave value a visit reported; shown as the median with the 75th percentile beside it, never as a mean alone."],
             ["Section reach", "Engaged visits that reached a section, as a share of engaged visits, in page order."],
             ["Edition and GitHub clicks", "Visits with a click ping of that kind, by target and by the place the link was (header menu, About chips, hero, footer)."],
+            ["Explorer visit", "A visit that loaded a page on the patient explorer's host, from an edition's demo dialog or directly; its API calls and writes are summed over the range."],
             ["Returning visitor", "A token seen on more than one day inside the range."],
             ["Unique visitors", "Distinct tokens among the visits in the range, under whatever filters are active."],
             ["Compare", "Every headline number against the same-length period immediately before the range, as a signed percentage with an arrow; beacon reach as points."],
@@ -145,7 +150,7 @@ story += [
     table(
         ["Control", "What it does"],
         [
-            ["Edition switcher", "All plus the four editions, as a segmented control; a shorthand for the edition filter."],
+            ["Edition switcher", "All, the four editions, and the patient explorer, as a segmented control; a shorthand for the edition filter."],
             ["Range", "Today, 7, 30, or 90 days, this month, last month, or a custom pair of dates bounded by the earliest day with data and today."],
             ["Compare", "Overlays the previous period on the chart as a dashed line and puts a delta on every tile."],
             ["Filters", "Clicking a row in the Editions, Referrers, Screens, Color scheme, or Countries panel adds a chip; chips are removable one by one or all at once. One filter per dimension; filters combine with AND."],
@@ -163,9 +168,10 @@ story += [
             ["Beacon reach", "Share of visits that sent any ping; greyed when none did.", ""],
             ["Time on page", "Median seconds visible; 75th percentile in the tooltip.", ""],
             ["Edition clicks, GitHub clicks", "Visits that switched edition, and visits that opened the profile or a repository.", ""],
-            ["Resume downloads", "A seventh tile, only when the range has any.", ""],
+            ["Patient explorer", "Visits that opened the explorer, with a sparkline; the share of visits and its API calls and writes in the tooltip.", "Never; zero is zero."],
+            ["Resume downloads", "An eighth tile, only when the range has any.", ""],
             ["Per day (or per week)", "Visits and visitors, or beacon reach, time on page, or edition clicks; previous period dashed; days without a file shaded; weekly from 91 days.", ""],
-            ["Editions", "Horizontal bars, visits that loaded each; a visit on two editions counts in both.", "No visits in this range"],
+            ["Editions", "Horizontal bars, visits that loaded each, the patient explorer as the fifth row; a visit on two hosts counts in both.", "No visits in this range"],
             ["Referrers", "Top ten hosts with direct grouped, Others collapsed.", "No visits in this range"],
             ["Screens and color scheme", "Two small doughnuts with legends that filter.", "No beacon data in this range"],
             ["Countries", "Top ten with flags, derived from the edge location, so labelled served from.", "No visits in this range"],
@@ -210,8 +216,8 @@ story += [
     table(
         ["Suite", "Runs with", "What it proves"],
         [
-            [c("tools/test/") + " (26)", c("node --test"), "Parsing and decoding, the window filter, gunzipping a folder, scanner and owner classification, the 30-minute split, a session across local midnight, the visit rule, the command line, the calendar math on both sides of a daylight saving change, every field of a visit record, no IP or browser string in a record, the golden day file byte for byte, determinism, the index merge."],
-            [c("stats/src/**/*.test.ts(x)") + " (85)", c("vitest run"), "Date math, the query round trip, the fetch client (cache, 404 as missing, retry after 500, newer schema refused), every aggregation function, the series (daily, weekly, missing days), the formatters, each component (tiles, sparkline, bars, chips, switcher, picker, updated, table twin, states), the Dashboard over a fake client (numbers, panels, filtering, compare, empty, error), and the App (controls to URL, URL to controls, back button, index failure)."],
+            [c("tools/test/") + " (48)", c("node --test"), "Parsing and decoding, the window filter, gunzipping a folder, scanner and owner classification, the 30-minute split, a session across local midnight, the visit rule, the explorer's API calls and writes, the five hosts, the command line, the calendar math on both sides of a daylight saving change, every field of a visit record, no IP or browser string in a record, the golden day file byte for byte, determinism, the index merge, and the run summary."],
+            [c("stats/src/**/*.test.ts(x)") + " (98)", c("vitest run"), "Date math, the query round trip, the fetch client (cache, 404 as missing, retry after 500, newer schema refused, older files normalized), every aggregation function, the series (daily, weekly, missing days), the formatters, each component (tiles, sparkline, bars, chips, switcher, picker, updated, table twin, states), the Dashboard over a fake client (numbers, panels, filtering, compare, empty, error), and the App (controls to URL, URL to controls, back button, index failure)."],
             [c("infra/lambda/stats-auth/") + " (6)", c("node --test"), "The options built from the parameters with hardened cookies, a missing parameter refused, the SSM read with decryption, one authenticator per container, and the fail-closed 503 with a retry on the next request."],
         ],
         [1.7 * inch, 1.0 * inch, 4.3 * inch],
@@ -299,5 +305,5 @@ build(
     title="The visitor dashboard of mvcprogrammer.com",
     subject="Guideline for building, testing, and deploying the visitor dashboard",
     running_title="mvcprogrammer.com  ·  The visitor dashboard",
-    dated="Guideline, October 2026",
+    dated="Guideline, November 2026",
 )

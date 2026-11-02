@@ -36,6 +36,10 @@ export interface Summary {
   readonly githubRepoClicks: number;
   /** Visits that called the Experience API. */
   readonly apiLoads: number;
+  /** Visits that loaded the patient explorer, the calls they made to its API, and the writes among those calls. */
+  readonly explorerVisits: number;
+  readonly explorerCalls: number;
+  readonly explorerWrites: number;
   readonly skillClicks: Counts;
   readonly resumeDownloads: Counts;
 }
@@ -122,6 +126,9 @@ export function summarize(visits: readonly VisitRecord[]): Summary {
     githubProfileClicks: github.filter((click) => click.startsWith('github/profile/')).length,
     githubRepoClicks: github.filter((click) => !click.startsWith('github/profile/')).length,
     apiLoads: visits.filter((visit) => (visit.apiCalls ?? 0) > 0).length,
+    explorerVisits: visits.filter((visit) => visit.editions.includes('fhir')).length,
+    explorerCalls: visits.reduce((total, visit) => total + (visit.fhirCalls ?? 0), 0),
+    explorerWrites: visits.reduce((total, visit) => total + (visit.fhirWrites ?? 0), 0),
     skillClicks: countBy(visits.flatMap((visit) => visit.skills ?? [])),
     resumeDownloads: countBy(visits.flatMap((visit) => visit.resumes ?? [])),
   };

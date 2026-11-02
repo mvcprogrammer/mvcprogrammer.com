@@ -199,12 +199,12 @@ function daysTable(files) {
   }
   return [
     ...table(
-      ['Day', 'Requests', 'Scanner requests', 'Pings', 'API', 'Visits', 'Visitors', 'File'],
-      files.map((file) => [code(file.day), count(file.requests), count(file.scannerRequests), count(file.pings), count(file.apiRequests), count(file.visits), count(file.visitors), bytes(file.bytes)]),
-      ['left', 'right', 'right', 'right', 'right', 'right', 'right', 'right'],
+      ['Day', 'Requests', 'Scanner requests', 'Pings', 'API', 'FHIR', 'Visits', 'Visitors', 'File'],
+      files.map((file) => [code(file.day), count(file.requests), count(file.scannerRequests), count(file.pings), count(file.apiRequests), count(file.fhirRequests ?? 0), count(file.visits), count(file.visitors), bytes(file.bytes)]),
+      ['left', 'right', 'right', 'right', 'right', 'right', 'right', 'right', 'right'],
     ),
     '',
-    'Requests leave out the owner. Scanner requests are those from a bot browser string or answered with a 4xx, as the dashboard counts them; pings are beacon rows and API the Experience API rows behind the visits.',
+    'Requests leave out the owner. Scanner requests are those from a bot browser string or answered with a 4xx, as the dashboard counts them; pings are beacon rows, API the Experience API rows, and FHIR the patient explorer API rows behind the visits.',
   ];
 }
 

@@ -13,6 +13,8 @@
 //   G  The owner's own IP: excluded when the tools are told to.
 //   H  A browser that fetched the page and nothing else: not a visit.
 //   I  A Blazor edition visit on 2026-10-16 (MIA): belongs to the day before.
+//   J  A desktop visitor (LHR) who opened the home page, then the patient explorer on its own host:
+//      load ping there, a search (GET), a create (POST) and a delete (DELETE) on the explorer's API, leave 40 s.
 
 const FIELDS = 'date time x-edge-location sc-bytes c-ip cs-method cs(Host) cs-uri-stem sc-status cs(Referer) cs(User-Agent) cs-uri-query cs(Cookie) x-edge-result-type x-edge-request-id x-host-header cs-protocol cs-bytes time-taken x-forwarded-for ssl-protocol ssl-cipher x-edge-response-result-type cs-protocol-version fle-status fle-encrypted-fields c-port time-to-first-byte x-edge-detailed-result-type sc-content-type sc-content-len sc-range-start sc-range-end';
 
@@ -72,6 +74,17 @@ export const ROWS = [
 
   // H
   { at: '2026-10-17T18:00:00Z', edge: 'JFK', ip: '192.0.2.9', host: 'mvcprogrammer.com', path: '/', status: 200, ua: CHROME },
+
+  // J: 15:00 local, the home page and then the explorer
+  { at: '2026-10-17T19:00:00Z', edge: 'LHR', ip: '198.51.100.20', host: 'mvcprogrammer.com', path: '/', status: 200, ua: CHROME },
+  { at: '2026-10-17T19:00:01Z', edge: 'LHR', ip: '198.51.100.20', host: 'mvcprogrammer.com', path: '/styles.css', status: 200, ua: CHROME },
+  { at: '2026-10-17T19:00:10Z', edge: 'LHR', ip: '198.51.100.20', host: 'fhir.mvcprogrammer.com', path: '/', status: 200, referrer: 'https://mvcprogrammer.com/', ua: CHROME },
+  { at: '2026-10-17T19:00:11Z', edge: 'LHR', ip: '198.51.100.20', host: 'fhir.mvcprogrammer.com', path: '/main-DEF456.js', status: 200, ua: CHROME },
+  { at: '2026-10-17T19:00:12Z', edge: 'LHR', ip: '198.51.100.20', host: 'fhir.mvcprogrammer.com', path: '/ping', status: 204, ua: CHROME, query: 'e=load&v=desktop&c=light' },
+  { at: '2026-10-17T19:00:13Z', edge: 'LHR', ip: '198.51.100.20', host: 'fhir.mvcprogrammer.com', path: '/api/fhir/patients', status: 200, ua: CHROME, query: 'family=Programmer' },
+  { at: '2026-10-17T19:00:30Z', edge: 'LHR', ip: '198.51.100.20', method: 'POST', host: 'fhir.mvcprogrammer.com', path: '/api/fhir/patients', status: 201, ua: CHROME },
+  { at: '2026-10-17T19:00:45Z', edge: 'LHR', ip: '198.51.100.20', method: 'DELETE', host: 'fhir.mvcprogrammer.com', path: '/api/fhir/patients/1234', status: 204, ua: CHROME },
+  { at: '2026-10-17T19:00:50Z', edge: 'LHR', ip: '198.51.100.20', host: 'fhir.mvcprogrammer.com', path: '/ping', status: 204, ua: CHROME, query: 'e=leave&t=40' },
 
   // C: 22:30 local
   { at: '2026-10-18T02:30:00Z', edge: 'FRA', ip: '198.51.100.7', host: 'react.mvcprogrammer.com', path: '/', status: 200, ua: IPHONE },
