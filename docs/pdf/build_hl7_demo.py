@@ -22,14 +22,14 @@ story += [
     p("The HL7 ETL demo", "title"),
     p("A runbook for showing the HL7 v2 to FHIR pipeline end to end: messages land in Postgres integration "
       "tables, a .NET loader maps them to FHIR R4 and bulk-loads a public FHIR server, and the patient explorer "
-      "reads the result back. Eight minutes, four terminal commands, one browser tab. Synthetic data only.", "subtitle"),
+      "reads the result back. Eight minutes, a handful of terminal commands, one browser tab. Synthetic data only.", "subtitle"),
 ]
 
 # ---------------------------------------------------------------- 1
 story += [
-    p("1. What is being shown", "h1"),
-    p("The integration-engine job every health system runs. An EHR emits HL7 v2 messages (ADT^A01 admissions, ORU^R01 "
-      "results); an engine lands them, transforms them to FHIR R4, and loads a FHIR server that the clinical tools read. "
+    p("1. A workload every health system runs", "h1"),
+    p("An EHR emits HL7 v2 messages (ADT^A01 admissions, ORU^R01 results); an integration engine lands them, transforms "
+      "them to FHIR R4, and loads a FHIR server that the clinical tools read. "
       "Here the landing store is Postgres, the engine is the console in " + link("api/src/Hl7.Etl", ETL)
       + ", the FHIR server is the public HAPI sandbox, and the reader is " + link("fhir.mvcprogrammer.com", "https://fhir.mvcprogrammer.com/")
       + ". The design is in the HL7 ETL section of " + link("api/README.md", BLOB + "api/README.md") + "."),
@@ -62,8 +62,8 @@ story += [
     p("Step 2. Check the cohort is still on the sandbox.", "h2"),
     p("The sandbox is wiped now and then. Count the patients the ETL loaded:"),
     *code_block([
-        'curl -s "https://hapi.fhir.org/baseR4/Patient?identifier=https://mvcprogrammer.com/fhir/etl|&_summary=count" \\',
-        '  -H "Accept: application/fhir+json"',
+        'curl -s -H "Accept: application/fhir+json" \\',
+        '  "https://hapi.fhir.org/baseR4/Patient?identifier=https://mvcprogrammer.com/fhir/etl|&_summary=count"',
     ]),
     p("Expected " + c('"total": 25') + ". If it is 0, replay the feed, which recreates everything in a few seconds:"),
     *code_block(["$B requeue && $B load"]),
@@ -85,13 +85,13 @@ story += [
     p("Step 1. Frame it (thirty seconds).", "h2"),
     p("“This is the integration-engine job every health system runs: HL7 v2 messages arrive from an EHR, land in integration "
       "tables, get transformed to FHIR R4, and are loaded into a FHIR server that the clinical tools read. I built it end to end "
-      "on my stack in a day. Synthetic data only.”"),
+      "on an Angular/C# .NET stack in one sprint. Synthetic data only.”"),
     p("Step 2. Show the landing tables (one minute).", "h2"),
     *code_block([
         "$B status",
         'psql -d hl7_etl -c "select message_type, trigger_event, count(*) from hl7.messages group by 1, 2 order by 1"',
-        "psql -d hl7_etl -Atc \"select raw_message from hl7.messages where message_type = 'ORU' order by message_id limit 1\" \\",
-        "  | tr '\\r' '\\n'",
+        "psql -d hl7_etl -Atc \"select raw_message from hl7.messages where message_type = 'ORU' \\",
+        "  order by message_id limit 1\" | tr '\\r' '\\n'",
     ]),
     p("Point at the segments: MSH, PID with the MRN, OBR, and the OBX lines with LOINC codes and UCUM units. Say that every "
       "message is a row, unique on its control id, so a redelivery lands once."),
@@ -100,13 +100,13 @@ story += [
     p("It prints " + c("0 messages landed, 67 had already landed") + ". Say this is why the control id is the key."),
     p("Step 4. Replay the load (two minutes).", "h2"),
     *code_block(["$B requeue", "$B load"]),
-    p("Walk the log: a batch of 25 messages becomes one transaction bundle, the server answers per entry, and the summary says "
+    p("Walk the log: each batch of up to 25 messages becomes one transaction bundle, the server answers per entry, and the summary says "
       + c("0 resources created, 268 already present") + ". Say that every entry is a conditional create keyed on an identifier, so "
       "the same feed can be loaded as many times as you like and nothing duplicates. That is the property a real engine needs after "
       "a crash or a redelivery."),
     p("Step 5. Read it back in the explorer (two minutes).", "h2"),
     p("In the explorer tab, with the identifier search already run, pick the patient you warmed. Show the MRN, the encounter count, "
-      "and the vital signs with their values. Open the under-the-hood log to show the FHIR calls the page made. Say the explorer did "
+      "and the vital signs with their values. Open the Under the hood panel to show the FHIR calls the page made. Say the explorer did "
       "not change for this; the ETL stamps everything with one identifier system, so the cohort is one search away."),
     p("Step 6. Code tour on GitHub (two minutes).", "h2"),
     p("Open three files and say one sentence each:"),
@@ -115,7 +115,7 @@ story += [
     b(c("Mappers/AdmissionMapper.cs") + " or " + c("ResultMapper.cs") + ": parse at the boundary, map to FHIR with the Firely SDK, and a "
       "message that cannot map names its control id, field, and reason and does not stop the batch."),
     b(c("Services/LoadService.cs") + ": one bundle per batch, resilient HTTP, the batch settled in the landing table."),
-    p("Then pull request #223 and its section “What the first live run taught”: the public server refused conditional references, "
+    p("Then pull request #223 and its section “What the first live run taught, now handled and tested”: the public server refused conditional references, "
       "and a failed batch was being re-claimed in the same run. Both found by running it for real, both fixed with tests the same "
       "afternoon. This is the part a technical audience cares about most."),
     p("Step 7. Close (thirty seconds).", "h2"),
@@ -135,7 +135,7 @@ story += [
                  + " anyway: the run log shows batches failing cleanly with the server's reason and keeping their claim for retry, which is itself a good story."],
                 ["A summary shows zero observations", "The ten-minute edge cache on a patient loaded moments earlier. Pick the patient you warmed, or any other."],
                 [c("$B") + " is not found", "A new terminal lost the variables; rerun the " + c("export PATH") + " and " + c("B=") + " lines from section 2."],
-                ["The explorer lists more than 25", "Other people's records can carry the same family name, not the ETL identifier system; the identifier search is exact. Make sure the bar is at the end of the token and the family name is blank."],
+                ["The explorer lists more than 25", "The identifier search is exact, so extra rows mean the Family name field still has a value or the bar is missing from the end of the identifier token. Clear the family name, keep the bar, and search again."],
                 [c("generate") + " lands messages", "The landing table was emptied (a new database, or a test run against it). Fine: " + c("$B load") + " then creates on the sandbox what is not there and reports the rest as already present."],
             ],
             [1.9 * inch, 5.1 * inch],
