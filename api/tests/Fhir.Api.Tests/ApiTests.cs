@@ -535,6 +535,14 @@ public sealed class ApiTests
         return patient;
     }
 
+    /// <summary>A patient as the HL7 ETL stores one: an MR-typed identifier in the ETL system, no session identifier.</summary>
+    private static Patient Cohort(string id = "1842")
+    {
+        var patient = Fixtures.Patient(id, family: "Okafor", given: "Cormac", mrn: null);
+        patient.Identifier.Add(new Hl7.Fhir.Model.Identifier("https://mvcprogrammer.com/fhir/etl", "MRN-000017") { Type = new CodeableConcept(Fixtures.V2_0203, "MR") });
+        return patient;
+    }
+
     private static HttpRequestMessage Write(HttpMethod method, string path, string? body = null, string? session = SESSION, string? key = null, string mediaType = "application/json")
     {
         var request = new HttpRequestMessage(method, path);
@@ -720,9 +728,11 @@ public sealed class ApiTests
         Assert.Empty(factory.Handler.Requests);
     }
 
+    /// <summary>Another session's patient, one the explorer never made, one the HL7 ETL loaded, and a missing one all answer the same 404 to a patient write.</summary>
     [Theory]
     [InlineData("other-session")]
     [InlineData("not-created-by-the-explorer")]
+    [InlineData("hl7-cohort")]
     [InlineData("missing")]
     public async Task Writes_to_a_patient_that_is_not_this_sessions_are_404_problems(string which)
     {
@@ -735,6 +745,9 @@ public sealed class ApiTests
                 break;
             case "not-created-by-the-explorer":
                 factory.Handler.On(HttpMethod.Get, "/Patient/1842", Fixtures.Patient("1842"));
+                break;
+            case "hl7-cohort":
+                factory.Handler.On(HttpMethod.Get, "/Patient/1842", Cohort());
                 break;
             default:
                 factory.Handler.On(HttpMethod.Get, "/Patient/1842", FakeFhirHandler.Outcome("no such patient"), HttpStatusCode.NotFound);
@@ -1050,6 +1063,45 @@ public sealed class ApiTests
         Assert.DoesNotContain("\"id\"", post.Body, StringComparison.Ordinal);
     }
 
+    /// <summary>A patient the HL7 ETL loaded carries no session token but an identifier in the cohort system; the guard lets a condition through and the create references it.</summary>
+    [Fact]
+    public async Task AddCondition_ShouldRecordOnAPatientTheHl7EtlLoaded()
+    {
+        // Arrange
+        using var factory = new FhirApiFactory();
+        factory.Handler.On(HttpMethod.Get, "/Patient/1842", Cohort());
+        factory.Handler.On(HttpMethod.Get, "/Condition?", Fixtures.CountOnly(0));
+        factory.Handler.On(HttpMethod.Post, "/Condition", Stored(), HttpStatusCode.Created);
+        using var client = factory.CreateClient();
+
+        // Act
+        var response = await client.SendAsync(AddCondition(), Ct);
+
+        // Assert
+        Assert.Equal(HttpStatusCode.Created, response.StatusCode);
+        var post = Assert.Single(factory.Handler.Sent, r => r.Method == HttpMethod.Post);
+        Assert.Contains("\"reference\":\"Patient/1842\"", post.Body, StringComparison.Ordinal);
+    }
+
+    /// <summary>The cohort rule is the identifier system, not the MR type: a patient whose only identifiers are elsewhere stays a 404.</summary>
+    [Fact]
+    public async Task AddCondition_ShouldAnswer404ForAPatientWithAnIdentifierOutsideTheCohortSystem()
+    {
+        // Arrange
+        using var factory = new FhirApiFactory();
+        var patient = Fixtures.Patient("1842", mrn: null);
+        patient.Identifier.Add(new Hl7.Fhir.Model.Identifier("https://example.org/mrn", "MRN-000017") { Type = new CodeableConcept(Fixtures.V2_0203, "MR") });
+        factory.Handler.On(HttpMethod.Get, "/Patient/1842", patient);
+        using var client = factory.CreateClient();
+
+        // Act
+        var response = await client.SendAsync(AddCondition(), Ct);
+
+        // Assert
+        await AssertProblem(response, HttpStatusCode.NotFound, "not-found");
+        Assert.DoesNotContain(factory.Handler.Sent, r => r.Method == HttpMethod.Post);
+    }
+
     /// <summary>The sandbox answers a matched conditional create with 200 and the existing resource; the function passes that through and creates nothing.</summary>
     /// <summary>HAPI answers a matched conditional create with 200, no body, and the existing resource's Location; the function reads that resource and still answers 200.</summary>
     [Fact]
@@ -1246,7 +1298,7 @@ public sealed class ApiTests
 
         // Assert
         var problem = await AssertProblem(response, HttpStatusCode.NotFound, "not-found");
-        Assert.Contains("This session created no Patient with id '1842'", problem.GetProperty("detail").GetString(), StringComparison.Ordinal);
+        Assert.Contains("This session created no Patient with id '1842', and the HL7 ETL loaded none.", problem.GetProperty("detail").GetString(), StringComparison.Ordinal);
         Assert.DoesNotContain(factory.Handler.Sent, r => r.Method == HttpMethod.Post);
     }
 
@@ -1375,6 +1427,26 @@ public sealed class ApiTests
         Assert.Equal([HttpMethod.Get, HttpMethod.Get, HttpMethod.Put], factory.Handler.Sent.Select(r => r.Method));
     }
 
+    /// <summary>A condition of a patient the HL7 ETL loaded can be resolved by any session, like one of the session's own.</summary>
+    [Fact]
+    public async Task ResolveCondition_ShouldResolveOnAPatientTheHl7EtlLoaded()
+    {
+        // Arrange
+        using var factory = new FhirApiFactory();
+        factory.Handler.On(HttpMethod.Get, "/Patient/1842", Cohort());
+        factory.Handler.On(HttpMethod.Get, "/Condition/9f1c", Stored());
+        factory.Handler.On(HttpMethod.Put, "/Condition/9f1c", (request, _, ct) => Echo(request, ct));
+        using var client = factory.CreateClient();
+
+        // Act
+        var response = await client.SendAsync(Resolve(), Ct);
+
+        // Assert
+        Assert.Equal(HttpStatusCode.NoContent, response.StatusCode);
+        var put = Assert.Single(factory.Handler.Sent, r => r.Method == HttpMethod.Put);
+        Assert.Contains("\"code\":\"resolved\"", put.Body, StringComparison.Ordinal);
+    }
+
     /// <summary>Resolving a resolved condition is the end state already: 204 and no write, so the operation is idempotent.</summary>
     [Fact]
     public async Task ResolveCondition_ShouldAnswer204WithoutWritingWhenAlreadyResolved()
@@ -1476,7 +1548,7 @@ public sealed class ApiTests
 
         // Assert
         var problem = await AssertProblem(response, HttpStatusCode.NotFound, "not-found");
-        Assert.Contains("This session created no Patient with id '1842'", problem.GetProperty("detail").GetString(), StringComparison.Ordinal);
+        Assert.Contains("This session created no Patient with id '1842', and the HL7 ETL loaded none.", problem.GetProperty("detail").GetString(), StringComparison.Ordinal);
         Assert.DoesNotContain(factory.Handler.Requests, u => u.PathAndQuery.Contains("/Condition/", StringComparison.Ordinal));
         Assert.DoesNotContain(factory.Handler.Sent, r => r.Method == HttpMethod.Put);
     }
@@ -1514,7 +1586,7 @@ public sealed class ApiTests
         // Assert
         var problem = await AssertProblem(response, HttpStatusCode.NotFound, "not-found");
         Assert.Equal("Condition not found", problem.GetProperty("title").GetString());
-        Assert.Contains("Patient '1842' created by this session has no Condition with id '9f1c'", problem.GetProperty("detail").GetString(), StringComparison.Ordinal);
+        Assert.Contains("Patient '1842' has no Condition with id '9f1c' this session may resolve.", problem.GetProperty("detail").GetString(), StringComparison.Ordinal);
         Assert.Equal("no-store", response.Headers.CacheControl?.ToString());
         Assert.DoesNotContain(factory.Handler.Sent, r => r.Method == HttpMethod.Put);
     }

@@ -9,9 +9,9 @@ namespace Fhir.Api.Services;
 /// </summary>
 public interface IConditionWriteService
 {
-    /// <summary>Records a listed condition on a patient this session created. <c>Created</c> is false when the patient already had it active and the existing resource is returned.</summary>
+    /// <summary>Records a listed condition on a patient this session created or the HL7 ETL loaded. <c>Created</c> is false when the patient already had it active and the existing resource is returned.</summary>
     Task<(ConditionWriteResult Result, bool Created)> AddAsync(string patientId, ConditionInput input, string sessionToken, CancellationToken cancellationToken);
 
-    /// <summary>Sets a condition of a patient this session created to resolved. A condition already resolved is left as it is; one that does not reference the patient is not found.</summary>
+    /// <summary>Sets a condition of a patient this session created or the HL7 ETL loaded to resolved. A condition already resolved is left as it is; one that does not reference the patient is not found.</summary>
     Task ResolveAsync(string patientId, string conditionId, string sessionToken, CancellationToken cancellationToken);
 }

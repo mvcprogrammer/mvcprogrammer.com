@@ -60,6 +60,13 @@ public sealed class FhirOptions
     /// <summary>The seeded demo patient every visitor searches for first. Read-only to the write operations.</summary>
     public string SeedPatientId { get; set; } = "mvc-programmer";
 
+    /// <summary>
+    /// The identifier system the HL7 ETL stamps on every patient it loads. A session may add and resolve
+    /// conditions on those patients as if they were its own, so the explorer can work a cohort it did not
+    /// create; the patients themselves stay read-only to replace, patch, and delete.
+    /// </summary>
+    public string CohortIdentifierSystem { get; set; } = "https://mvcprogrammer.com/fhir/etl";
+
     /// <summary>How long a read CapabilityStatement is kept per instance.</summary>
     public int CapabilityTtlSeconds { get; set; } = 3_600;
 
