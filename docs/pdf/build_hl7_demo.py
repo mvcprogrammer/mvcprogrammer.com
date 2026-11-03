@@ -85,7 +85,7 @@ story += [
     p("Step 1. Frame it (thirty seconds).", "h2"),
     p("“This is the integration-engine job every health system runs: HL7 v2 messages arrive from an EHR, land in integration "
       "tables, get transformed to FHIR R4, and are loaded into a FHIR server that the clinical tools read. I built it end to end "
-      "on my stack in a day. Synthetic data only.”"),
+      "on an Angular/C# .NET stack in one sprint. Synthetic data only.”"),
     p("Step 2. Show the landing tables (one minute).", "h2"),
     *code_block([
         "$B status",
