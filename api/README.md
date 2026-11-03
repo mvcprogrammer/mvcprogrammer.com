@@ -188,84 +188,9 @@ Deployment and the CloudFront wiring are in [docs/DEPLOY.md](../docs/DEPLOY.md),
 # HL7 ETL
 
 The integration-engine job every health system runs, shown end to end on this stack: HL7 v2 messages
-(ADT^A01 admissions, ORU^R01 results) land in Postgres integration tables, a .NET console parses them
-into FHIR R4 resources and bulk-loads the public HAPI sandbox through transaction bundles, and the
-[patient explorer](https://fhir.mvcprogrammer.com/) lists what landed. Synthetic data only: the cohort is
-generated in the repo, nothing real passes through. Built as an epic of four slices. The step-by-step demo,
-with the commands and what to say at each, is [docs/HL7-ETL-DEMO.pdf](../docs/HL7-ETL-DEMO.pdf) (built by
-`docs/pdf/build_hl7_demo.py`).
-
-## Layout
-
-```
-api/src/Hl7.Etl/
-  Program.cs                The commands: migrate, generate, load, requeue, status.
-  Sql/                      The hl7 schema: the messages landing table and the functions the repository calls
-                            (insert, claim a batch with SKIP LOCKED, complete, fail, requeue, status). Applied by migrate, once each.
-  Configurations/           EtlOptions (Options pattern; HL7_ETL_CONNECTION overrides the connection string).
-  Databases/                MessageRepository: one Npgsql connection per call, one function per method, typed parameters.
-  Mappers/                  LandedMessageMapper (reader rows to records by ordinal); MessageMapper, AdmissionMapper, and
-                            ResultMapper (HL7 v2 to FHIR R4, see below); Hl7Values (typed field reads); EtlIdentifiers;
-                            BundleBuilder (one transaction bundle per batch, conditional creates, in-bundle references).
-  Exceptions/               Hl7MappingException (the control id, the location such as PID.7 or OBX[3].2, and the reason) and
-                            BundleRejectedException (the status and the OperationOutcome text).
-  Services/                 MigrationService, GenerateService, LoadService (the loader), HttpBundleClient (the resilient
-                            HttpClient that posts bundles and looks identifiers up).
-  Generators/               SyntheticCohortGenerator (deterministic per seed) and Hl7MessageComposer (HL7-V2 library, v2.5.1).
-api/tests/Hl7.Etl.Tests/    Generator tests (compose, then parse back), mapper tests (every path, every failure, a Firely
-                            round trip), and repository tests against a real Postgres.
-```
-
-## Run it
-
-```bash
-brew install postgresql@17 && brew services start postgresql@17 && createdb hl7_etl   # once, on a Mac
-dotnet run --project api/src/Hl7.Etl -- migrate                   # create or update the hl7 schema; idempotent
-dotnet run --project api/src/Hl7.Etl -- generate --patients 25    # land 25 admissions and about 40 results; a rerun lands nothing
-dotnet run --project api/src/Hl7.Etl -- load                      # parse and bulk-load the sandbox, one transaction bundle per batch
-dotnet run --project api/src/Hl7.Etl -- requeue                   # put every processed message back, then load again: nothing duplicates
-dotnet run --project api/src/Hl7.Etl -- status                    # pending, claimed, processed, failed
-
-HL7_ETL_TEST_CONNECTION="Host=localhost;Database=hl7_etl_test" dotnet test --project api/tests/Hl7.Etl.Tests
-```
-
-The connection string defaults to `Host=localhost;Database=hl7_etl`; `HL7_ETL_CONNECTION` overrides it. The
-repository tests drop and recreate the `hl7` schema of the database named by `HL7_ETL_TEST_CONNECTION`
-and are skipped without it; CI runs them against a Postgres service container.
-
-## Design notes
-
-- **Postgres functions as the data path.** The application holds no SQL of its own beyond the one-line
-  function calls and the migrator's bootstrap: the Postgres equivalent of the stored-procedure path in the
-  coding standard. A Postgres procedure cannot return rows, so these are functions selected from.
-- **Land once, claim in batches.** MSH-10 (the message control id) is unique, so a redelivered message
-  lands once and `generate` is idempotent. `messages_claim` takes pending rows in arrival order with
-  `FOR UPDATE SKIP LOCKED`, stamps the claim and the attempt, and treats a claim older than the stale
-  window as abandoned; `complete` and `fail` settle a batch in place. The landing table is the only record
-  of progress.
-- **Deterministic cohort.** The same seed gives the same patients, visits, and values, so a demo reruns
-  and a test asserts exact messages. Every observation is LOINC-coded with UCUM units, so the mapper can
-  carry both into FHIR unchanged.
-- **The mapping.** ADT^A01 gives a Patient (PID-3 MRN as an identifier typed MR, PID-5 official name,
-  PID-8 sex, PID-7 birth date) and an in-progress Encounter (PV1-2 class as v3 ActCode, PV1-3 ward,
-  PV1-19 visit number as an identifier typed VN, PV1-44 admit time). ORU^R01 gives one Observation per
-  OBX: LOINC code and display from OBX-3, the numeric value with its UCUM unit from OBX-5 and OBX-6,
-  status from OBX-11, time from OBX-14 (OBR-7 when absent), the category from the panel in OBR-4
-  (vital signs or laboratory). Every resource carries an identifier under the ETL system, and
-  encounters and observations reference the patient (and the encounter) by conditional reference,
-  `Patient?identifier=system|mrn`, which the loader resolves in-bundle when both land in one batch. A
-  message that cannot be mapped raises `Hl7MappingException` naming the control id, the field, and the
-  reason; the loader records it against the row and the batch goes on.
-- **The load.** A batch of claimed messages becomes one transaction bundle; every entry is a conditional
-  create (`ifNoneExist` on the ETL identifier), so a rerun matches instead of duplicating and the whole
-  feed can be replayed: `requeue` then `load` reports every resource as already present. The public
-  sandbox refuses conditional references (`Patient?identifier=...`) inside a bundle, so references to a
-  patient or encounter in the same batch become in-bundle `urn:uuid` references, and references to one
-  loaded by an earlier batch are resolved to `Patient/{id}` by one identifier lookup per batch; a message
-  whose target is not on the server yet is set aside and retried later. The bundle goes through
-  `IHttpClientFactory` with the standard resilience handler (attempt and total timeouts, retries with
-  jitter; safe because the bundle is idempotent). A batch the server rejects, or that times out, is marked
-  failed with the reason and keeps its claim, so the same run does not spin on it; the next run after the
-  stale-claim window retries it. The landing table is the only record of progress.
-- **HL7-V2 over nHapi.** MIT-licensed, targets .NET 10, parses and composes without a per-version schema;
-  nHapi is MPL-2.0 and targets netstandard2.0 with a far larger object model than a demo needs.
+(ADT^A01 admissions, ORU^R01 results) land in a Postgres integration table, a .NET console claims them in
+batches, parses them into FHIR R4 resources, and bulk-loads the public HAPI sandbox through transaction
+bundles, idempotently. The [patient explorer](https://fhir.mvcprogrammer.com/) lists what landed. Synthetic
+data only. It is a console, not a function, and it has its own README: [src/Hl7.Etl/README.md](src/Hl7.Etl/README.md)
+covers the commands, the configuration, the landing table and its functions, the mapping, the load, and the
+tests. The step-by-step demo is [docs/HL7-ETL-DEMO.pdf](../docs/HL7-ETL-DEMO.pdf).
