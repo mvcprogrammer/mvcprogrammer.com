@@ -132,6 +132,21 @@ export function createOwnPatientSummary(id = 'mine-1'): PatientSummary {
   };
 }
 
+/** A patient summary for a patient the HL7 ETL loaded: an MR-typed identifier in the ETL cohort system and no session identifier. */
+export function createCohortPatientSummary(id = 'etl-1'): PatientSummary {
+  const summary = createPatientSummary();
+  return {
+    ...summary,
+    patient: {
+      ...summary.patient,
+      id,
+      name: 'Okafor, Cormac',
+      mrn: 'MRN-000017',
+      identifiers: [{ system: 'https://mvcprogrammer.com/fhir/etl', value: 'MRN-000017', type: 'MR' }],
+    },
+  };
+}
+
 /** What a write returns for the given input, as the function maps it: demographics plus a one-request trace. */
 export function createPatientWriteResult(input: PatientInput, id = 'new-1'): PatientWriteResult {
   const given = input.givenName && input.givenName.trim() !== '' ? input.givenName.trim() : undefined;

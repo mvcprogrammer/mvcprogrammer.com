@@ -9,11 +9,26 @@ public sealed class DemoPatientReadOnlyException(string id)
     public string Id { get; } = id;
 }
 
-/// <summary>No patient with that id was created by this session: it may not exist, it may have been wiped, or it may be someone else's. Same answer in every case.</summary>
-public sealed class WritablePatientNotFoundException(string id)
-    : Exception($"This session created no Patient with id '{id}'. It may have been wiped; create another.")
+/// <summary>No patient with that id this session may write to: it may not exist, it may have been wiped, or it may be someone else's. Same answer in every case.</summary>
+public sealed class WritablePatientNotFoundException : Exception
 {
-    public string Id { get; } = id;
+    /// <summary>The patient-write answer: only a patient this session created may be replaced, patched, or deleted.</summary>
+    public WritablePatientNotFoundException(string id)
+        : this(id, $"This session created no Patient with id '{id}'. It may have been wiped; create another.")
+    {
+    }
+
+    private WritablePatientNotFoundException(string id, string message)
+        : base(message)
+    {
+        Id = id;
+    }
+
+    public string Id { get; }
+
+    /// <summary>The condition-write answer: a patient this session created or the HL7 ETL loaded may carry conditions.</summary>
+    public static WritablePatientNotFoundException ForConditions(string id) =>
+        new(id, $"This session created no Patient with id '{id}', and the HL7 ETL loaded none. It may have been wiped; create another, or load the cohort.");
 }
 
 /// <summary>A patch operation could not be applied; nothing was written.</summary>
@@ -30,9 +45,9 @@ public sealed class SessionCapExceededException(int cap)
     public int Cap { get; } = cap;
 }
 
-/// <summary>No such condition on a patient this session created: the condition may not exist, may have been wiped, or may reference another patient. Same answer in every case.</summary>
+/// <summary>No such condition on a patient this session may write conditions on: the condition may not exist, may have been wiped, or may reference another patient. Same answer in every case.</summary>
 public sealed class WritableConditionNotFoundException(string patientId, string conditionId)
-    : Exception($"Patient '{patientId}' created by this session has no Condition with id '{conditionId}'. It may have been wiped.")
+    : Exception($"Patient '{patientId}' has no Condition with id '{conditionId}' this session may resolve. It may have been wiped.")
 {
     public string PatientId { get; } = patientId;
     public string ConditionId { get; } = conditionId;

@@ -8,6 +8,7 @@ import { FakeFhirClient } from '../../../testing/fake-fhir-client';
 import { CONDITION_PICK_LIST } from '../../content/condition-pick-list';
 import {
   createCapabilitySubset,
+  createCohortPatientSummary,
   createConditionWriteResult,
   createEmptyPatientSearchResult,
   createFhirResponse,
@@ -541,6 +542,35 @@ describe('FhirExplorer', () => {
       expect(blocked('fhir-replace')).toBe(true);
     });
 
+    it('should call a patient the HL7 ETL loaded conditions-only, keep the defaults, and block the verbs with the cohort reason', async () => {
+      // Arrange
+      client.onSearchPatients = () => Promise.resolve(createFhirResponse(createPatientSearchResult(createPatientListItem({ id: 'etl-1', name: 'Okafor, Cormac' }))));
+      client.onGetSummary = (id) => Promise.resolve(createFhirResponse(createCohortPatientSummary(id)));
+      await render();
+
+      // Act
+      submit();
+      await fixture.whenStable();
+
+      // Assert: the panel says what the card may do, and the form can only create
+      expect(target().textContent).toBe('Patient/etl-1 was loaded by the HL7 ETL: its conditions can be added and resolved on the card; the patient itself cannot be changed here. The form can create a new patient.');
+      expect(target().classList.contains('is-mine')).toBe(false);
+      expect(editField('familyName').value).toBe('Patient');
+      expect(blocked('fhir-create')).toBe(false);
+      expect(blocked('fhir-replace')).toBe(true);
+      expect(blocked('fhir-patch')).toBe(true);
+      expect(blocked('fhir-delete')).toBe(true);
+      expect(button('fhir-delete').title).toBe(FhirExplorer.BLOCK_COHORT_MESSAGE);
+
+      // Act: a blocked press says why
+      button('fhir-delete').click();
+      await fixture.whenStable();
+
+      // Assert
+      expect(textOf(editStatus())).toBe(FhirExplorer.BLOCK_COHORT_MESSAGE);
+      expect(client.deletes).toEqual([]);
+    });
+
     it('should call the seeded patient read-only and enable the verbs for a patient this session created', async () => {
       // Arrange
       client.onSearchPatients = () => Promise.resolve(createFhirResponse(createPatientSearchResult(createPatientListItem({ id: 'mvc-programmer' }), createPatientListItem({ id: 'mine-1' }))));
@@ -842,26 +872,97 @@ describe('FhirExplorer', () => {
   });
 
   describe('addCondition', () => {
-    it('should offer the ten listed conditions, the first selected, and block Add while nothing is selected', async () => {
+    it('should show no condition form until a patient is selected, then a collapsed one on the card offering the ten listed conditions', async () => {
       // Act
       await render();
 
-      // Assert
+      // Assert: nothing selected, nothing to add to
+      expect(host.querySelector('#fhir-condition')).toBeNull();
+
+      // Act: select a patient (the default search loads another session's)
+      submit();
+      await fixture.whenStable();
+
+      // Assert: the disclosure is on the card, closed, with the pick list inside
+      const details = host.querySelector('#fhir-card #fhir-condition') as HTMLDetailsElement;
+      expect(details).not.toBeNull();
+      expect(details.open).toBe(false);
+      expect(host.querySelector('#fhir-condition-title')?.textContent).toBe('Add a condition');
       const options = Array.from(host.querySelectorAll<HTMLOptionElement>('#fhir-condition-code option'));
       expect(options.map((o) => o.value)).toEqual(CONDITION_PICK_LIST.map((c) => c.code));
       expect(options[0].textContent).toBe('Essential hypertension · 59621000');
       expect(conditionSelect().value).toBe('59621000');
-      expect(blocked('fhir-add-condition')).toBe(true);
-      expect(button('fhir-add-condition').title).toBe(FhirExplorer.BLOCK_NONE_MESSAGE);
-      expect(host.querySelector('#fhir-condition-title')?.textContent).toBe('Add a condition');
+      expect(host.querySelector('#fhir-condition .fhir-edit-lead')?.textContent).toBe(FhirExplorer.CONDITION_LEAD);
+      expect(host.querySelector('#fhir-edit #fhir-condition-code')).toBeNull();
+    });
 
-      // Act: a blocked press says why and calls nothing
+    it('should keep the disclosure open across patients once opened', async () => {
+      // Arrange
+      client.onSearchPatients = () => Promise.resolve(createFhirResponse(createPatientSearchResult(createPatientListItem({ id: '78785' }), createPatientListItem({ id: 'mine-1' }))));
+      client.onGetSummary = (id) => Promise.resolve(createFhirResponse(id === 'mine-1' ? createOwnPatientSummary() : { ...createPatientSummary(), patient: { ...createPatientSummary().patient, id } }));
+      await render();
+      submit();
+      await fixture.whenStable();
+
+      // Act: open it the way a visitor would
+      const details = host.querySelector('#fhir-condition') as HTMLDetailsElement;
+      details.open = true;
+      details.dispatchEvent(new Event('toggle'));
+      fixture.detectChanges();
+
+      // Act: select another patient
+      (host.querySelector('.fhir-patient[data-id="mine-1"]') as HTMLButtonElement).click();
+      await fixture.whenStable();
+
+      // Assert
+      expect((host.querySelector('#fhir-condition') as HTMLDetailsElement).open).toBe(true);
+    });
+
+    it('should block Add for a patient that is neither this session\'s nor the HL7 ETL\'s, with the condition reason', async () => {
+      // Arrange: the default search loads another session's patient
+      await render();
+      submit();
+      await fixture.whenStable();
+
+      // Assert
+      expect(blocked('fhir-add-condition')).toBe(true);
+      expect(button('fhir-add-condition').title).toBe(FhirExplorer.BLOCK_OTHER_CONDITION_MESSAGE);
+      expect(host.querySelector('.fhir-pill-action')).toBeNull();
+
+      // Act: a blocked press says why on the card and calls nothing
       button('fhir-add-condition').click();
       await fixture.whenStable();
 
       // Assert
-      expect(textOf(editStatus())).toBe(FhirExplorer.BLOCK_NONE_MESSAGE);
+      expect(textOf(conditionStatus())).toBe(FhirExplorer.BLOCK_OTHER_CONDITION_MESSAGE);
       expect(client.conditionAdds).toEqual([]);
+    });
+
+    it('should add a condition to a patient the HL7 ETL loaded and put its chip on the card', async () => {
+      // Arrange
+      client.onSearchPatients = () => Promise.resolve(createFhirResponse(createPatientSearchResult(createPatientListItem({ id: 'etl-1', name: 'Okafor, Cormac' }))));
+      client.onGetSummary = (id) => Promise.resolve(createFhirResponse(createCohortPatientSummary(id)));
+      client.onAddCondition = (id, input) => Promise.resolve(createFhirResponse(createConditionWriteResult(input.code, id), { status: 201, xCache: null, etag: null }));
+      await render();
+      submit();
+      await fixture.whenStable();
+      choose('195967001');
+
+      // Assert: allowed before the press
+      expect(blocked('fhir-add-condition')).toBe(false);
+      expect(button('fhir-add-condition').title).toBe('');
+
+      // Act
+      button('fhir-add-condition').click();
+      await fixture.whenStable();
+
+      // Assert
+      expect(client.conditionAdds).toEqual([{ id: 'etl-1', input: { code: '195967001' } }]);
+      const chips = Array.from(host.querySelectorAll('#fhir-conditions .fhir-pill:not(.fhir-pill-more)'));
+      expect(chips[0].querySelector('.fhir-pill-text')?.textContent).toBe('Asthma');
+      expect(textOf(conditionStatus())).toBe('Added Asthma (Condition/cond-1) to Patient/etl-1.');
+      expect(conditionStatus().classList.contains('is-ok')).toBe(true);
+      expect(textOf(editStatus())).not.toContain('Asthma');
     });
 
     it('should block Add for the seeded patient with its own reason', async () => {
@@ -878,7 +979,7 @@ describe('FhirExplorer', () => {
 
       // Assert
       expect(button('fhir-add-condition').title).toBe(FhirExplorer.BLOCK_SEED_MESSAGE);
-      expect(textOf(editStatus())).toBe(FhirExplorer.BLOCK_SEED_MESSAGE);
+      expect(textOf(conditionStatus())).toBe(FhirExplorer.BLOCK_SEED_MESSAGE);
       expect(client.conditionAdds).toEqual([]);
     });
 
@@ -901,8 +1002,8 @@ describe('FhirExplorer', () => {
       expect(chips[0].querySelector('.fhir-pill-text')?.textContent).toBe('Type 2 diabetes mellitus');
       expect(chips[0].querySelector('.fhir-pill-code')?.textContent).toBe('SNOMED CT 44054006');
       expect(host.querySelector('#fhir-tile-conditions')?.textContent).toBe('3');
-      expect(textOf(editStatus())).toBe('Added Type 2 diabetes mellitus (Condition/cond-1) to Patient/mine-1.');
-      expect(editStatus().classList.contains('is-ok')).toBe(true);
+      expect(textOf(conditionStatus())).toBe('Added Type 2 diabetes mellitus (Condition/cond-1) to Patient/mine-1.');
+      expect(conditionStatus().classList.contains('is-ok')).toBe(true);
       expect(blocked('fhir-add-condition')).toBe(false);
 
       // Assert: the log
@@ -937,7 +1038,7 @@ describe('FhirExplorer', () => {
       const chips = Array.from(host.querySelectorAll('#fhir-conditions .fhir-pill:not(.fhir-pill-more)'));
       expect(chips).toHaveLength(1);
       expect(host.querySelector('#fhir-tile-conditions')?.textContent).toBe('2');
-      expect(textOf(editStatus())).toBe('Patient/mine-1 already has Essential hypertension active (Condition/c-hyp); nothing was added.');
+      expect(textOf(conditionStatus())).toBe('Patient/mine-1 already has Essential hypertension active (Condition/c-hyp); nothing was added.');
       expect(logText()).toContain('← 200 /patients/mine-1/conditions');
       expect(logText()).toContain('already there, returned Condition/c-hyp');
     });
@@ -953,8 +1054,8 @@ describe('FhirExplorer', () => {
       await fixture.whenStable();
 
       // Assert
-      expect(textOf(editStatus())).toBe('Patient \'mine-1\' already has 10 active conditions; resolve one before adding another.');
-      expect(editStatus().classList.contains('is-error')).toBe(true);
+      expect(textOf(conditionStatus())).toBe('Patient \'mine-1\' already has 10 active conditions; resolve one before adding another.');
+      expect(conditionStatus().classList.contains('is-error')).toBe(true);
       expect(host.querySelectorAll('#fhir-conditions .fhir-pill:not(.fhir-pill-more)')).toHaveLength(1);
       expect(host.querySelector('#fhir-tile-conditions')?.textContent).toBe('2');
       expect(logText()).toContain('← 422 /patients/mine-1/conditions: Condition rejected in 40 ms');
@@ -977,7 +1078,7 @@ describe('FhirExplorer', () => {
       // Assert
       expect(button('fhir-add-condition').title).toBe(FhirExplorer.BLOCK_WRITING_MESSAGE);
       expect(button('fhir-delete').title).toBe(FhirExplorer.BLOCK_WRITING_MESSAGE);
-      expect(textOf(editStatus())).toBe('Adding…');
+      expect(textOf(conditionStatus())).toBe('Adding…');
 
       // Act
       resolve();
@@ -1002,10 +1103,10 @@ describe('FhirExplorer', () => {
   });
 
   describe('resolveCondition', () => {
-    it('should show a Resolve action on each active chip of the session\'s own patient only', async () => {
+    it('should show a Resolve action on each active chip of the session\'s own patient and the HL7 cohort\'s, not the seed\'s or another session\'s', async () => {
       // Arrange
-      client.onSearchPatients = () => Promise.resolve(createFhirResponse(createPatientSearchResult(createPatientListItem({ id: 'mvc-programmer' }), createPatientListItem({ id: '78785' }), createPatientListItem({ id: 'mine-1' }))));
-      client.onGetSummary = (id) => Promise.resolve(createFhirResponse(id === 'mine-1' ? createOwnPatientSummary() : { ...createPatientSummary(), patient: { ...createPatientSummary().patient, id } }));
+      client.onSearchPatients = () => Promise.resolve(createFhirResponse(createPatientSearchResult(createPatientListItem({ id: 'mvc-programmer' }), createPatientListItem({ id: '78785' }), createPatientListItem({ id: 'etl-1' }), createPatientListItem({ id: 'mine-1' }))));
+      client.onGetSummary = (id) => Promise.resolve(createFhirResponse(id === 'mine-1' ? createOwnPatientSummary() : id === 'etl-1' ? createCohortPatientSummary() : { ...createPatientSummary(), patient: { ...createPatientSummary().patient, id } }));
       await render();
       submit();
       await fixture.whenStable();
@@ -1019,6 +1120,14 @@ describe('FhirExplorer', () => {
 
       // Assert
       expect(host.querySelector('.fhir-pill-action')).toBeNull();
+
+      // Act: a patient the HL7 ETL loaded
+      (host.querySelector('.fhir-patient[data-id="etl-1"]') as HTMLButtonElement).click();
+      await fixture.whenStable();
+
+      // Assert: one action per active chip, as for the session's own
+      expect(host.querySelectorAll('#fhir-conditions .fhir-pill-action')).toHaveLength(1);
+      expect((host.querySelector('#fhir-resolve-c-hyp') as HTMLButtonElement).getAttribute('aria-disabled')).toBeNull();
 
       // Act: the session's own patient
       (host.querySelector('.fhir-patient[data-id="mine-1"]') as HTMLButtonElement).click();
@@ -1054,8 +1163,8 @@ describe('FhirExplorer', () => {
       await fixture.whenStable();
       const resolved = Array.from(host.querySelectorAll('#fhir-resolved .fhir-pill.is-resolved .fhir-pill-text')).map((e) => e.textContent);
       expect(resolved).toEqual(['Essential hypertension (disorder)', 'Acute bronchitis (disorder)']);
-      expect(textOf(editStatus())).toBe('Resolved Essential hypertension (disorder) (Condition/c-hyp) on Patient/mine-1.');
-      expect(editStatus().classList.contains('is-ok')).toBe(true);
+      expect(textOf(conditionStatus())).toBe('Resolved Essential hypertension (disorder) (Condition/c-hyp) on Patient/mine-1.');
+      expect(conditionStatus().classList.contains('is-ok')).toBe(true);
 
       // Assert: the log
       const log = logText();
@@ -1068,15 +1177,15 @@ describe('FhirExplorer', () => {
       // Arrange
       await selectOwnPatient();
       client.onResolveCondition = () =>
-        Promise.reject(new FhirProblemError("Patient 'mine-1' created by this session has no Condition with id 'c-hyp'. It may have been wiped.", 404, 'Condition not found', 35, null, false));
+        Promise.reject(new FhirProblemError("Patient 'mine-1' has no Condition with id 'c-hyp' this session may resolve. It may have been wiped.", 404, 'Condition not found', 35, null, false));
 
       // Act
       (host.querySelector('#fhir-resolve-c-hyp') as HTMLButtonElement).click();
       await fixture.whenStable();
 
       // Assert
-      expect(textOf(editStatus())).toBe("Patient 'mine-1' created by this session has no Condition with id 'c-hyp'. It may have been wiped.");
-      expect(editStatus().classList.contains('is-error')).toBe(true);
+      expect(textOf(conditionStatus())).toBe("Patient 'mine-1' has no Condition with id 'c-hyp' this session may resolve. It may have been wiped.");
+      expect(conditionStatus().classList.contains('is-error')).toBe(true);
       expect(host.querySelector('#fhir-resolve-c-hyp')).not.toBeNull();
       expect(host.querySelectorAll('#fhir-conditions .fhir-pill:not(.fhir-pill-more)')).toHaveLength(1);
       expect(logText()).toContain('← 404 /patients/mine-1/conditions/c-hyp/resolve: Condition not found in 35 ms');
@@ -1099,14 +1208,14 @@ describe('FhirExplorer', () => {
       // Assert
       expect(action.getAttribute('aria-disabled')).toBe('true');
       expect(action.title).toBe(FhirExplorer.BLOCK_WRITING_MESSAGE);
-      expect(textOf(editStatus())).toBe('Resolving…');
+      expect(textOf(conditionStatus())).toBe('Resolving…');
 
       // Act: a second press while blocked
       action.click();
       fixture.detectChanges();
 
       // Assert
-      expect(textOf(editStatus())).toBe(FhirExplorer.BLOCK_WRITING_MESSAGE);
+      expect(textOf(conditionStatus())).toBe(FhirExplorer.BLOCK_WRITING_MESSAGE);
       expect(client.resolves).toHaveLength(1);
 
       // Act
@@ -1201,6 +1310,11 @@ describe('FhirExplorer', () => {
 
   function editStatus(): HTMLElement {
     return host.querySelector('#fhir-edit-status') as HTMLElement;
+  }
+
+  /** The card's status for adds and resolves, beside the condition form. */
+  function conditionStatus(): HTMLElement {
+    return host.querySelector('#fhir-condition-status') as HTMLElement;
   }
 
   function logText(): string {

@@ -68,26 +68,32 @@ The edit panel is the write side of the demo. Every write carries the session to
 a UUID kept in `sessionStorage` for the life of the tab), a create carries an idempotency key the
 explorer reuses until the create succeeds, and a patch is built as a JSON Patch of the fields that
 changed since the patient was loaded, each guarded by a `test` of the old value. The function decides
-what is allowed: the seeded patient is read-only, and only a patient this session created can be
-replaced, patched, or deleted. The panel says which case the selected patient is. With nothing selected the
+what is allowed: the seeded patient is read-only, only a patient this session created can be replaced,
+patched, or deleted, and a patient the HL7 ETL loaded (an identifier in `https://mvcprogrammer.com/fhir/etl`,
+see `src/app/content/identifier-systems.ts`) is conditions-only. The panel says which case the selected
+patient is. With nothing selected the
 form holds the new-patient defaults (family name Patient, given name Demo, MRN mvcprogrammer.com), so Create
 works without typing. Selecting a patient this session created replaces them with its fields; selecting a
 read-only patient (the seeded one, or another session's) leaves them in place, since the form can only create.
 
-Under the verbs, the condition row is the first write on a clinical resource: a select of ten listed
-conditions (`src/app/content/condition-pick-list.ts`, a mirror of the function's list, which is the source
-of truth) and an Add button that is blocked for the same reasons as replace and delete. The add sends
-`POST /api/fhir/patients/{id}/conditions` with the SNOMED CT code; a 201 puts the returned condition at the
-top of the card's active chips and bumps the count, a 200 means the patient already had it active and
-changes nothing, and a 422 (off the list, or ten active already) shows as the status. The card is never
-re-read after a write: the browser and CloudFront may hold the old summary for a while, and the write
-result is the record as the sandbox stored it.
+The condition form is on the summary card, with the patient it writes to: under the condition chips, a
+disclosure labelled "Add a condition" that starts collapsed and opens on request (its state is kept from
+one patient to the next). Inside are a select of ten listed conditions (`src/app/content/condition-pick-list.ts`,
+a mirror of the function's list, which is the source of truth) and an Add button, the first write on a
+clinical resource. It is allowed on a patient this session created and on one the HL7 ETL loaded, and
+blocked with its reason otherwise (nothing selected, the seeded patient, anyone else's patient, a write in
+flight). The add sends `POST /api/fhir/patients/{id}/conditions` with the SNOMED CT code; a 201 puts the
+returned condition at the top of the card's active chips and bumps the count, a 200 means the patient
+already had it active and changes nothing, and a 422 (off the list, or ten active already) shows in the
+status line under the form, which reports adds and resolves and is cleared when another patient loads. The
+card is never re-read after a write: the browser and CloudFront may hold the old summary for a while, and
+the write result is the record as the sandbox stored it.
 
-On the card, every active condition of a patient this session created carries a Resolve action (the
-seeded patient and other sessions' patients show none). It sends `POST /api/fhir/patients/{id}/conditions/{conditionId}/resolve`
+Every active condition of a patient this session created or the HL7 ETL loaded carries a Resolve action
+(the seeded patient and other sessions' patients show none). It sends `POST /api/fhir/patients/{id}/conditions/{conditionId}/resolve`
 with no body; a 204 moves the chip under the resolved count without a re-read, and a 404 (the condition
-is gone or not that patient's) shows as the status. The action is blocked, not disabled, while a write
-is in flight, like the verbs.
+is gone or not that patient's) shows in the same status line. The action is blocked, not disabled, while a
+write is in flight, like the verbs.
 
 The search form opens with the family name `Programmer` and the Identifier field set to `mvcprogrammer.com`,
 the MRN the seeded patient carries and every patient created here gets by default, so the first Search pins

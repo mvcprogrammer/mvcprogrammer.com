@@ -2,7 +2,7 @@ openapi: 3.1.0
 
 info:
   title: mvcprogrammer.com API
-  version: 1.9.0
+  version: 1.10.0
   summary: "APIs behind mvcprogrammer.com: the Experience section and the FHIR R4 patient explorer."
   description: |
     Two small, public functions served same-origin under `/api`.
@@ -67,11 +67,16 @@ info:
       - A patient holds at most ten active conditions; the eleventh answers `422`.
       - Conditions share the write budget. The patient is checked first, so the seeded patient
         answers `403` and a patient another session created answers `404`, as for patient writes.
+      - From 1.10.0 the condition operations also accept a patient the HL7 ETL loaded: one that
+        carries an identifier in the system `https://mvcprogrammer.com/fhir/etl`, which only the
+        ETL writes. The explorer can work that cohort as if it were its own, while the patients
+        themselves stay read-only to `PUT`, `PATCH`, and `DELETE`. Any other record still answers
+        `404`.
       - Resolving (`POST /fhir/patients/{id}/conditions/{conditionId}/resolve`, specified in 1.6.0,
         built in 1.7.0) sets `clinicalStatus` to `resolved` on any
-        condition of a session-created patient, the ones the add made and any other. It answers
-        `204`, again for a condition already resolved, so it is idempotent. The operation is the one
-        action-shaped endpoint in this document; its description says why.
+        condition of a patient the session may write conditions on, the ones the add made and any
+        other. It answers `204`, again for a condition already resolved, so it is idempotent. The
+        operation is the one action-shaped endpoint in this document; its description says why.
   contact:
     name: Neal Thomas
     url: https://mvcprogrammer.com/#contact
@@ -595,8 +600,8 @@ paths:
       operationId: addCondition
       summary: Add a condition to a demo patient
       description: |
-        Records one of the ten listed conditions on a patient this session created, as a
-        `Condition` with `clinicalStatus` active, category `problem-list-item`, the SNOMED CT
+        Records one of the ten listed conditions on a patient this session created, or one the
+        HL7 ETL loaded (from 1.10.0), as a `Condition` with `clinicalStatus` active, category `problem-list-item`, the SNOMED CT
         coding and display from the list, `subject` the patient, and `recordedDate` today. The
         body carries the code only; the function owns the list and answers `422` for a code
         that is not on it, or when the patient already holds ten active conditions.
@@ -606,8 +611,10 @@ paths:
         nothing; the explorer shows that as "already there". A condition that was resolved can
         be added again and becomes a new, active `Condition`.
 
-        The same guard as patient writes applies, checked before anything is written: the seeded
-        demo patient answers `403`, and a patient this session did not create answers `404`.
+        The guard is checked before anything is written: the seeded demo patient answers `403`;
+        a patient this session created, or one carrying an identifier in the ETL cohort system
+        (`https://mvcprogrammer.com/fhir/etl`), is accepted; any other patient answers `404`.
+        The cohort rule is wider than the one for patient writes, which stay session-only.
 
         The pick list (SNOMED CT, system `http://snomed.info/sct`):
 
@@ -684,15 +691,16 @@ paths:
       operationId: resolveCondition
       summary: Resolve a condition of a demo patient
       description: |
-        Marks a condition of a patient this session created as resolved: `clinicalStatus` becomes
+        Marks a condition of a patient this session created, or one the HL7 ETL loaded (from
+        1.10.0), as resolved: `clinicalStatus` becomes
         `resolved` and `abatementDateTime` today, and the condition moves from the summary's active
         list to its resolved one. Any condition that references the patient qualifies, not only
         those the add operation made. No request body.
 
         Idempotent: resolving a condition that is already resolved changes nothing and answers
-        `204` again. The same guard as the other writes applies, checked before anything is
-        written: the seeded demo patient answers `403`; a patient this session did not create, or
-        a condition that does not reference that patient, answers `404`.
+        `204` again. The same guard as the add applies, checked before anything is written: the
+        seeded demo patient answers `403`; a patient that is neither this session's nor the ETL
+        cohort's, or a condition that does not reference that patient, answers `404`.
 
         **Why an action in the path.** The endpoint rules say a path names a resource, never an
         action, and this one ends in `/resolve`. The alternatives were weighed: a `PATCH` on the
@@ -1154,7 +1162,9 @@ components:
       description: |
         No patient with that id was created by this session. The sandbox may have no such
         patient, it may have been wiped, or it may belong to someone else; the answer is the
-        same in every case so the explorer cannot probe records it did not create.
+        same in every case so the explorer cannot probe records it did not create. On the
+        condition operations the rule is wider (from 1.10.0): a patient the HL7 ETL loaded
+        qualifies too, and the `detail` says so ("..., and the HL7 ETL loaded none.").
       content:
         application/problem+json:
           schema:
@@ -1211,10 +1221,10 @@ components:
             instance: /api/fhir/patients
     WritableConditionNotFound:
       description: |
-        No such condition on a patient this session created. The patient may not be this
-        session's (the same answer as for patient writes), or the condition may not exist, may
-        have been wiped, or may belong to another patient; the answer is the same in every case
-        so the explorer cannot probe records it did not create.
+        No such condition on a patient this session may write conditions on. The patient may be
+        neither this session's nor the ETL cohort's (the same answer as the add gives), or the
+        condition may not exist, may have been wiped, or may belong to another patient; the
+        answer is the same in every case so the explorer cannot probe records it did not create.
       content:
         application/problem+json:
           schema:
@@ -1223,7 +1233,7 @@ components:
             type: https://mvcprogrammer.com/api/problems/not-found
             title: Condition not found
             status: 404
-            detail: Patient '1842' created by this session has no Condition with id '9f1c'. It may have been wiped.
+            detail: Patient '1842' has no Condition with id '9f1c' this session may resolve. It may have been wiped.
             instance: /api/fhir/patients/1842/conditions/9f1c/resolve
     ConditionRejected:
       description: |

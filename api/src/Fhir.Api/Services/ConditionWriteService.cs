@@ -10,10 +10,11 @@ namespace Fhir.Api.Services;
 
 /// <summary>
 /// The add, in order: the code must be on the pick list (no upstream call is spent on one that is
-/// not), the patient must be this session's, the patient must have room under the active cap, and
-/// then a conditional create on patient, code, and active status so a repeat returns the condition
-/// already there. The resolve: the patient must be this session's, the condition must exist and
-/// reference it, and then one update unless it is already resolved. Nothing is kept in the function.
+/// not), the patient must be one this session may write conditions on (its own, or one the HL7 ETL
+/// loaded), the patient must have room under the active cap, and then a conditional create on
+/// patient, code, and active status so a repeat returns the condition already there. The resolve:
+/// the same guard, the condition must exist and reference the patient, and then one update unless
+/// it is already resolved. Nothing is kept in the function.
 /// </summary>
 public sealed class ConditionWriteService : IConditionWriteService
 {
@@ -46,8 +47,8 @@ public sealed class ConditionWriteService : IConditionWriteService
                 $"Code '{input.Code}' is not on the pick list; send one of the {ConditionPickList.All.Count} SNOMED CT codes the operation documents.");
 
         var trace = new TraceBuilder(new DataSource(_options.SourceName, _options.BaseUrl.ToString().TrimEnd('/')), _options.PageCap);
-        _ = await _guard.OwnedPatientAsync(patientId, sessionToken, trace, cancellationToken)
-            ?? throw new WritablePatientNotFoundException(patientId);
+        _ = await _guard.ConditionWritablePatientAsync(patientId, sessionToken, trace, cancellationToken)
+            ?? throw WritablePatientNotFoundException.ForConditions(patientId);
 
         var active = await _gateway.CountAsync<Condition>(ConditionInputMapper.ActiveConditionsQuery(patientId), trace, cancellationToken);
         if (active >= _options.MaxActiveConditionsPerPatient)
@@ -70,8 +71,8 @@ public sealed class ConditionWriteService : IConditionWriteService
         ArgumentException.ThrowIfNullOrWhiteSpace(sessionToken);
 
         var trace = new TraceBuilder(new DataSource(_options.SourceName, _options.BaseUrl.ToString().TrimEnd('/')), _options.PageCap);
-        _ = await _guard.OwnedPatientAsync(patientId, sessionToken, trace, cancellationToken)
-            ?? throw new WritablePatientNotFoundException(patientId);
+        _ = await _guard.ConditionWritablePatientAsync(patientId, sessionToken, trace, cancellationToken)
+            ?? throw WritablePatientNotFoundException.ForConditions(patientId);
 
         Condition stored;
         try

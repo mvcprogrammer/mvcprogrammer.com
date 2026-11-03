@@ -100,7 +100,8 @@ api/src/Fhir.Api/
                             conditional create, update, delete; the upstream and write exceptions; CapabilityCache;
                             DemoIdentifiers and ConditionPickList (the ten SNOMED CT conditions a visitor may add).
   Services/                 PatientExplorerService (the Patient first, then four bounded searches concurrently),
-                            DemoGuardService (seeded patient 403, not this session's 404), PatientWriteService,
+                            DemoGuardService (seeded patient 403; patient writes need this session's patient, condition
+                            writes also take the HL7 ETL's cohort; anything else 404), PatientWriteService,
                             ConditionWriteService (pick list, active cap, conditional create).
   Mapping/                  PatientMapper, ConditionMapper, VitalSignMapper, CapabilityMapper (US Core fields only);
                             PatientInputMapper / Validator / PatchApplier and ConditionInputMapper for the writes.
@@ -145,15 +146,17 @@ wiped or down. `FHIR_SOURCE_NAME` is the label the trace carries.
 - **Conditions, the first clinical write.** `POST /fhir/patients/{id}/conditions` (specified in
   `openapi.yaml` 1.4.0, built in 1.5.0) records one of ten listed conditions. `ConditionPickList` is
   the source of truth (a well-formed code off it is 422 before any upstream call), `DemoGuardService`
-  is the same guard the patient writes run (403 for the seeded patient, 404 for anyone else's), the
-  cap of active conditions per patient is counted on the sandbox (`clinical-status=active`,
+  runs the condition rule (403 for the seeded patient; this session's patients and, from 1.10.0, the
+  HL7 ETL's cohort, recognised by an identifier in `FhirOptions.CohortIdentifierSystem`, pass; anyone
+  else's is 404, so the explorer can work the cohort it did not create while patient writes stay
+  session-only), the cap of active conditions per patient is counted on the sandbox (`clinical-status=active`,
   `_summary=count`; at the cap, 422), and the create is a FHIR conditional create on patient, code,
   and active status, so a repeat answers 200 with the existing resource and a resolved condition can
   be recorded again. `ConditionInputMapper` builds the resource and both searches; nothing the
   visitor sends reaches the sandbox but a listed code.
 - **Resolve, the one action in a path.** `POST /fhir/patients/{id}/conditions/{conditionId}/resolve`
-  (specified in `openapi.yaml` 1.6.0, built in 1.7.0): the same guard first (403 seeded, 404 for a
-  foreign patient), then the condition is read and must reference that patient (else the same 404, so
+  (specified in `openapi.yaml` 1.6.0, built in 1.7.0): the same condition rule first (403 seeded, 404
+  for a foreign patient), then the condition is read and must reference that patient (else the same 404, so
   nothing can be probed), then one `PUT` with `clinicalStatus` resolved and `abatementDateTime` today,
   skipped when it is already resolved, so 204 is idempotent and a repeat costs no write. The
   operation's description records why a `POST` to a sub-resource beat a `PATCH`, a `PUT`, and a `DELETE`;

@@ -1,6 +1,7 @@
 import { ChangeDetectionStrategy, Component, ElementRef, OnDestroy, OnInit, PendingTasks, afterRenderEffect, computed, inject, signal, viewChild } from '@angular/core';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { CONDITION_PICK_LIST } from '../../content/condition-pick-list';
+import { ETL_COHORT_SYSTEM } from '../../content/identifier-systems';
 import { ClinicalStatus } from '../../enumerations/clinical-status';
 import { Sex } from '../../enumerations/sex';
 import { FhirProblemError } from '../../exceptions/fhir-problem-error';
@@ -27,17 +28,21 @@ interface DateParts {
   readonly time: string;
 }
 
-/** Whose the selected patient is, which decides what the edit panel may do to it. */
-export type Ownership = 'none' | 'mine' | 'seed' | 'other';
+/**
+ * Whose the selected patient is, which decides what the edit panel and the condition form may do to
+ * it: `mine` allows everything, `cohort` (loaded by the HL7 ETL) allows conditions only, `seed` and
+ * `other` allow nothing.
+ */
+export type Ownership = 'none' | 'mine' | 'cohort' | 'seed' | 'other';
 
 /** The edit form's fields, in the order they are patched. */
 const EDIT_FIELDS: readonly PatientPatchPath[] = ['/familyName', '/givenName', '/sex', '/birthDate', '/mrn'];
 
 /**
  * The FHIR R4 patient explorer, the one page of fhir.mvcprogrammer.com: search, the patient list, the
- * summary card with a Resolve action on each condition of the session's own patient, the edit panel
- * (create, replace, patch, delete, and add a condition, under the demo guard), and the "under the
- * hood" log. The first request to /api/fhir (the capability check) happens when the page renders.
+ * summary card (with a collapsed "Add a condition" form and a Resolve action on each active condition,
+ * for the session's own patients and the HL7 ETL's cohort), the edit panel (create, replace, patch,
+ * delete, under the demo guard), and the "under the hood" log. The first request to /api/fhir (the capability check) happens when the page renders.
  */
 @Component({
   selector: 'app-fhir-explorer',
@@ -91,7 +96,9 @@ export class FhirExplorer implements OnInit, OnDestroy {
   static readonly BLOCK_SEED_MESSAGE = 'The seeded demo patient is read-only. Create a patient of your own and change that.';
   static readonly BLOCK_OTHER_MESSAGE = 'This patient was not created in this session, so it cannot be changed here. Create a patient of your own.';
   static readonly BLOCK_WRITING_MESSAGE = 'A write is in flight; wait for it to finish.';
-  static readonly CONDITION_LEAD = 'Add one of ten listed conditions to a patient created in this session. The function owns the list; a condition the patient already has active comes back as already there.';
+  static readonly BLOCK_COHORT_MESSAGE = 'This patient was loaded by the HL7 ETL, so only its conditions can be changed here. Create a patient of your own to replace, patch, or delete.';
+  static readonly BLOCK_OTHER_CONDITION_MESSAGE = 'This patient was neither created in this session nor loaded by the HL7 ETL, so no condition can be added or resolved here.';
+  static readonly CONDITION_LEAD = 'Add one of ten listed conditions to this patient. The function owns the list; a condition the patient already has active comes back as already there. Allowed on a patient created in this session or loaded by the HL7 ETL.';
 
   /** The search form: a family name or an identifier (either narrows the search enough); the seeded patient's name and the demo MRN prefilled. */
   protected readonly form = inject(FormBuilder).nonNullable.group(
@@ -130,6 +137,13 @@ export class FhirExplorer implements OnInit, OnDestroy {
   protected readonly writing = signal(false);
   protected readonly editStatusText = signal('');
   protected readonly editStatusKind = signal<'is-ok' | 'is-error' | ''>('');
+
+  /** The condition form's status, shown on the card under the form it reports on; cleared when another patient loads. */
+  protected readonly conditionStatusText = signal('');
+  protected readonly conditionStatusKind = signal<'is-ok' | 'is-error' | ''>('');
+
+  /** Whether the card's condition form is open. It starts collapsed and keeps its state from one patient to the next. */
+  protected readonly conditionOpen = signal(false);
 
   /** The function's field errors from the last 400, keyed by field. */
   protected readonly serverErrors = signal<Readonly<Record<string, readonly string[]>>>({});
@@ -182,14 +196,19 @@ export class FhirExplorer implements OnInit, OnDestroy {
       return 'seed';
     }
 
-    const mine = summary.patient.identifiers.some((i) => i.system === DemoSession.SESSION_SYSTEM && i.value === this.session.token);
-    return mine ? 'mine' : 'other';
+    if (summary.patient.identifiers.some((i) => i.system === DemoSession.SESSION_SYSTEM && i.value === this.session.token)) {
+      return 'mine';
+    }
+
+    return summary.patient.identifiers.some((i) => i.system === ETL_COHORT_SYSTEM && i.value !== '') ? 'cohort' : 'other';
   });
   protected readonly editTarget = computed(() => {
     const id = this.summary()?.patient.id;
     switch (this.ownership()) {
       case 'mine':
         return `Editing Patient/${id}, created in this session: replace, patch, and delete are allowed.`;
+      case 'cohort':
+        return `Patient/${id} was loaded by the HL7 ETL: its conditions can be added and resolved on the card; the patient itself cannot be changed here. The form can create a new patient.`;
       case 'seed':
         return `Patient/${id} is the seeded demo patient and is read-only here. The form can create a new patient.`;
       case 'other':
@@ -200,14 +219,18 @@ export class FhirExplorer implements OnInit, OnDestroy {
   });
   protected readonly canChange = computed(() => this.ownership() === 'mine' && !this.writing());
 
-  /** Whether the card shows its Resolve actions: the patient is this session's. The action itself is blocked while a write is in flight. */
-  protected readonly canResolve = computed(() => this.ownership() === 'mine');
+  /** Whether the session may write conditions on the selected patient: its own, or one the HL7 ETL loaded. */
+  protected readonly canWriteConditions = computed(() => this.ownership() === 'mine' || this.ownership() === 'cohort');
+
+  /** Whether the card shows its Resolve actions. The action itself is blocked while a write is in flight. */
+  protected readonly canResolve = computed(() => this.canWriteConditions());
 
   protected readonly hasChanges = computed(() => {
     const loaded = this.loadedInput();
     return loaded !== null && FhirExplorer.patchOperations(loaded, FhirExplorer.toInput(this.editValue())).length > 0;
   });
   protected readonly editStatusClass = computed(() => (this.editStatusKind() === '' ? 'form-status' : `form-status ${this.editStatusKind()}`));
+  protected readonly conditionStatusClass = computed(() => (this.conditionStatusKind() === '' ? 'form-status fhir-condition-status' : `form-status fhir-condition-status ${this.conditionStatusKind()}`));
 
   /** Why a create is blocked right now, or null: shown on hover and on a blocked press. */
   protected readonly createBlock = computed(() => (this.writing() ? FhirExplorer.BLOCK_WRITING_MESSAGE : null));
@@ -217,6 +240,9 @@ export class FhirExplorer implements OnInit, OnDestroy {
 
   /** Why a patch is blocked right now, or null; a patch also needs something to have changed. */
   protected readonly patchBlock = computed(() => this.blockReason(true));
+
+  /** Why an add or a resolve is blocked right now, or null: the condition rule is wider than the patient one (the HL7 cohort qualifies). */
+  protected readonly conditionBlock = computed(() => this.conditionBlockReason());
 
   private readonly client = inject(FhirClient);
   private readonly session = inject(DemoSession);
@@ -350,6 +376,11 @@ export class FhirExplorer implements OnInit, OnDestroy {
     this.resolvedShown.update((shown) => !shown);
   }
 
+  /** Follows the native disclosure, so the open state survives the card re-rendering for the next patient. */
+  protected toggleCondition(event: Event): void {
+    this.conditionOpen.set((event.target as HTMLDetailsElement).open);
+  }
+
   protected toggleRaw(): void {
     const id = this.selectedId();
     if (id === null || this.summary() === null) {
@@ -434,11 +465,11 @@ export class FhirExplorer implements OnInit, OnDestroy {
 
   /** POST the selected condition to the selected patient. */
   protected addCondition(): void {
-    if (this.sayWhyBlocked(this.changeBlock())) {
+    if (this.sayWhyConditionBlocked(this.conditionBlock())) {
       return;
     }
 
-    const id = this.changeableId();
+    const id = this.conditionTargetId();
     const code = this.conditionForm.getRawValue().code;
     if (id === null) {
       return;
@@ -449,16 +480,16 @@ export class FhirExplorer implements OnInit, OnDestroy {
 
   /** The Resolve action's title: the block reason when blocked, else what it does. */
   protected resolveTitle(condition: ConditionItem): string {
-    return this.changeBlock() ?? `Resolve ${condition.display}`;
+    return this.conditionBlock() ?? `Resolve ${condition.display}`;
   }
 
   /** POST .../conditions/{id}/resolve for one of the selected patient's active conditions. */
   protected resolveCondition(condition: ConditionItem): void {
-    if (this.sayWhyBlocked(this.changeBlock())) {
+    if (this.sayWhyConditionBlocked(this.conditionBlock())) {
       return;
     }
 
-    const id = this.changeableId();
+    const id = this.conditionTargetId();
     if (id === null || condition.id === undefined) {
       return;
     }
@@ -491,10 +522,30 @@ export class FhirExplorer implements OnInit, OnDestroy {
         return FhirExplorer.BLOCK_NONE_MESSAGE;
       case 'seed':
         return FhirExplorer.BLOCK_SEED_MESSAGE;
+      case 'cohort':
+        return FhirExplorer.BLOCK_COHORT_MESSAGE;
       case 'other':
         return FhirExplorer.BLOCK_OTHER_MESSAGE;
       default:
         return needsChanges && !this.hasChanges() ? FhirExplorer.EDIT_NO_CHANGES_MESSAGE : null;
+    }
+  }
+
+  /** The reason a condition write on the selected patient is blocked, or null when it may go ahead. */
+  private conditionBlockReason(): string | null {
+    if (this.writing()) {
+      return FhirExplorer.BLOCK_WRITING_MESSAGE;
+    }
+
+    switch (this.ownership()) {
+      case 'none':
+        return FhirExplorer.BLOCK_NONE_MESSAGE;
+      case 'seed':
+        return FhirExplorer.BLOCK_SEED_MESSAGE;
+      case 'other':
+        return FhirExplorer.BLOCK_OTHER_CONDITION_MESSAGE;
+      default:
+        return null;
     }
   }
 
@@ -508,9 +559,24 @@ export class FhirExplorer implements OnInit, OnDestroy {
     return true;
   }
 
+  /** Writes a condition block reason to the card's status, the same way the panel does for its verbs. True when blocked. */
+  private sayWhyConditionBlocked(reason: string | null): boolean {
+    if (reason === null) {
+      return false;
+    }
+
+    this.setConditionStatus(reason, '');
+    return true;
+  }
+
   /** The selected patient's id when this session may change it and no write is in flight. */
   private changeableId(): string | null {
     return this.canChange() ? (this.summary()?.patient.id ?? null) : null;
+  }
+
+  /** The selected patient's id when this session may write conditions on it and no write is in flight. */
+  private conditionTargetId(): string | null {
+    return this.canWriteConditions() && !this.writing() ? (this.summary()?.patient.id ?? null) : null;
   }
 
   /** The form as PatientInput after its own validation, or null with the errors showing. */
@@ -625,7 +691,7 @@ export class FhirExplorer implements OnInit, OnDestroy {
     const path = `/patients/${encodeURIComponent(id)}/conditions`;
     const display = CONDITION_PICK_LIST.find((c) => c.code === code)?.display ?? code;
     this.writing.set(true);
-    this.setEditStatus('Adding…', '');
+    this.setConditionStatus('Adding…', '');
     this.write(`→ POST ${FhirExplorer.API}${path} · X-Demo-Session ${this.session.token}`, 'request');
     this.write(`  code ${code} (${display}, SNOMED CT)`, 'detail');
 
@@ -637,7 +703,7 @@ export class FhirExplorer implements OnInit, OnDestroy {
 
       this.afterConditionAdd(id, path, response);
     } catch (error: unknown) {
-      this.failWrite(path, error);
+      this.failWrite(path, error, true);
     } finally {
       this.writing.set(false);
     }
@@ -647,7 +713,7 @@ export class FhirExplorer implements OnInit, OnDestroy {
     const conditionId = condition.id ?? '';
     const path = `/patients/${encodeURIComponent(id)}/conditions/${encodeURIComponent(conditionId)}/resolve`;
     this.writing.set(true);
-    this.setEditStatus('Resolving…', '');
+    this.setConditionStatus('Resolving…', '');
     this.write(`→ POST ${FhirExplorer.API}${path} · X-Demo-Session ${this.session.token}`, 'request');
 
     try {
@@ -659,9 +725,9 @@ export class FhirExplorer implements OnInit, OnDestroy {
       this.write(`← ${response.status} ${path} in ${response.durationMs} ms · ${FhirExplorer.describeCache(response.xCache)}`, 'response');
       this.write(`  Condition/${conditionId} is resolved; the card moves it under the resolved count (a cached summary may lag for a few minutes)`, 'detail');
       this.moveToResolved(id, conditionId);
-      this.setEditStatus(`Resolved ${condition.display} (Condition/${conditionId}) on Patient/${id}.`, 'is-ok');
+      this.setConditionStatus(`Resolved ${condition.display} (Condition/${conditionId}) on Patient/${id}.`, 'is-ok');
     } catch (error: unknown) {
-      this.failWrite(path, error);
+      this.failWrite(path, error, true);
     } finally {
       this.writing.set(false);
     }
@@ -716,7 +782,7 @@ export class FhirExplorer implements OnInit, OnDestroy {
         conditions: { ...summary.conditions, active: [condition, ...others] },
       };
     });
-    this.setEditStatus(created ? `Added ${condition.display} (${name}) to Patient/${id}.` : `Patient/${id} already has ${condition.display} active (${name}); nothing was added.`, 'is-ok');
+    this.setConditionStatus(created ? `Added ${condition.display} (${name}) to Patient/${id}.` : `Patient/${id} already has ${condition.display} active (${name}); nothing was added.`, 'is-ok');
   }
 
   /**
@@ -743,24 +809,35 @@ export class FhirExplorer implements OnInit, OnDestroy {
     this.listMessage.set(FhirExplorer.NO_MATCH_MESSAGE);
   }
 
-  private failWrite(path: string, error: unknown): void {
+  /** Logs a failed write and shows its problem as the status: the card's for a condition write, the panel's for a patient write (whose field errors also go to the form). */
+  private failWrite(path: string, error: unknown, forCondition = false): void {
     if (this.destroyed) {
       return;
     }
 
     const problem = FhirExplorer.asProblem(error);
     this.writeFailure(path, problem);
-    this.serverErrors.set(problem.errors);
     for (const [field, messages] of Object.entries(problem.errors)) {
       this.write(`  ${field}: ${messages.join(' ')}`, 'error');
     }
 
+    if (forCondition) {
+      this.setConditionStatus(problem.message, 'is-error');
+      return;
+    }
+
+    this.serverErrors.set(problem.errors);
     this.setEditStatus(problem.message, 'is-error');
   }
 
   private setEditStatus(text: string, kind: 'is-ok' | 'is-error' | ''): void {
     this.editStatusText.set(text);
     this.editStatusKind.set(kind);
+  }
+
+  private setConditionStatus(text: string, kind: 'is-ok' | 'is-error' | ''): void {
+    this.conditionStatusText.set(text);
+    this.conditionStatusKind.set(kind);
   }
 
   /**
@@ -940,6 +1017,7 @@ export class FhirExplorer implements OnInit, OnDestroy {
       this.write(`  mapped to PatientSummary: ${body.conditions.active.length} active and ${body.conditions.resolved.length} resolved conditions, ${body.vitals.length} vital signs`, 'detail');
       this.showDto('PatientSummary', body);
       this.resolvedShown.set(false);
+      this.setConditionStatus('', '');
       this.summary.set(body);
       if (this.ownership() === 'mine') {
         this.loadIntoForm(body.patient);

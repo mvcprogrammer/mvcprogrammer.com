@@ -21,7 +21,27 @@ public sealed class DemoGuardService : IDemoGuardService
         _options = options.Value;
     }
 
-    public async Task<Patient?> OwnedPatientAsync(string patientId, string sessionToken, TraceBuilder trace, CancellationToken cancellationToken)
+    public Task<Patient?> OwnedPatientAsync(string patientId, string sessionToken, TraceBuilder trace, CancellationToken cancellationToken) =>
+        ReadForWriteAsync(patientId, sessionToken, trace, stored => IsOwned(stored, sessionToken), () => new WritablePatientNotFoundException(patientId), cancellationToken);
+
+    public Task<Patient?> ConditionWritablePatientAsync(string patientId, string sessionToken, TraceBuilder trace, CancellationToken cancellationToken) =>
+        ReadForWriteAsync(patientId, sessionToken, trace, stored => IsOwned(stored, sessionToken) || IsInCohort(stored), () => WritablePatientNotFoundException.ForConditions(patientId), cancellationToken);
+
+    private static bool IsOwned(Patient stored, string sessionToken) =>
+        string.Equals(PatientInputMapper.SessionTokenOf(stored), sessionToken, StringComparison.Ordinal);
+
+    /// <summary>True when the patient carries an identifier in the cohort system, which only the HL7 ETL writes.</summary>
+    private bool IsInCohort(Patient stored) =>
+        stored.Identifier.Any(i => string.Equals(i.System, _options.CohortIdentifierSystem, StringComparison.Ordinal) && !string.IsNullOrWhiteSpace(i.Value));
+
+    /// <summary>The shared shape: seed is 403, gone is null, missing or not permitted is the same 404 (so nothing can be probed).</summary>
+    private async Task<Patient?> ReadForWriteAsync(
+        string patientId,
+        string sessionToken,
+        TraceBuilder trace,
+        Func<Patient, bool> permitted,
+        Func<WritablePatientNotFoundException> notFound,
+        CancellationToken cancellationToken)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(patientId);
         ArgumentException.ThrowIfNullOrWhiteSpace(sessionToken);
@@ -43,11 +63,9 @@ public sealed class DemoGuardService : IDemoGuardService
         }
         catch (UpstreamNotFoundException)
         {
-            throw new WritablePatientNotFoundException(patientId);
+            throw notFound();
         }
 
-        return string.Equals(PatientInputMapper.SessionTokenOf(stored), sessionToken, StringComparison.Ordinal)
-            ? stored
-            : throw new WritablePatientNotFoundException(patientId);
+        return permitted(stored) ? stored : throw notFound();
     }
 }
