@@ -13,7 +13,7 @@ public sealed class CallToActionTests : BunitContext
     public void ServicesSection_ShouldSelectJobTopicOnCallToAction()
     {
         // Arrange
-        var (_, _, topic) = this.AddSiteServices();
+        var (_, topic) = this.AddSiteServices();
         string? selected = null;
         topic.Subscribe(t => selected = t);
         var cut = Render<ServicesSection>();

@@ -88,7 +88,7 @@ public sealed class FakeFhirHandler : HttpMessageHandler
         On(pathContains, async (_, _, ct) =>
         {
             await Task.Delay(TimeSpan.FromSeconds(30), ct);
-            return Json(Outcome("too late"), HttpStatusCode.OK);
+            return Json(Outcome("too late"));
         });
 
     public static HttpResponseMessage Json(Resource resource, HttpStatusCode status = HttpStatusCode.OK) =>

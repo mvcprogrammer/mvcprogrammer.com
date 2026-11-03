@@ -68,7 +68,7 @@ public static class ConditionInputMapper
     public static Condition ToResolved(Condition stored, DateOnly today)
     {
         ArgumentNullException.ThrowIfNull(stored);
-        var resolved = (Condition)stored.DeepCopy();
+        var resolved = stored.DeepCopy();
         resolved.ClinicalStatus = new CodeableConcept(CLINICAL_STATUS_SYSTEM, RESOLVED);
         resolved.Abatement = new FhirDateTime(today.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture));
         return resolved;
@@ -80,6 +80,8 @@ public static class ConditionInputMapper
         ArgumentNullException.ThrowIfNull(condition);
         ArgumentException.ThrowIfNullOrWhiteSpace(patientId);
 
+        // The SDK marks Subject non-null because R4 requires it, but a parsed resource can still lack it.
+        // ReSharper disable once ConditionalAccessQualifierIsNonNullableAccordingToAPIContract
         var reference = condition.Subject?.Reference;
         if (string.IsNullOrWhiteSpace(reference))
         {

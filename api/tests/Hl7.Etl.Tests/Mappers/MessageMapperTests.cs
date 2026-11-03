@@ -40,7 +40,7 @@ public sealed class MessageMapperTests
         Assert.Equal("IMP", encounter.Class.Code);
         Assert.Equal($"Patient?identifier={Uri.EscapeDataString($"{_system}|{_patient.Mrn}")}", encounter.Subject!.Reference);
         Assert.Equal(_patient.AdmittedAt.ToUniversalTime(), encounter.Period!.StartElement!.ToDateTimeOffset(TimeSpan.Zero));
-        Assert.Equal(_patient.Ward, Assert.Single(encounter.Location).Location!.Display);
+        Assert.Equal(_patient.Ward, Assert.Single(encounter.Location).Location.Display);
     }
 
     [Fact]

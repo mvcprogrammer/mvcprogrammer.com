@@ -1,8 +1,5 @@
 using System.Net;
-using System.Net.Http;
-using Microsoft.AspNetCore.Components.Forms;
 using Portfolio.Blazor.Sections;
-using Portfolio.Blazor.Tests.Fakes;
 using Portfolio.Blazor.Tests.Helpers;
 using Portfolio.Blazor.ViewModels;
 
@@ -41,7 +38,7 @@ public sealed class ContactSectionTests : BunitContext
     public async Task OnTopicSelected_ShouldPreselectTopic()
     {
         // Arrange
-        var (_, _, topic) = this.AddSiteServices();
+        var (_, topic) = this.AddSiteServices();
         var cut = Render<ContactSection>();
 
         // Act (the call-to-action buttons select on the renderer's dispatcher, so the test does too)
@@ -56,7 +53,7 @@ public sealed class ContactSectionTests : BunitContext
     public async Task Dispose_ShouldUnsubscribeFromTopicState()
     {
         // Arrange
-        var (_, _, topic) = this.AddSiteServices();
+        var (_, topic) = this.AddSiteServices();
         Render<ContactSection>();
         await DisposeComponentsAsync();
 
@@ -98,7 +95,7 @@ public sealed class ContactSectionTests : BunitContext
     public async Task SendAsync_ShouldPostRequestAndShowEmailConfirmation()
     {
         // Arrange
-        var (_, contact, _) = this.AddSiteServices();
+        var (contact, _) = this.AddSiteServices();
         var cut = Render<ContactSection>();
         Arrange_FilledForm(cut);
 
@@ -126,7 +123,7 @@ public sealed class ContactSectionTests : BunitContext
     public async Task SendAsync_ShouldIncludePhoneAndShowCallConfirmation()
     {
         // Arrange
-        var (_, contact, _) = this.AddSiteServices();
+        var (contact, _) = this.AddSiteServices();
         var cut = Render<ContactSection>();
         Arrange_FilledForm(cut);
         cut.FindAll("select")[1].Change(ContactForm.REPLY_BY_PHONE);
@@ -147,7 +144,7 @@ public sealed class ContactSectionTests : BunitContext
     public async Task SendAsync_ShouldForwardHoneypotValue()
     {
         // Arrange
-        var (_, contact, _) = this.AddSiteServices();
+        var (contact, _) = this.AddSiteServices();
         var cut = Render<ContactSection>();
         Arrange_FilledForm(cut);
         cut.Find(".field-trap input").Change("https://spam.example.test");
@@ -164,7 +161,7 @@ public sealed class ContactSectionTests : BunitContext
     public async Task SendAsync_ShouldShowRateLimitMessageOn429()
     {
         // Arrange
-        var (_, contact, _) = this.AddSiteServices();
+        var (contact, _) = this.AddSiteServices();
         contact.OnSend = _ => throw new HttpRequestException("rate limited", null, HttpStatusCode.TooManyRequests);
         var cut = Render<ContactSection>();
         Arrange_FilledForm(cut);
@@ -184,7 +181,7 @@ public sealed class ContactSectionTests : BunitContext
     public async Task SendAsync_ShouldShowGenericMessageOnOtherFailure()
     {
         // Arrange
-        var (_, contact, _) = this.AddSiteServices();
+        var (contact, _) = this.AddSiteServices();
         contact.OnSend = _ => throw new HttpRequestException("boom", null, HttpStatusCode.InternalServerError);
         var cut = Render<ContactSection>();
         Arrange_FilledForm(cut);
@@ -202,7 +199,7 @@ public sealed class ContactSectionTests : BunitContext
     public async Task SendAsync_ShouldShowTimeoutMessageOnCancellation()
     {
         // Arrange
-        var (_, contact, _) = this.AddSiteServices();
+        var (contact, _) = this.AddSiteServices();
         contact.OnSend = _ => throw new TaskCanceledException("timeout");
         var cut = Render<ContactSection>();
         Arrange_FilledForm(cut);
@@ -219,7 +216,7 @@ public sealed class ContactSectionTests : BunitContext
     public async Task SendAsync_ShouldNotPostWhenModelIsInvalid()
     {
         // Arrange
-        var (_, contact, _) = this.AddSiteServices();
+        var (contact, _) = this.AddSiteServices();
         var cut = Render<ContactSection>();
 
         // Act
@@ -236,7 +233,7 @@ public sealed class ContactSectionTests : BunitContext
     public async Task SendAsync_ShouldNotPostWhenCallRequestedWithoutPhone()
     {
         // Arrange
-        var (_, contact, _) = this.AddSiteServices();
+        var (contact, _) = this.AddSiteServices();
         var cut = Render<ContactSection>();
         Arrange_FilledForm(cut);
         cut.FindAll("select")[1].Change(ContactForm.REPLY_BY_PHONE);

@@ -29,7 +29,7 @@ internal static class BunitContextExtensions
     }
 
     /// <summary>Registers the real topic state and the fakes for the two HTTP clients.</summary>
-    public static (FakeExperienceClient Experience, FakeContactClient Contact, IContactTopicState Topic) AddSiteServices(this BunitContext context)
+    public static (FakeContactClient Contact, IContactTopicState Topic) AddSiteServices(this BunitContext context)
     {
         var experience = new FakeExperienceClient();
         var contact = new FakeContactClient();
@@ -38,7 +38,7 @@ internal static class BunitContextExtensions
         context.Services.AddSingleton<IContactClient>(contact);
         context.Services.AddSingleton<IContactTopicState>(topic);
         context.AddSiteOptions();
-        return (experience, contact, topic);
+        return (contact, topic);
     }
 
     /// <summary>
