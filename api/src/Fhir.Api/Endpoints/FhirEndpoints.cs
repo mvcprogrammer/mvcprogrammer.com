@@ -223,7 +223,7 @@ public static partial class FhirEndpoints
         var errors = new Dictionary<string, string[]>(StringComparer.Ordinal);
         var session = Token(context, SESSION_HEADER, errors);
         var input = await ReadBodyAsync<ConditionInput>(context, errors, cancellationToken);
-        if (input is not null && (input.Code is null || !SnomedCodePattern().IsMatch(input.Code)))
+        if (input is not null && (string.IsNullOrWhiteSpace(input.Code) || !SnomedCodePattern().IsMatch(input.Code)))
         {
             errors["code"] = ["'code' is required and must be a SNOMED CT concept id: 6 to 18 digits."];
         }

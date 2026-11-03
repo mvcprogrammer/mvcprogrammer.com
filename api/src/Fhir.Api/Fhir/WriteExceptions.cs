@@ -24,6 +24,9 @@ public sealed class WritablePatientNotFoundException : Exception
         Id = id;
     }
 
+    /// <summary>The patient id the write named.</summary>
+    // Carried for callers and logs; the problem filter reads only the message.
+    // ReSharper disable once UnusedAutoPropertyAccessor.Global
     public string Id { get; }
 
     /// <summary>The condition-write answer: a patient this session created or the HL7 ETL loaded may carry conditions.</summary>

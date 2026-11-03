@@ -107,7 +107,7 @@ public sealed class SyntheticCohortGeneratorTests
             Assert.Matches("^ETL-005-\\d{4}$", p.Mrn);
             Assert.Contains(p.Sex, new[] { "F", "M" });
             Assert.InRange(p.BirthDate.Year, 1940, 2009);
-            Assert.InRange(p.AdmittedAt, SyntheticCohortGenerator.BASE_TIME.AddDays(-30), SyntheticCohortGenerator.BASE_TIME);
+            Assert.InRange(p.AdmittedAt, SyntheticCohortGenerator.BaseTime.AddDays(-30), SyntheticCohortGenerator.BaseTime);
         });
     }
 

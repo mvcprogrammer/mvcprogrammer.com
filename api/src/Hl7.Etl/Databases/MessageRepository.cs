@@ -37,7 +37,8 @@ public sealed class MessageRepository : IMessageRepository
         ArgumentNullException.ThrowIfNull(message);
 
         await using var connection = await _dataSource.OpenConnectionAsync(cancellationToken);
-        await using var command = new NpgsqlCommand(INSERT_CALL, connection) { CommandTimeout = COMMAND_TIMEOUT_SECONDS };
+        await using var command = new NpgsqlCommand(INSERT_CALL, connection);
+        command.CommandTimeout = COMMAND_TIMEOUT_SECONDS;
         command.Parameters.Add(new NpgsqlParameter { NpgsqlDbType = NpgsqlDbType.Text, Value = message.MessageControlId });
         command.Parameters.Add(new NpgsqlParameter { NpgsqlDbType = NpgsqlDbType.Text, Value = message.MessageType });
         command.Parameters.Add(new NpgsqlParameter { NpgsqlDbType = NpgsqlDbType.Text, Value = message.TriggerEvent });
@@ -54,7 +55,8 @@ public sealed class MessageRepository : IMessageRepository
         ArgumentOutOfRangeException.ThrowIfLessThan(batchSize, 1);
 
         await using var connection = await _dataSource.OpenConnectionAsync(cancellationToken);
-        await using var command = new NpgsqlCommand(CLAIM_CALL, connection) { CommandTimeout = COMMAND_TIMEOUT_SECONDS };
+        await using var command = new NpgsqlCommand(CLAIM_CALL, connection);
+        command.CommandTimeout = COMMAND_TIMEOUT_SECONDS;
         command.Parameters.Add(new NpgsqlParameter { NpgsqlDbType = NpgsqlDbType.Integer, Value = batchSize });
         command.Parameters.Add(new NpgsqlParameter { NpgsqlDbType = NpgsqlDbType.Interval, Value = staleAfter });
         await using var reader = await command.ExecuteReaderAsync(cancellationToken);
@@ -81,7 +83,8 @@ public sealed class MessageRepository : IMessageRepository
     public async Task<LandingStatus> StatusAsync(CancellationToken cancellationToken)
     {
         await using var connection = await _dataSource.OpenConnectionAsync(cancellationToken);
-        await using var command = new NpgsqlCommand(STATUS_CALL, connection) { CommandTimeout = COMMAND_TIMEOUT_SECONDS };
+        await using var command = new NpgsqlCommand(STATUS_CALL, connection);
+        command.CommandTimeout = COMMAND_TIMEOUT_SECONDS;
         await using var reader = await command.ExecuteReaderAsync(cancellationToken);
         return await LandedMessageMapper.ReadStatusAsync(reader, cancellationToken);
     }
@@ -90,7 +93,8 @@ public sealed class MessageRepository : IMessageRepository
     public async Task<int> RequeueAsync(CancellationToken cancellationToken)
     {
         await using var connection = await _dataSource.OpenConnectionAsync(cancellationToken);
-        await using var command = new NpgsqlCommand(REQUEUE_CALL, connection) { CommandTimeout = COMMAND_TIMEOUT_SECONDS };
+        await using var command = new NpgsqlCommand(REQUEUE_CALL, connection);
+        command.CommandTimeout = COMMAND_TIMEOUT_SECONDS;
         var result = await command.ExecuteScalarAsync(cancellationToken);
         return result is int requeued ? requeued : 0;
     }
@@ -107,6 +111,8 @@ public sealed class MessageRepository : IMessageRepository
         await using var command = complete
             ? new NpgsqlCommand(COMPLETE_CALL, connection) { CommandTimeout = COMMAND_TIMEOUT_SECONDS }
             : new NpgsqlCommand(FAIL_CALL, connection) { CommandTimeout = COMMAND_TIMEOUT_SECONDS };
+        // Npgsql documents Array | <element type> as the way to name an array parameter; the enum has no [Flags].
+        // ReSharper disable once BitwiseOperatorOnEnumWithoutFlags
         command.Parameters.Add(new NpgsqlParameter { NpgsqlDbType = NpgsqlDbType.Array | NpgsqlDbType.Bigint, Value = messageIds.ToArray() });
         command.Parameters.Add(new NpgsqlParameter { NpgsqlDbType = NpgsqlDbType.Text, Value = text });
         var result = await command.ExecuteScalarAsync(cancellationToken);

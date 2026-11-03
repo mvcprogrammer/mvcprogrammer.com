@@ -14,8 +14,11 @@ public sealed class BundleRejectedException : Exception
     }
 
     /// <summary>The HTTP status the server answered.</summary>
+    // Carried for callers and logs; nothing inside the ETL reads it.
+    // ReSharper disable once UnusedAutoPropertyAccessor.Global
     public HttpStatusCode Status { get; }
 
     /// <summary>The first OperationOutcome issue, or the body when there was none.</summary>
+    // ReSharper disable once UnusedAutoPropertyAccessor.Global
     public string Detail { get; }
 }

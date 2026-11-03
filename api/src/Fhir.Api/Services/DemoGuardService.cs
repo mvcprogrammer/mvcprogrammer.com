@@ -21,11 +21,17 @@ public sealed class DemoGuardService : IDemoGuardService
         _options = options.Value;
     }
 
-    public Task<Patient?> OwnedPatientAsync(string patientId, string sessionToken, TraceBuilder trace, CancellationToken cancellationToken) =>
-        ReadForWriteAsync(patientId, sessionToken, trace, stored => IsOwned(stored, sessionToken), () => new WritablePatientNotFoundException(patientId), cancellationToken);
+    public Task<Patient?> OwnedPatientAsync(string patientId, string sessionToken, TraceBuilder trace, CancellationToken cancellationToken)
+    {
+        ArgumentException.ThrowIfNullOrWhiteSpace(sessionToken);
+        return ReadForWriteAsync(patientId, trace, stored => IsOwned(stored, sessionToken), () => new WritablePatientNotFoundException(patientId), cancellationToken);
+    }
 
-    public Task<Patient?> ConditionWritablePatientAsync(string patientId, string sessionToken, TraceBuilder trace, CancellationToken cancellationToken) =>
-        ReadForWriteAsync(patientId, sessionToken, trace, stored => IsOwned(stored, sessionToken) || IsInCohort(stored), () => WritablePatientNotFoundException.ForConditions(patientId), cancellationToken);
+    public Task<Patient?> ConditionWritablePatientAsync(string patientId, string sessionToken, TraceBuilder trace, CancellationToken cancellationToken)
+    {
+        ArgumentException.ThrowIfNullOrWhiteSpace(sessionToken);
+        return ReadForWriteAsync(patientId, trace, stored => IsOwned(stored, sessionToken) || IsInCohort(stored), () => WritablePatientNotFoundException.ForConditions(patientId), cancellationToken);
+    }
 
     private static bool IsOwned(Patient stored, string sessionToken) =>
         string.Equals(PatientInputMapper.SessionTokenOf(stored), sessionToken, StringComparison.Ordinal);
@@ -37,14 +43,12 @@ public sealed class DemoGuardService : IDemoGuardService
     /// <summary>The shared shape: seed is 403, gone is null, missing or not permitted is the same 404 (so nothing can be probed).</summary>
     private async Task<Patient?> ReadForWriteAsync(
         string patientId,
-        string sessionToken,
         TraceBuilder trace,
         Func<Patient, bool> permitted,
         Func<WritablePatientNotFoundException> notFound,
         CancellationToken cancellationToken)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(patientId);
-        ArgumentException.ThrowIfNullOrWhiteSpace(sessionToken);
         ArgumentNullException.ThrowIfNull(trace);
 
         if (string.Equals(patientId, _options.SeedPatientId, StringComparison.Ordinal))

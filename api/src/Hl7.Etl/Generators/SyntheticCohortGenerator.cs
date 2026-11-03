@@ -14,7 +14,7 @@ public sealed class SyntheticCohortGenerator
     public const string SENDING_FACILITY = "MVCDEMO";
 
     /// <summary>The admissions all fall in the days before this instant, so the cohort reads as recent.</summary>
-    public static readonly DateTimeOffset BASE_TIME = new(2026, 11, 1, 8, 0, 0, TimeSpan.Zero);
+    public static DateTimeOffset BaseTime { get; } = new(2026, 11, 1, 8, 0, 0, TimeSpan.Zero);
 
     private static readonly string[] _familyNames = ["Okafor", "Lindqvist", "Delgado", "Nakamura", "Brennan", "Haddad", "Castellano", "Mbeki", "Sørensen", "Petrov", "Achterberg", "Quinlan"];
     private static readonly string[] _givenNamesF = ["Amara", "Ingrid", "Lucia", "Hana", "Niamh", "Layla", "Giulia", "Thandiwe", "Freja", "Irina", "Saskia", "Maeve"];
@@ -43,7 +43,7 @@ public sealed class SyntheticCohortGenerator
             var family = _familyNames[_random.Next(_familyNames.Length)];
             var given = (female ? _givenNamesF : _givenNamesM)[_random.Next(_givenNamesF.Length)];
             var birth = new DateOnly(1940 + _random.Next(70), 1 + _random.Next(12), 1 + _random.Next(28));
-            var admitted = BASE_TIME.AddDays(-_random.Next(1, 30)).AddMinutes(_random.Next(0, 24 * 60));
+            var admitted = BaseTime.AddDays(-_random.Next(1, 30)).AddMinutes(_random.Next(0, 24 * 60));
             patients.Add(new SyntheticPatient(
                 $"ETL-{_seed:D3}-{i:D4}",
                 family,

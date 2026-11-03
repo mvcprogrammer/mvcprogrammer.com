@@ -41,10 +41,8 @@ public sealed class HttpBundleClient : IBundleClient
         ArgumentNullException.ThrowIfNull(bundle);
 
         using var client = _clients.CreateClient(CLIENT_NAME);
-        using var request = new HttpRequestMessage(HttpMethod.Post, string.Empty)
-        {
-            Content = new StringContent(JsonSerializer.Serialize(bundle, _fhirJson)),
-        };
+        using var request = new HttpRequestMessage(HttpMethod.Post, string.Empty);
+        request.Content = new StringContent(JsonSerializer.Serialize(bundle, _fhirJson));
         request.Content.Headers.ContentType = new MediaTypeHeaderValue(FHIR_JSON);
         request.Headers.Accept.Add(new MediaTypeWithQualityHeaderValue(FHIR_JSON));
         // The entries' status lines are all the loader needs; the resources themselves would only cost bandwidth.

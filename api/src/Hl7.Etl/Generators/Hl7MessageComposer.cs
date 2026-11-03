@@ -40,7 +40,10 @@ public static class Hl7MessageComposer
         var pv1 = new Segment("PV1", message.Encoding);
         pv1.AddNewField("1", 1);
         pv1.AddNewField("I", 2);
-        pv1.AddNewField($"{patient.Ward}^{101 + patient.Mrn.GetHashCode(StringComparison.Ordinal) % 50 switch { < 0 => 0, var n => n }}^A", 3);
+        // The room follows from the MRN's characters so the same cohort composes the same message on every
+        // run; a string hash code is randomised per process and would not.
+        var room = 101 + patient.Mrn.Sum(c => c) % 50;
+        pv1.AddNewField($"{patient.Ward}^{room}^A", 3);
         pv1.AddNewField($"{patient.Ward}", 10);
         pv1.AddNewField(patient.VisitNumber, 19);
         pv1.AddNewField(Dtm(patient.AdmittedAt), 44);

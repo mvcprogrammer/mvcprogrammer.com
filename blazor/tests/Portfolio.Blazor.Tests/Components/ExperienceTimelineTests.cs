@@ -1,4 +1,3 @@
-using System.Net.Http;
 using System.Text.Json;
 using Microsoft.AspNetCore.Components.Web;
 using Microsoft.Extensions.DependencyInjection;
@@ -293,7 +292,7 @@ public sealed class ExperienceTimelineTests : BunitContext
         };
         Services.AddSingleton<IExperienceClient>(client);
         this.AddSiteOptions();
-        var cut = Render<ExperienceTimeline>();
+        Render<ExperienceTimeline>();
         await started.Task;
 
         // Act

@@ -1383,12 +1383,13 @@ public sealed class ApiTests
         });
         using var client = factory.CreateClient();
         using var cancellation = new CancellationTokenSource(TimeSpan.FromMilliseconds(50));
+        var token = cancellation.Token;
 
         // Act
-        var act = () => client.SendAsync(AddCondition(), cancellation.Token);
+        var act = client.SendAsync(AddCondition(), token);
 
         // Assert
-        await Assert.ThrowsAnyAsync<OperationCanceledException>(act);
+        await Assert.ThrowsAnyAsync<OperationCanceledException>(() => act);
         await upstreamCancelled.Task.WaitAsync(TimeSpan.FromSeconds(2), Ct);
         Assert.DoesNotContain(factory.Handler.Sent, r => r.Method == HttpMethod.Post);
     }
@@ -1672,12 +1673,13 @@ public sealed class ApiTests
         });
         using var client = factory.CreateClient();
         using var cancellation = new CancellationTokenSource(TimeSpan.FromMilliseconds(80));
+        var token = cancellation.Token;
 
         // Act
-        var act = () => client.SendAsync(Resolve(), cancellation.Token);
+        var act = client.SendAsync(Resolve(), token);
 
         // Assert
-        await Assert.ThrowsAnyAsync<OperationCanceledException>(act);
+        await Assert.ThrowsAnyAsync<OperationCanceledException>(() => act);
         await upstreamCancelled.Task.WaitAsync(TimeSpan.FromSeconds(2), Ct);
         Assert.DoesNotContain(factory.Handler.Sent, r => r.Method == HttpMethod.Put);
     }

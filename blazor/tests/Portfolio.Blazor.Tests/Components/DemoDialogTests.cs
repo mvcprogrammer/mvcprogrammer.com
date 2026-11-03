@@ -1,4 +1,3 @@
-using Microsoft.AspNetCore.Components;
 using Portfolio.Blazor.Components;
 using Portfolio.Blazor.Sections;
 using Portfolio.Blazor.Tests.Helpers;

@@ -1,4 +1,3 @@
-using Fhir.Api.Fhir;
 using Fhir.Api.Mapping;
 using Fhir.Api.Models;
 using Hl7.Fhir.Model;

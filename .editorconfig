@@ -171,3 +171,8 @@ resharper_not_accessed_positional_property_global_highlighting = none
 # in test classes, and only there.
 [*Tests.cs]
 dotnet_naming_rule.members_pascal.severity = none
+# ReSharper (Rider and InspectCode) only. Tests pass default arguments explicitly so the case
+# reads without the builder's signature, and xUnit's Assert.Collection inspectors take an
+# element only to assert on it; neither is a redundancy in a test.
+resharper_redundant_argument_default_value_highlighting = none
+resharper_parameter_only_used_for_precondition_check_local_highlighting = none
