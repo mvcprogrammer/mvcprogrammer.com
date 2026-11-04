@@ -113,10 +113,11 @@
             }
           </ul>
           <!-- Add a condition: the first write on a clinical resource, on the patient the card shows. Collapsed until asked
-               for; the select mirrors the function's pick list; the button is blocked for the condition rule's reasons
-               (nothing selected, the seed, a patient that is neither this session's nor the HL7 ETL's, a write in flight). -->
-          <details class="fhir-condition" id="fhir-condition" [open]="conditionOpen()" (toggle)="toggleCondition($event)">
-            <summary id="fhir-condition-title">Add a condition</summary>
+               for, and kept shut (heading aria-disabled, the reason as its hover) on a patient that allows no adds: the
+               seed, or one that is neither this session's nor the HL7 ETL's. Inside, the select mirrors the function's
+               pick list and the button is blocked for the condition rule's remaining reason (a write in flight). -->
+          <details class="fhir-condition" id="fhir-condition" [open]="conditionShown()">
+            <summary id="fhir-condition-title" [attr.aria-disabled]="conditionDisclosureBlock() !== null ? 'true' : null" [attr.title]="conditionDisclosureBlock()" (click)="pressConditionSummary($event)">Add a condition</summary>
             <form class="fhir-condition-form" [class.is-loading]="writing()" id="fhir-condition-form" novalidate aria-labelledby="fhir-condition-title" [formGroup]="conditionForm" (ngSubmit)="addCondition()">
               <p class="fhir-edit-lead">{{ CONDITION_LEAD }}</p>
               <div class="fhir-condition-row">
@@ -134,7 +135,7 @@
           </details>
           <p [class]="conditionStatusClass()" id="fhir-condition-status" role="status" aria-live="polite">
             @if (conditionStatusText() === '') {
-              @if (conditionOpen()) {
+              @if (conditionShown()) {
                 Add sends <code>POST /api/fhir/patients/&lbrace;id&rbrace;/conditions</code>; Resolve sends <code>POST &hellip;/conditions/&lbrace;conditionId&rbrace;/resolve</code>. Both carry <code>X-Demo-Session</code>.
               }
             } @else {

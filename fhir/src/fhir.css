@@ -160,6 +160,16 @@ app-not-found {
   color: var(--hover);
 }
 
+/* The heading of a disclosure that will not open on this patient: aria-disabled rather than hidden, so the reason (its title) shows on hover. */
+.fhir-condition > summary[aria-disabled="true"] {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.fhir-condition > summary[aria-disabled="true"]:hover {
+  color: var(--text-muted);
+}
+
 .fhir-condition-form {
   margin-top: 0.75rem;
 }
