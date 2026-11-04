@@ -68,5 +68,5 @@ Held 2026-10-30, the day the last planned item closed.
 | 2 | A deploy script that refuses a non-main branch or a dirty tree, for both Lambdas. | #202 | Sprint 2 |
 | 3 | Set Started the moment an item moves to In progress; the backfill stays the safety net. | habit, no issue | ongoing |
 | 4 | Fix the local test runner or script the built binaries, and document it. | #203 | Sprint 2 |
-| 5 | Move the end-to-end explorer check into `tools/` and have it delete what it created on exit. | #204 | Sprint 2 |
+| 5 | Move the end-to-end explorer check into `tools/` and have it delete what it created on exit. | #204, merged into #242 | Sprint 2 |
 | 6 | Group Dependabot's Angular updates so one pull request carries one lockfile change. | #205 | Sprint 2 |

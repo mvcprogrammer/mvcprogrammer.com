@@ -1,0 +1,59 @@
+name: Reap FHIR sandbox patients
+
+# Deletes the demo patients the explorer's visitors left on the public HAPI sandbox: every patient
+# the function creates carries the visitor's session token as an identifier, and once that browser is
+# gone nothing can delete the patient through the API. tools/fhir-reap.mjs lists the ones older than
+# the threshold and deletes each with its conditions first. The seeded patient and the HL7 ETL cohort
+# carry no session identifier and are never candidates.
+#
+# Manual only, by decision (#242): there is no schedule, so every deletion is one the owner asked
+# for from the Actions tab. The run defaults to a dry run, which lists the candidates in the job
+# summary and deletes nothing; untick "Dry run" to delete them. No AWS credentials: the sandbox is
+# public and the run touches nothing of ours.
+
+on:
+  workflow_dispatch:
+    inputs:
+      max_age_hours:
+        description: "Only patients last updated at least this many hours ago (0 = all)"
+        required: false
+        default: "24"
+      dry_run:
+        description: "Dry run: list the candidates, delete nothing"
+        type: boolean
+        required: false
+        default: true
+
+permissions:
+  contents: read
+
+concurrency:
+  group: fhir-reap
+  cancel-in-progress: false
+
+jobs:
+  reap:
+    name: ${{ inputs.dry_run && 'List the stray patients' || 'Delete the stray patients' }}
+    runs-on: ubuntu-24.04
+    steps:
+      - name: Check out
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - name: Set up Node
+        uses: actions/setup-node@a0853c24544627f65ddf259abe73b1d18a591444 # v5.0.0
+        with:
+          node-version: 24
+
+      - name: Test the sandbox library
+        run: node --test tools/test/fhir-sandbox.test.mjs
+
+      # The script appends its own table to the job summary (one row per candidate with what
+      # happened to it) and exits non-zero when any delete failed, which fails the run.
+      - name: Reap
+        env:
+          ACTOR: ${{ github.actor }}
+          MAX_AGE_HOURS: ${{ inputs.max_age_hours || '24' }}
+          DRY_RUN: ${{ inputs.dry_run && '--dry-run' || '' }}
+        run: |
+          echo "Run by ${ACTOR}: max age ${MAX_AGE_HOURS} h, ${DRY_RUN:-apply}." >> "$GITHUB_STEP_SUMMARY"
+          node tools/fhir-reap.mjs --max-age-hours "${MAX_AGE_HOURS}" ${DRY_RUN} --summary "$GITHUB_STEP_SUMMARY"

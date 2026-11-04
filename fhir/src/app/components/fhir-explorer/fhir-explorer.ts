@@ -88,7 +88,7 @@ export class FhirExplorer implements OnInit, OnDestroy {
   /** The seeded demo patient, read-only to the writes. */
   static readonly SEED_PATIENT_ID = 'mvc-programmer';
 
-  static readonly EDIT_LEAD = 'Writes go to the same throwaway sandbox. Only patients created in this browser session can be replaced, patched, or deleted; the seeded patient is read-only. A session can create five.';
+  static readonly EDIT_LEAD = 'Writes go to the same throwaway sandbox. Only patients created in this browser can be replaced, patched, or deleted; the session token stays with the browser, so closing the tab keeps them yours. The seeded patient is read-only. A session can create five.';
   static readonly EDIT_NONE_MESSAGE = 'No patient selected: the form creates a new one.';
   static readonly EDIT_MRN_MESSAGE = 'Letters, digits, hyphens, and dots only; at most 40.';
   static readonly EDIT_NO_CHANGES_MESSAGE = 'Nothing changed since the patient was loaded, so there is nothing to patch.';

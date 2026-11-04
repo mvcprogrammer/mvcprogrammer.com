@@ -25,7 +25,7 @@ fhir/
   src/app/content/              The condition pick list: the ten SNOMED CT conditions the select offers, a mirror of the function's.
   src/app/interfaces/           FhirClient, DemoSession (the session token and idempotency keys), and EngagementTracker: abstract
                                 classes that double as injection tokens.
-  src/app/services/             HttpFhirClient over HttpClient (reads and writes), BrowserDemoSession (sessionStorage), and the beacon
+  src/app/services/             HttpFhirClient over HttpClient (reads and writes), BrowserDemoSession (localStorage), and the beacon
                                 tracker (GET /ping, mirrored from ../main.js).
   src/app/providers/            provideSite(): validates the options and registers everything above.
   src/app/models/, requests/    Interfaces matching the FHIR section of ../api/openapi.yaml, PatientInput, the JSON Patch
@@ -65,7 +65,8 @@ npx ng test --watch=false --filter "FhirExplorer"       # one suite or test by n
 ```
 
 The edit panel is the write side of the demo. Every write carries the session token (`X-Demo-Session`,
-a UUID kept in `sessionStorage` for the life of the tab), a create carries an idempotency key the
+a UUID kept in `localStorage`, so it stays with the browser from one visit to the next and closing the tab
+does not orphan what the visitor created), a create carries an idempotency key the
 explorer reuses until the create succeeds, and a patch is built as a JSON Patch of the fields that
 changed since the patient was loaded, each guarded by a `test` of the old value. The function decides
 what is allowed: the seeded patient is read-only, only a patient this session created can be replaced,
@@ -111,6 +112,33 @@ the family name cleared lists its whole cohort.
 The dev server has no `/api`, so the capability check fails and the explorer says so in its log.
 Serve the build output behind the real CloudFront behaviors (or any host that proxies `/api/fhir`)
 to search.
+
+## Check it live
+
+`tools/fhir-e2e.mjs` drives the write side end to end through the API, the way the page does: create a
+demo patient, replay the create with the same `Idempotency-Key`, add a condition, add it again, resolve it,
+read the summary, delete the patient, delete it again. Each step prints its outcome; the first failure stops
+the run with exit status 1. Whatever happens, the run ends by deleting what it created, through the API with
+its own session token first and, when that cannot (the function is down, the write budget is spent), directly
+on the sandbox with its conditions first, so a failed run leaves no litter behind. A full run spends eight of
+the address's ten writes per ten minutes, so wait between runs.
+
+```bash
+node tools/fhir-e2e.mjs https://fhir.mvcprogrammer.com/                      # the live host
+node tools/fhir-e2e.mjs https://fhir.mvcprogrammer.com/ --stop-after add     # fail on purpose and watch the clean-up
+```
+
+Against a local preview, run the function on a free port (5000 is taken by AirPlay on macOS, and the launch
+profile adds an https URL that fails without a certificate) and the explorer with `/api` proxied to it:
+
+```bash
+ASPNETCORE_URLS=http://localhost:5055 dotnet run --project ../api/src/Fhir.Api --no-launch-profile
+npx ng serve --proxy-config proxy.conf.json      # a local file, not checked in: { "/api": { "target": "http://localhost:5055" } }
+node ../tools/fhir-e2e.mjs http://localhost:4200/
+```
+
+The patients visitors leave behind (a browser whose token is gone can no longer delete them) are removed by
+`tools/fhir-reap.mjs`, run by hand or from the Actions tab; see [FHIR sandbox hygiene](../docs/DEPLOY.md#fhir-sandbox-hygiene).
 
 ## Hosting
 

@@ -736,6 +736,30 @@ curl -s -o /dev/null -w "%{http_code} %{redirect_url}\n" https://mvcprogrammer.c
 aws logs tail /aws/lambda/mvcprogrammer-fhir-api --since 1h --format short
 ```
 
+### FHIR sandbox hygiene
+
+Every patient the function creates carries the visitor's session token as an identifier
+(`https://mvcprogrammer.com/fhir/demo-session`), and the token lives in the visitor's browser. Once that
+browser is gone, nothing can delete the patient through the API: the guard answers 404 to every other
+session, by design. The sandbox itself is open, so the repository removes them directly, outside the
+guard; only the session identifier system is ever addressed, and the seeded patient and the HL7 ETL cohort
+carry none, so they are never candidates.
+
+The reaper has no schedule, by decision (#242): every deletion is one somebody asked for. Run it from the
+Actions tab (**Reap FHIR sandbox patients**, manual dispatch) or by hand. The workflow defaults to a dry
+run, which lists the candidates in the job summary and deletes nothing; untick "Dry run" to delete them.
+The default age threshold of 24 hours leaves a visitor's open browser alone; 0 takes every session patient.
+It needs no AWS credentials.
+
+```bash
+node tools/fhir-reap.mjs --dry-run                 # list what a run would delete (24 h and older)
+node tools/fhir-reap.mjs                           # delete them, conditions first
+node tools/fhir-reap.mjs --max-age-hours 0         # every session patient, whatever its age
+```
+
+`tools/fhir-e2e.mjs` (see [fhir/README.md](../fhir/README.md#check-it-live)) deletes what it creates on exit,
+so a check run leaves nothing for the reaper unless it is killed outright.
+
 ## Blazor edition (blazor.mvcprogrammer.com)
 
 Added 2026-10-14. The Blazor WebAssembly build in `blazor/` is published to the `blazor/` prefix of
