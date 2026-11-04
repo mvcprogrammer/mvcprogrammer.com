@@ -62,8 +62,8 @@ export function ServicesSection() {
             <p>
               The same standard governs my AI tooling: enterprise-grade Claude agents equipped with
               skills for the healthcare industry, including HL7 v2, FHIR, and HIPAA, and for the
-              accounting domain, grounded in production code and code-review feedback so generated
-              code meets the team's conventions before a human reads it.
+              accounting domain, grounded in what production code and code-review feedback taught me
+              so generated code meets the team's conventions before a human reads it.
             </p>
             <p>One standard for every line, by me or by machine: it's the same engineering.</p>
           </article>
