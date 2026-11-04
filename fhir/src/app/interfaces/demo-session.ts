@@ -6,7 +6,7 @@ export abstract class DemoSession {
   /** The identifier system the function stamps the session token on a created patient with. */
   static readonly SESSION_SYSTEM = 'https://mvcprogrammer.com/fhir/demo-session';
 
-  /** The session token, a UUID, the same for the life of the browser tab. */
+  /** The session token, a UUID, the same in this browser from one visit to the next. */
   abstract readonly token: string;
 
   /** A fresh idempotency key, a UUID, for one create attempt. */

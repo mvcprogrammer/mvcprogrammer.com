@@ -3,14 +3,15 @@ import { Injectable, inject } from '@angular/core';
 import { DemoSession } from '../interfaces/demo-session';
 
 /**
- * The session token lives in sessionStorage, so it lasts as long as the tab and is never shared
- * between tabs or visitors; a visitor who closes the tab loses the ability to change what they
- * created, which the explorer's lead sentence says. Where storage is blocked, the token lasts for
- * the page only.
+ * The session token lives in localStorage, so it stays with the browser from one visit to the next
+ * and a closed tab does not orphan the patients the visitor created (until 2026-11-04 it lived in
+ * sessionStorage and died with the tab, which left patients on the sandbox nobody could delete).
+ * Storage is per origin and per browser profile, so it is never shared between visitors. Where
+ * storage is blocked, the token lasts for the page only.
  */
 @Injectable()
 export class BrowserDemoSession extends DemoSession {
-  /** The sessionStorage key. */
+  /** The localStorage key. */
   static readonly STORAGE_KEY = 'fhir-demo-session';
 
   private readonly document = inject(DOCUMENT);
@@ -26,13 +27,13 @@ export class BrowserDemoSession extends DemoSession {
   private load(): string {
     const window = this.document.defaultView;
     try {
-      const saved = window?.sessionStorage.getItem(BrowserDemoSession.STORAGE_KEY);
+      const saved = window?.localStorage.getItem(BrowserDemoSession.STORAGE_KEY);
       if (saved !== null && saved !== undefined && /^[0-9a-f-]{36}$/.test(saved)) {
         return saved;
       }
 
       const token = BrowserDemoSession.uuid(window);
-      window?.sessionStorage.setItem(BrowserDemoSession.STORAGE_KEY, token);
+      window?.localStorage.setItem(BrowserDemoSession.STORAGE_KEY, token);
       return token;
     } catch {
       return BrowserDemoSession.uuid(window);
