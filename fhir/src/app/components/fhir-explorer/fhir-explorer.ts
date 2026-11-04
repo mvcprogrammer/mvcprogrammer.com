@@ -117,13 +117,17 @@ export class FhirExplorer implements OnInit, OnDestroy {
   protected readonly CONDITIONS = CONDITION_PICK_LIST;
 
   /** What a new patient starts as, so Create works without typing and the result carries the demo MRN the search opens on. */
-  static readonly NEW_PATIENT: Readonly<Record<'familyName' | 'givenName' | 'mrn', string>> = { familyName: 'Patient', givenName: 'Demo', mrn: FhirExplorer.DEMO_MRN };
+  /** The fixed new-patient defaults; the birth date joins them when the form is filled (`defaultBirthDate`). */
+  static readonly NEW_PATIENT: Readonly<Record<'familyName' | 'givenName' | 'sex' | 'mrn', string>> = { familyName: 'Patient', givenName: 'Demo', sex: Sex.Female, mrn: FhirExplorer.DEMO_MRN };
+
+  /** How old a patient created with the defaults is on the day it is created. */
+  static readonly DEFAULT_AGE_YEARS = 18;
 
   protected readonly editForm = inject(FormBuilder).nonNullable.group({
     familyName: [FhirExplorer.NEW_PATIENT.familyName, [notBlank, Validators.maxLength(60)]],
     givenName: [FhirExplorer.NEW_PATIENT.givenName, [Validators.maxLength(60)]],
-    sex: [''],
-    birthDate: ['', [Validators.pattern(/^\d{4}-\d{2}-\d{2}$/)]],
+    sex: [FhirExplorer.NEW_PATIENT.sex],
+    birthDate: [FhirExplorer.defaultBirthDate(), [Validators.pattern(/^\d{4}-\d{2}-\d{2}$/)]],
     mrn: [FhirExplorer.NEW_PATIENT.mrn, [Validators.maxLength(40), Validators.pattern(/^[A-Za-z0-9\-.]*$/)]],
   });
 
@@ -867,7 +871,7 @@ export class FhirExplorer implements OnInit, OnDestroy {
    * the defaults rather than a copy of a patient it cannot change.
    */
   private resetToDefaults(): void {
-    this.editForm.setValue({ ...FhirExplorer.NEW_PATIENT, sex: '', birthDate: '' });
+    this.editForm.setValue({ ...FhirExplorer.NEW_PATIENT, birthDate: FhirExplorer.defaultBirthDate() });
     this.loadedInput.set(null);
     this.editValidated.set(false);
     this.serverErrors.set({});
@@ -945,6 +949,20 @@ export class FhirExplorer implements OnInit, OnDestroy {
   }
 
   /** The query string of a search, the given parameters only, in the order the API documents them. */
+  /**
+   * The default birth date for a new patient: `DEFAULT_AGE_YEARS` before the given day in the browser's local
+   * date, in the YYYY-MM-DD form the input takes. A 29th of February falls back to the 28th.
+   */
+  static defaultBirthDate(today: Date = new Date()): string {
+    const born = new Date(today.getFullYear() - FhirExplorer.DEFAULT_AGE_YEARS, today.getMonth(), today.getDate());
+    if (born.getMonth() !== today.getMonth()) {
+      born.setDate(0);
+    }
+
+    const pad = (part: number): string => String(part).padStart(2, '0');
+    return `${born.getFullYear()}-${pad(born.getMonth() + 1)}-${pad(born.getDate())}`;
+  }
+
   static searchQuery(family: string, birthdate: string, identifier: string): string {
     const parts: string[] = [];
     if (family !== '') {
