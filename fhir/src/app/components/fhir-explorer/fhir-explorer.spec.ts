@@ -503,6 +503,26 @@ describe('FhirExplorer', () => {
     });
   });
 
+  describe('defaultBirthDate', () => {
+    it('should be eighteen years before the given day, zero-padded', () => {
+      expect(FhirExplorer.defaultBirthDate(new Date(2026, 10, 4))).toBe('2008-11-04');
+      expect(FhirExplorer.defaultBirthDate(new Date(2026, 0, 5))).toBe('2008-01-05');
+    });
+
+    it('should fall back to the 28th for a 29th of February', () => {
+      expect(FhirExplorer.defaultBirthDate(new Date(2028, 1, 29))).toBe('2010-02-28');
+      expect(FhirExplorer.defaultBirthDate(new Date(2026, 1, 28))).toBe('2008-02-28');
+    });
+
+    it('should be what the form starts with', async () => {
+      // Act
+      await render();
+
+      // Assert
+      expect(editField('birthDate').value).toBe(FhirExplorer.defaultBirthDate());
+    });
+  });
+
   describe('edit panel', () => {
     it('should start with nothing selected and the form holding the new-patient defaults, create enabled, the other verbs disabled', async () => {
       // Act
@@ -513,8 +533,8 @@ describe('FhirExplorer', () => {
       expect(editField('familyName').value).toBe('Patient');
       expect(editField('givenName').value).toBe('Demo');
       expect(editField('mrn').value).toBe('mvcprogrammer.com');
-      expect((host.querySelector('#fhir-edit-sex') as HTMLSelectElement).value).toBe('');
-      expect(editField('birthDate').value).toBe('');
+      expect((host.querySelector('#fhir-edit-sex') as HTMLSelectElement).value).toBe('female');
+      expect(editField('birthDate').value).toBe(FhirExplorer.defaultBirthDate());
       expect(blocked('fhir-create')).toBe(false);
       expect(blocked('fhir-replace')).toBe(true);
       expect(blocked('fhir-patch')).toBe(true);
@@ -534,8 +554,8 @@ describe('FhirExplorer', () => {
       // Assert: the form can only create, so it holds the defaults, not the loaded patient's fields
       expect(editField('familyName').value).toBe('Patient');
       expect(editField('givenName').value).toBe('Demo');
-      expect((host.querySelector('#fhir-edit-sex') as HTMLSelectElement).value).toBe('');
-      expect(editField('birthDate').value).toBe('');
+      expect((host.querySelector('#fhir-edit-sex') as HTMLSelectElement).value).toBe('female');
+      expect(editField('birthDate').value).toBe(FhirExplorer.defaultBirthDate());
       expect(editField('mrn').value).toBe('mvcprogrammer.com');
       expect(target().textContent).toContain('Patient/78785 was not created in this session');
       expect(target().classList.contains('is-mine')).toBe(false);
@@ -612,7 +632,7 @@ describe('FhirExplorer', () => {
 
       // Assert
       const create = client.creates[0];
-      expect(create.input).toEqual({ familyName: 'Patient', givenName: 'Demo', mrn: 'mvcprogrammer.com' });
+      expect(create.input).toEqual({ familyName: 'Patient', givenName: 'Demo', sex: 'female', birthDate: FhirExplorer.defaultBirthDate(), mrn: 'mvcprogrammer.com' });
     });
 
     it('should refuse to create without a family name or with a bad MRN, without calling the API', async () => {
@@ -645,7 +665,7 @@ describe('FhirExplorer', () => {
 
       // Assert
       const create = client.creates[0];
-      expect(create.input).toEqual({ familyName: 'Dickens', givenName: 'Charles', mrn: 'MVC-0042' });
+      expect(create.input).toEqual({ familyName: 'Dickens', givenName: 'Charles', sex: 'female', birthDate: FhirExplorer.defaultBirthDate(), mrn: 'MVC-0042' });
       expect(create.key).toBe(session.keys[0]);
       expect(textOf(editStatus())).toContain('Created Patient/new-1');
       expect(host.querySelector('.fhir-patient[data-id="new-1"] .fhir-patient-name')?.textContent).toBe('Dickens, Charles');

@@ -73,8 +73,8 @@ what is allowed: the seeded patient is read-only, only a patient this session cr
 patched, or deleted, and a patient the HL7 ETL loaded (an identifier in `https://mvcprogrammer.com/fhir/etl`,
 see `src/app/content/identifier-systems.ts`) is conditions-only. The panel says which case the selected
 patient is. With nothing selected the
-form holds the new-patient defaults (family name Patient, given name Demo, MRN mvcprogrammer.com), so Create
-works without typing. Selecting a patient this session created replaces them with its fields; selecting a
+form holds the new-patient defaults (family name Patient, given name Demo, sex female, a birth date eighteen
+years before today in the browser's local date, MRN mvcprogrammer.com), so Create works without typing. Selecting a patient this session created replaces them with its fields; selecting a
 read-only patient (the seeded one, or another session's) leaves them in place, since the form can only create.
 
 The condition form is on the summary card, with the patient it writes to: under the condition chips, a
