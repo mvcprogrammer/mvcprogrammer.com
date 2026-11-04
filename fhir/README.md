@@ -79,11 +79,12 @@ read-only patient (the seeded one, or another session's) leaves them in place, s
 
 The condition form is on the summary card, with the patient it writes to: under the condition chips, a
 disclosure labelled "Add a condition" that starts collapsed and opens on request (its state is kept from
-one patient to the next). Inside are a select of ten listed conditions (`src/app/content/condition-pick-list.ts`,
+one patient to the next). It opens only on a patient this session created or the HL7 ETL loaded; on the
+seeded patient or anyone else's, the heading is `aria-disabled` with the reason as its hover, a press on it
+writes that reason to the status line instead of opening, and an open form closes until a patient that
+allows adds is selected again. Inside are a select of ten listed conditions (`src/app/content/condition-pick-list.ts`,
 a mirror of the function's list, which is the source of truth) and an Add button, the first write on a
-clinical resource. It is allowed on a patient this session created and on one the HL7 ETL loaded, and
-blocked with its reason otherwise (nothing selected, the seeded patient, anyone else's patient, a write in
-flight). The add sends `POST /api/fhir/patients/{id}/conditions` with the SNOMED CT code; a 201 puts the
+clinical resource, blocked with its reason while a write is in flight. The add sends `POST /api/fhir/patients/{id}/conditions` with the SNOMED CT code; a 201 puts the
 returned condition at the top of the card's active chips and bumps the count, a 200 means the patient
 already had it active and changes nothing, and a 422 (off the list, or ten active already) shows in the
 status line under the form, which reports adds and resolves and is cleared when another patient loads. The

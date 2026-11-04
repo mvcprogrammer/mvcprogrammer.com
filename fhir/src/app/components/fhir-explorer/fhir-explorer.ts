@@ -142,7 +142,10 @@ export class FhirExplorer implements OnInit, OnDestroy {
   protected readonly conditionStatusText = signal('');
   protected readonly conditionStatusKind = signal<'is-ok' | 'is-error' | ''>('');
 
-  /** Whether the card's condition form is open. It starts collapsed and keeps its state from one patient to the next. */
+  /**
+   * Whether the visitor has asked for the card's condition form. It starts collapsed and keeps its state from
+   * one patient to the next; the disclosure itself opens only when the patient allows adds (`conditionShown`).
+   */
   protected readonly conditionOpen = signal(false);
 
   /** The function's field errors from the last 400, keyed by field. */
@@ -243,6 +246,16 @@ export class FhirExplorer implements OnInit, OnDestroy {
 
   /** Why an add or a resolve is blocked right now, or null: the condition rule is wider than the patient one (the HL7 cohort qualifies). */
   protected readonly conditionBlock = computed(() => this.conditionBlockReason());
+
+  /**
+   * Why the "Add a condition" disclosure stays shut on the selected patient, or null when it may open: the
+   * ownership reasons only (the seed, another session's patient). A write in flight blocks the button, not
+   * the disclosure, so the form does not collapse under the visitor mid-add.
+   */
+  protected readonly conditionDisclosureBlock = computed(() => (this.canWriteConditions() ? null : this.conditionBlockReason()));
+
+  /** Whether the disclosure is open now: asked for, and allowed on this patient. */
+  protected readonly conditionShown = computed(() => this.conditionOpen() && this.conditionDisclosureBlock() === null);
 
   private readonly client = inject(FhirClient);
   private readonly session = inject(DemoSession);
@@ -376,9 +389,17 @@ export class FhirExplorer implements OnInit, OnDestroy {
     this.resolvedShown.update((shown) => !shown);
   }
 
-  /** Follows the native disclosure, so the open state survives the card re-rendering for the next patient. */
-  protected toggleCondition(event: Event): void {
-    this.conditionOpen.set((event.target as HTMLDetailsElement).open);
+  /**
+   * A press on the disclosure's heading (Enter and Space on a summary arrive as clicks too). The native toggle
+   * is cancelled and the open state kept here, so it survives the card re-rendering for the next patient and
+   * a patient that allows no adds keeps the form shut: then the press writes the reason to the card's status
+   * instead, as a blocked verb does, and the visitor's choice is kept for the next patient that allows them.
+   */
+  protected pressConditionSummary(event: Event): void {
+    event.preventDefault();
+    if (!this.sayWhyConditionBlocked(this.conditionDisclosureBlock())) {
+      this.conditionOpen.update((open) => !open);
+    }
   }
 
   protected toggleRaw(): void {

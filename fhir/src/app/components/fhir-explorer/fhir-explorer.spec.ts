@@ -896,19 +896,22 @@ describe('FhirExplorer', () => {
       expect(host.querySelector('#fhir-edit #fhir-condition-code')).toBeNull();
     });
 
-    it('should keep the disclosure open across patients once opened', async () => {
-      // Arrange
-      client.onSearchPatients = () => Promise.resolve(createFhirResponse(createPatientSearchResult(createPatientListItem({ id: '78785' }), createPatientListItem({ id: 'mine-1' }))));
-      client.onGetSummary = (id) => Promise.resolve(createFhirResponse(id === 'mine-1' ? createOwnPatientSummary() : { ...createPatientSummary(), patient: { ...createPatientSummary().patient, id } }));
+    it('should keep the disclosure open across patients that allow adds once opened', async () => {
+      // Arrange: a patient the HL7 ETL loaded first, the session's own second
+      client.onSearchPatients = () => Promise.resolve(createFhirResponse(createPatientSearchResult(createPatientListItem({ id: 'etl-1' }), createPatientListItem({ id: 'mine-1' }))));
+      client.onGetSummary = (id) => Promise.resolve(createFhirResponse(id === 'mine-1' ? createOwnPatientSummary() : createCohortPatientSummary()));
       await render();
       submit();
       await fixture.whenStable();
 
-      // Act: open it the way a visitor would
-      const details = host.querySelector('#fhir-condition') as HTMLDetailsElement;
-      details.open = true;
-      details.dispatchEvent(new Event('toggle'));
+      // Act: open it the way a visitor would (the press is cancelled and the signal drives the element)
+      const press = new MouseEvent('click', { bubbles: true, cancelable: true });
+      conditionSummary().dispatchEvent(press);
       fixture.detectChanges();
+
+      // Assert
+      expect(press.defaultPrevented).toBe(true);
+      expect((host.querySelector('#fhir-condition') as HTMLDetailsElement).open).toBe(true);
 
       // Act: select another patient
       (host.querySelector('.fhir-patient[data-id="mine-1"]') as HTMLButtonElement).click();
@@ -916,26 +919,83 @@ describe('FhirExplorer', () => {
 
       // Assert
       expect((host.querySelector('#fhir-condition') as HTMLDetailsElement).open).toBe(true);
+
+      // Act: a second press closes it
+      conditionSummary().click();
+      fixture.detectChanges();
+
+      // Assert
+      expect((host.querySelector('#fhir-condition') as HTMLDetailsElement).open).toBe(false);
     });
 
-    it('should block Add for a patient that is neither this session\'s nor the HL7 ETL\'s, with the condition reason', async () => {
+    it('should keep the disclosure shut for a patient that is neither this session\'s nor the HL7 ETL\'s, with the condition reason as its hover', async () => {
       // Arrange: the default search loads another session's patient
       await render();
       submit();
       await fixture.whenStable();
 
-      // Assert
+      // Assert: the heading is blocked, not hidden, and carries the reason; the button inside is blocked the same way
+      expect(summaryBlocked()).toBe(true);
+      expect(conditionSummary().title).toBe(FhirExplorer.BLOCK_OTHER_CONDITION_MESSAGE);
       expect(blocked('fhir-add-condition')).toBe(true);
       expect(button('fhir-add-condition').title).toBe(FhirExplorer.BLOCK_OTHER_CONDITION_MESSAGE);
       expect(host.querySelector('.fhir-pill-action')).toBeNull();
 
-      // Act: a blocked press says why on the card and calls nothing
+      // Act: a press on the heading is cancelled and says why on the card
+      const press = new MouseEvent('click', { bubbles: true, cancelable: true });
+      conditionSummary().dispatchEvent(press);
+      fixture.detectChanges();
+
+      // Assert
+      expect(press.defaultPrevented).toBe(true);
+      expect((host.querySelector('#fhir-condition') as HTMLDetailsElement).open).toBe(false);
+      expect(textOf(conditionStatus())).toBe(FhirExplorer.BLOCK_OTHER_CONDITION_MESSAGE);
+
+      // Act: a blocked press on the button says the same and calls nothing
       button('fhir-add-condition').click();
       await fixture.whenStable();
 
       // Assert
       expect(textOf(conditionStatus())).toBe(FhirExplorer.BLOCK_OTHER_CONDITION_MESSAGE);
       expect(client.conditionAdds).toEqual([]);
+    });
+
+    it('should close an open disclosure on the seeded patient and reopen it on the next patient that allows adds', async () => {
+      // Arrange: the session's patient first, the seed second
+      client.onSearchPatients = () => Promise.resolve(createFhirResponse(createPatientSearchResult(createPatientListItem({ id: 'mine-1' }), createPatientListItem({ id: 'mvc-programmer' }))));
+      client.onGetSummary = (id) => Promise.resolve(createFhirResponse(id === 'mine-1' ? createOwnPatientSummary() : { ...createPatientSummary(), patient: { ...createPatientSummary().patient, id } }));
+      await render();
+      submit();
+      await fixture.whenStable();
+
+      // Act: open the form on the session's patient
+      conditionSummary().click();
+      fixture.detectChanges();
+
+      // Assert: allowed here, so it is open and the heading is live
+      let details = host.querySelector('#fhir-condition') as HTMLDetailsElement;
+      expect(details.open).toBe(true);
+      expect(summaryBlocked()).toBe(false);
+      expect(conditionSummary().title).toBe('');
+
+      // Act: select the seed
+      (host.querySelector('.fhir-patient[data-id="mvc-programmer"]') as HTMLButtonElement).click();
+      await fixture.whenStable();
+
+      // Assert: shut, with the seed reason on the heading
+      details = host.querySelector('#fhir-condition') as HTMLDetailsElement;
+      expect(details.open).toBe(false);
+      expect(summaryBlocked()).toBe(true);
+      expect(conditionSummary().title).toBe(FhirExplorer.BLOCK_SEED_MESSAGE);
+
+      // Act: back to the session's patient
+      (host.querySelector('.fhir-patient[data-id="mine-1"]') as HTMLButtonElement).click();
+      await fixture.whenStable();
+
+      // Assert: the visitor's choice survived the detour
+      details = host.querySelector('#fhir-condition') as HTMLDetailsElement;
+      expect(details.open).toBe(true);
+      expect(summaryBlocked()).toBe(false);
     });
 
     it('should add a condition to a patient the HL7 ETL loaded and put its chip on the card', async () => {
@@ -965,7 +1025,7 @@ describe('FhirExplorer', () => {
       expect(textOf(editStatus())).not.toContain('Asthma');
     });
 
-    it('should block Add for the seeded patient with its own reason', async () => {
+    it('should keep the disclosure shut for the seeded patient and block Add with its own reason', async () => {
       // Arrange
       client.onSearchPatients = () => Promise.resolve(createFhirResponse(createPatientSearchResult(createPatientListItem({ id: 'mvc-programmer' }))));
       client.onGetSummary = (id) => Promise.resolve(createFhirResponse({ ...createPatientSummary(), patient: { ...createPatientSummary().patient, id } }));
@@ -973,7 +1033,21 @@ describe('FhirExplorer', () => {
       submit();
       await fixture.whenStable();
 
-      // Act
+      // Assert: the heading will not open and says why on hover
+      expect(summaryBlocked()).toBe(true);
+      expect(conditionSummary().title).toBe(FhirExplorer.BLOCK_SEED_MESSAGE);
+
+      // Act: a press on the heading
+      const press = new MouseEvent('click', { bubbles: true, cancelable: true });
+      conditionSummary().dispatchEvent(press);
+      fixture.detectChanges();
+
+      // Assert
+      expect(press.defaultPrevented).toBe(true);
+      expect((host.querySelector('#fhir-condition') as HTMLDetailsElement).open).toBe(false);
+      expect(textOf(conditionStatus())).toBe(FhirExplorer.BLOCK_SEED_MESSAGE);
+
+      // Act: the button inside, reached by other means
       button('fhir-add-condition').click();
       await fixture.whenStable();
 
@@ -1310,6 +1384,16 @@ describe('FhirExplorer', () => {
 
   function editStatus(): HTMLElement {
     return host.querySelector('#fhir-edit-status') as HTMLElement;
+  }
+
+  /** The heading of the card's "Add a condition" disclosure. */
+  function conditionSummary(): HTMLElement {
+    return host.querySelector('#fhir-condition-title') as HTMLElement;
+  }
+
+  /** True when the disclosure's heading is marked aria-disabled: it will not open on this patient, and its title says why. */
+  function summaryBlocked(): boolean {
+    return conditionSummary().getAttribute('aria-disabled') === 'true';
   }
 
   /** The card's status for adds and resolves, beside the condition form. */
