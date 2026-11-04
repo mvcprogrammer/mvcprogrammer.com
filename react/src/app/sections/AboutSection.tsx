@@ -20,12 +20,12 @@ export function AboutSection() {
               software company, bringing GitHub Copilot and then Claude into day-to-day development
               and learning, from production code and code-review feedback, what makes an AI pair
               programmer worth trusting. I have since put those lessons into my own Claude skills
-              and agents, written from my experience in the healthcare field and used to build the
-              projects on this site: HL7 v2 and FHIR interoperability skills, accounting-domain
-              skills, and reviewer agents that enforce my coding standard. The result is a pair
-              programmer that already knows the domain and production patterns, so useful work
-              starts on day one. The skills and agents live in a private repository of mine and are
-              available for viewing on request.
+              and agents, written from my experience in the healthcare and accounting fields: HL7 v2
+              and FHIR interoperability skills, accounting-domain skills, and reviewer agents that
+              enforce my coding standard. The result is a pair programmer that already knows the
+              domain and my production patterns, so useful work starts on day one, as the HL7 and
+              FHIR projects on this site show. The skills and agents live in a private repository of
+              mine and are available for viewing on request.
             </p>
             <p>
               I build on SOLID principles and modern software engineering patterns, and I own my
