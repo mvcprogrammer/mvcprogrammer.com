@@ -106,6 +106,8 @@ A run that changes nothing pushes nothing.
 - Set the points before the work starts. If an item is re-estimated, record why on the issue.
 - Add an item to a sprint only when it is being worked in that sprint; an item pulled in or pushed
   out changes the sprint's total, and the chart shows that as a step.
+- An item starts only after its `Approved` comment (see "Starting work" below), so the Started
+  date is never earlier than that comment.
 - When a pull request closes an issue, say so in its body (`Closes #N`), so the backfill can find
   its commits. Work that never touches git says so in the issue body (`not in git`).
 - The pre-sprint history (#5 to #23, the backfilled items from the October 6 launch to the stats
@@ -127,6 +129,15 @@ Backlog until someone grooms it.
 - Anything the work depends on (a secret, a setting, another issue, something only the owner can
   do) is named, and who provides it is clear.
 - The body carries no IDs, email addresses, or private file names, because the board is public.
+
+## Starting work
+
+An item moves from Ready to In progress only after the owner has posted a comment on the issue
+that starts with the word `Approved`. The assistant announces when an item is Ready and reminds
+the owner to approve it, but never writes that comment itself; the feature branch is created, and
+the work begins, only once the comment exists. A "go ahead" in chat does not count: the comment on
+the issue is the record of who asked for the work to start, and anyone reading the board can see
+it. This rule applies from 2026-11-04.
 
 ## Definition of Done
 
