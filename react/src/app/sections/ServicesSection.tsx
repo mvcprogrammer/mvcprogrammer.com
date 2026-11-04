@@ -54,15 +54,18 @@ export function ServicesSection() {
             </div>
             <h3>Code</h3>
             <p>
-              Maintainable, efficient code written to industry-standard conventions refined over 15
-              years, built on SOLID principles and modern software engineering patterns, and
-              delivered on schedule.
+              Maintainable, efficient C# and TypeScript written to conventions refined over 15
+              years, built on SOLID principles and modern software engineering patterns, readable by
+              the next engineer without a tour, and kept that way through analyzers, code review,
+              and small, focused pull requests.
             </p>
             <p>
-              Clean, consistent C# and TypeScript the next engineer can read without a tour, kept
-              that way through analyzers, code review, and small, focused pull requests.
+              The same standard governs my AI tooling: enterprise-grade Claude agents equipped with
+              skills for the healthcare industry, including HL7 v2, FHIR, and HIPAA, and for the
+              accounting domain, grounded in production code and code-review feedback so generated
+              code meets the team's conventions before a human reads it.
             </p>
-            <p>No over-engineering or anti-patterns.</p>
+            <p>One standard for every line, by me or by machine: it's the same engineering.</p>
           </article>
           <article className="card service-card">
             <div className="service-icon" aria-hidden="true">
