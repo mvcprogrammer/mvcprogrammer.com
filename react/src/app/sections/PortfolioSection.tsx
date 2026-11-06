@@ -241,7 +241,7 @@ export function PortfolioSection() {
               <div className="card-media">
                 <img
                   src="assets/images/portfolio/property-search-kiosk.jpg"
-                  alt="Interactive property search kiosk screen listing Clearwater Beach condos with touch controls"
+                  alt="Touch-screen property search kiosk lit up in the window of a Clearwater Beach real estate office at night"
                   width="1200"
                   height="750"
                   loading="lazy"
