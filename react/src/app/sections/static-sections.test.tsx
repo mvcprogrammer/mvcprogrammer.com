@@ -71,7 +71,7 @@ describe('static sections', () => {
   });
 
   describe('PortfolioSection', () => {
-    it('should give each project card one primary button with a single row of links after it', () => {
+    it('should give each project card one primary button with at most one row of links after it', () => {
       // Arrange, Act
       renderWithSite(<PortfolioSection />, createSiteTestServices());
 
@@ -92,13 +92,15 @@ describe('static sections', () => {
       });
       expect(actions).toEqual([
         { buttons: 1, rows: 1, rowAfterButton: true, links: ['API repo', 'OpenAPI spec', 'Explorer repo'] },
-        { buttons: 1, rows: 1, rowAfterButton: true, links: ['Site repo'] },
+        { buttons: 1, rows: 0, rowAfterButton: false, links: [] },
         { buttons: 1, rows: 1, rowAfterButton: true, links: ['Screen repo', 'API repo'] },
       ]);
       const visit = cards[1].querySelector<HTMLAnchorElement>('.card-actions a.button-primary');
-      expect(visit?.getAttribute('href')).toBe('https://lightsplitters.com');
-      expect(visit?.textContent?.trim()).toBe('Visit lightsplitters.com');
+      expect(visit?.getAttribute('href')).toBe('https://portal.mvcprogrammer.com');
+      expect(visit?.textContent?.trim()).toBe('Open the patient portal');
       expect(visit?.querySelector('use')?.getAttribute('href')).toBe('#icon-globe');
+      expect(cards[1].querySelector('h3')?.textContent).toBe('Patient Portal');
+      expect(cards[1].querySelector('.card-media img')?.getAttribute('src')).toBe('assets/images/portfolio/patient-portal.jpg');
     });
 
     it('should link only to the source and open the kiosk from the card button', () => {
