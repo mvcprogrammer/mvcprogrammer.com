@@ -174,8 +174,8 @@ export function PortfolioSection() {
             <article className="card portfolio-card">
               <div className="card-media">
                 <img
-                  src="assets/images/portfolio/lightsplitters-com.jpg"
-                  alt="Home page of lightsplitters.com showing the LightSplitters Media wedding, portrait, and pet photography galleries"
+                  src="assets/images/portfolio/patient-portal.jpg"
+                  alt="The patient portal demonstration at portal.mvcprogrammer.com, showing an invented patient's Medications page: two current prescriptions and one past, with when the list was read and when it may be refreshed"
                   width="1200"
                   height="750"
                   loading="lazy"
@@ -183,55 +183,54 @@ export function PortfolioSection() {
                 />
               </div>
               <div className="card-body">
-                <h3>lightsplitters.com</h3>
-                <p className="card-subtitle">Photography studio, Angular on AWS</p>
+                <h3>Patient Portal</h3>
+                <p className="card-subtitle">
+                  Patient portal demonstration, Angular in front of C# on Lambda
+                </p>
                 <p>
-                  The website for LightSplitters Media, a fictional Tampa Bay photography studio I
-                  created as a portfolio piece: weddings, portraits, family albums, and archival prints. An
-                  Angular 22 workspace with standalone components and signals, prerendered to static
-                  HTML with no server. A second app in the same workspace is a template for client
-                  sites, so each couple's wedding site or family album lives at its own subdomain
-                  from one shared build plus a JSON file and a folder of photos. Masonry galleries
-                  with a native dialog lightbox, responsive WebP and JPEG images, a contact form
-                  that posts to a Lambda function sending through SES, and print orders through
-                  Stripe Payment Links. All of it served from a private S3 bucket through
-                  CloudFront, with a CloudFront Function routing each subdomain to its folder.
+                  A working patient portal at portal.mvcprogrammer.com. Open it as one of three
+                  invented patients, with no password, and read what a patient reads: upcoming and
+                  past appointments, a balance with its statements, test results, documents, and
+                  medications. A result the care team has not released yet says so instead of
+                  showing its numbers. Every patient, visit, and amount is synthetic.
+                </p>
+                <p>
+                  <strong>Contract first, practice system behind an interface.</strong> The API was
+                  specified as an OpenAPI document before any code, and the tests hold the .NET 10
+                  minimal API to it. It reaches the practice system only through a connector
+                  interface, so the in-memory synthetic connector can give way to a real one without
+                  touching an endpoint. Each view shows when it was read and when it may be
+                  refreshed, which paces calls to the system behind it, and a failure comes back as
+                  an RFC 9457 problem. Requests, messages, and payments are in the contract and ship
+                  next.
                 </p>
                 <ul
                   className="tag-list card-tags"
                   role="list"
-                  aria-label="Technologies used on lightsplitters.com"
+                  aria-label="Technologies used on the patient portal"
                 >
                   <li className="tag">Angular 22</li>
                   <li className="tag">TypeScript</li>
                   <li className="tag">Signals</li>
-                  <li className="tag">Prerendered SSG</li>
-                  <li className="tag">SCSS</li>
+                  <li className="tag">C# / .NET 10 on Lambda</li>
+                  <li className="tag">Minimal API</li>
+                  <li className="tag">OpenAPI 3.1</li>
+                  <li className="tag">RFC 9457</li>
+                  <li className="tag">xUnit</li>
+                  <li className="tag">Vitest</li>
                   <li className="tag">Amazon S3</li>
-                  <li className="tag">CloudFront Functions</li>
-                  <li className="tag">Lambda + SES</li>
-                  <li className="tag">Route 53</li>
-                  <li className="tag">Stripe</li>
+                  <li className="tag">CloudFront + OAC</li>
+                  <li className="tag">CloudFormation</li>
                 </ul>
                 <div className="button-row card-actions">
                   <a
                     className="button button-primary"
-                    href="https://lightsplitters.com"
+                    href="https://portal.mvcprogrammer.com"
                     target="_blank"
                     rel="noopener"
                   >
                     <Icon name="globe" />
-                    Visit lightsplitters.com
-                  </a>
-                </div>
-                <div className="card-links">
-                  <a
-                    className="card-link"
-                    href="https://github.com/mvcprogrammer/lightsplitters.com"
-                    target="_blank"
-                    rel="noopener"
-                  >
-                    Site repo
+                    Open the patient portal
                   </a>
                 </div>
               </div>

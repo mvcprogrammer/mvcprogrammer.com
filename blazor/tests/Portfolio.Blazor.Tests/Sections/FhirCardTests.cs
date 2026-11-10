@@ -42,9 +42,9 @@ public sealed class FhirCardTests : BunitContext
         Assert.Empty(module.Invocations);
     }
 
-    /// <summary>Each project card has one primary button and a single row of links after it.</summary>
+    /// <summary>Each project card has one primary button and at most one row of links after it.</summary>
     [Fact]
-    public void Render_ShouldGiveEachProjectCardOneButtonAndOneLinkRowAfterIt()
+    public void Render_ShouldGiveEachProjectCardOneButtonAndAtMostOneLinkRowAfterIt()
     {
         // Arrange
         this.AddSiteOptions();
@@ -66,13 +66,15 @@ public sealed class FhirCardTests : BunitContext
         Assert.Equal(
         [
             "1 button, 1 row, after=True: API repo|OpenAPI spec|Explorer repo",
-            "1 button, 1 row, after=True: Site repo",
+            "1 button, 0 row, after=False: ",
             "1 button, 1 row, after=True: Screen repo|API repo",
         ], actions);
         var visit = cards[1].QuerySelector(".card-actions a.button-primary");
-        Assert.Equal("https://lightsplitters.com", visit?.GetAttribute("href"));
-        Assert.Equal("Visit lightsplitters.com", visit?.TextContent.Trim());
+        Assert.Equal("https://portal.mvcprogrammer.com", visit?.GetAttribute("href"));
+        Assert.Equal("Open the patient portal", visit?.TextContent.Trim());
         Assert.Equal("#icon-globe", visit?.QuerySelector("use")?.GetAttribute("href"));
+        Assert.Equal("Patient Portal", cards[1].QuerySelector("h3")?.TextContent);
+        Assert.Equal("assets/images/portfolio/patient-portal.jpg", cards[1].QuerySelector(".card-media img")?.GetAttribute("src"));
     }
 
     /// <summary>Both demo dialogs are rendered closed, each with its own id and heading.</summary>
