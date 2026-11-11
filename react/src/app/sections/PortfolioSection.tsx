@@ -99,7 +99,7 @@ export function PortfolioSection() {
               <div className="card-media">
                 <img
                   src="assets/images/portfolio/fhir-explorer.jpg"
-                  alt="The FHIR R4 patient explorer at fhir.mvcprogrammer.com in dark mode, showing a synthetic patient's summary: counts and active conditions with SNOMED codes"
+                  alt="The FHIR R4 patient explorer at fhir.mvcprogrammer.com in dark mode, as it opens: the search form prefilled with the demo family name and identifier, above the panel for creating a demo patient"
                   width="1200"
                   height="750"
                   loading="lazy"
@@ -175,7 +175,7 @@ export function PortfolioSection() {
               <div className="card-media">
                 <img
                   src="assets/images/portfolio/patient-portal.jpg"
-                  alt="The patient portal demonstration at portal.mvcprogrammer.com, showing an invented patient's Medications page: two current prescriptions and one past, with when the list was read and when it may be refreshed"
+                  alt="The patient portal demonstration at portal.mvcprogrammer.com in dark mode, showing an invented patient's Medications page: two current prescriptions and one past, with when the list was read"
                   width="1200"
                   height="750"
                   loading="lazy"
