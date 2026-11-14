@@ -41,7 +41,7 @@
   <text x="790.8" y="396" text-anchor="middle">Sat 14</text>
   <text x="852.0" y="396" text-anchor="middle">Sun 15</text>
   <path class="ideal" d="M56.0,56.0 L117.2,80.6 L178.5,105.2 L239.7,129.8 L300.9,154.5 L362.2,179.1 L423.4,203.7 L484.6,228.3 L545.8,252.9 L607.1,277.5 L668.3,302.2 L729.5,326.8 L790.8,351.4 L852.0,376.0"/>
-  <path class="actual" d="M56.0,162.7 L117.2,178.5 L178.5,221.9 L239.7,221.9 L300.9,229.8 L362.2,229.8 L423.4,229.8 L484.6,237.7 L545.8,249.6 L607.1,257.5 L668.3,257.5 L729.5,257.5"/>
+  <path class="actual" d="M56.0,162.7 L117.2,178.5 L178.5,221.9 L239.7,221.9 L300.9,229.8 L362.2,229.8 L423.4,229.8 L484.6,237.7 L545.8,249.6 L607.1,257.5 L668.3,257.5 L729.5,257.5 L790.8,257.5"/>
   <circle class="dot" cx="56.0" cy="162.7" r="4"><title>2026-11-02: 54 points remaining</title></circle>
   <circle class="dot" cx="117.2" cy="178.5" r="4"><title>2026-11-03: 50 points remaining</title></circle>
   <circle class="dot" cx="178.5" cy="221.9" r="4"><title>2026-11-04: 39 points remaining</title></circle>
@@ -54,6 +54,7 @@
   <circle class="dot" cx="607.1" cy="257.5" r="4"><title>2026-11-11: 30 points remaining</title></circle>
   <circle class="dot" cx="668.3" cy="257.5" r="4"><title>2026-11-12: 30 points remaining</title></circle>
   <circle class="dot" cx="729.5" cy="257.5" r="4"><title>2026-11-13: 30 points remaining</title></circle>
-  <line class="today" x1="729.5" x2="729.5" y1="56" y2="376"/>
+  <circle class="dot" cx="790.8" cy="257.5" r="4"><title>2026-11-14: 30 points remaining</title></circle>
+  <line class="today" x1="790.8" x2="790.8" y1="56" y2="376"/>
   <text x="852" y="426" text-anchor="end">points remaining · dashed: ideal · solid: actual</text>
 </svg>
