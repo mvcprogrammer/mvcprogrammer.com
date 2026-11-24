@@ -211,6 +211,7 @@ describe('ExperienceTimeline', () => {
         'Docker',
         'C#',
         'ASP.NET Web API',
+        'AdvancedMD Expert',
       ).items;
 
       // Act
@@ -218,6 +219,7 @@ describe('ExperienceTimeline', () => {
 
       // Assert
       expect(ordered).toEqual([
+        'AdvancedMD Expert',
         'ASP.NET Web API',
         'C#',
         'React',
@@ -225,6 +227,7 @@ describe('ExperienceTimeline', () => {
         'Docker',
         'CloudWatch',
       ]);
+      expect(PINNED_SKILLS[0]).toBe('AdvancedMD Expert');
       expect(PINNED_SKILLS).toContain('Claude Pair Programming');
       expect(DEMOTED_SKILLS).toEqual(['CloudWatch']);
     });

@@ -1284,7 +1284,7 @@ components:
           description: Job title as held.
           minLength: 1
           maxLength: 120
-          examples: [Senior Software Engineer]
+          examples: [Senior Software Engineer / Tech Lead]
         organization:
           type: string
           minLength: 1
@@ -2023,7 +2023,7 @@ components:
       summary: Current role
       value:
         id: advancedmd
-        title: Senior Software Engineer
+        title: Senior Software Engineer / Tech Lead
         organization: AdvancedMD
         startDate: '2023-12'
         endDate: '2026-05'
@@ -2043,7 +2043,7 @@ components:
           skill: RabbitMQ
         items:
           - id: advancedmd
-            title: Senior Software Engineer
+            title: Senior Software Engineer / Tech Lead
             organization: AdvancedMD
             startDate: '2023-12'
             endDate: '2026-05'

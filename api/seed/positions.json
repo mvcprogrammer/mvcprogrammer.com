@@ -1,22 +1,28 @@
 [
   {
     "id": "advancedmd",
-    "title": "Senior Software Engineer",
+    "title": "Senior Software Engineer / Tech Lead",
     "organization": "AdvancedMD",
     "startDate": "2023-12",
     "endDate": "2026-05",
     "workMode": "remote",
     "location": "Remote",
     "highlights": [
+      "Tech lead on the AdvancedMD Partner API (AdvancedMD Connect), the XML and REST integration API that third-party applications use to read and write practice management (PM) and EHR data.",
+      "Prepared API clients for production certification: reviewed third-party integrations against AdvancedMD's API requirements and guided their developers from sandbox testing to production access.",
+      "Advised integrators on the AdvancedMD interoperability route that fit their product: the Partner API, the FHIR R4 APIs, HL7 v2 interfaces, or reporting extracts.",
+      "Applied working knowledge of EHR and PM setup and workflows (scheduling, patient demographics and insurance, charge entry and billing, clinical notes, documents, lab orders) so integrations behaved the way front-office, billing, and clinical staff expect.",
       "Re-architected a legacy interval-polling Windows service into an on-demand RabbitMQ pipeline, turning scheduled batch processing into event-driven real-time throughput handling 1M+ API requests 24/7.",
-      "Designed the publish/subscribe topology: durable queues, routing keys, consumer acknowledgment, dead-letter handling, and Polly retries with exponential backoff.",
-      "Scaled parallel consumers with bounded concurrency, thread-safe shared state, and cooperative cancellation for long-running operations.",
+      "Designed the publish/subscribe topology (durable queues, routing keys, consumer acknowledgment, dead-letter handling, Polly retries with exponential backoff) and scaled parallel consumers with bounded concurrency and cooperative cancellation.",
       "Built and maintained HL7 v2 and FHIR integrations with external healthcare systems in a HIPAA-regulated environment.",
       "Tuned SQL Server at enterprise scale on high-write integration tables: execution plans, indexing strategy, and query rewrites.",
       "Owned production incident response and root-cause analysis; instrumented services with Serilog, Seq, Datadog, and CloudWatch.",
       "Served two years on the AI Transition Team, bringing Claude pair programming into day-to-day development."
     ],
     "skills": [
+      "AdvancedMD Expert",
+      "EHR / PM integration",
+      "Healthcare interoperability",
       "C#",
       ".NET",
       ".NET Core",

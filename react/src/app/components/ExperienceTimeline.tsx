@@ -10,6 +10,7 @@ export const VISIBLE_CHIPS = 12;
 
 /** Chips named here lead the row in this order, regardless of position count. */
 export const PINNED_SKILLS: readonly string[] = [
+  'AdvancedMD Expert',
   'ASP.NET Web API',
   'C#',
   'Claude Pair Programming',
