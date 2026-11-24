@@ -2,7 +2,7 @@ import { ChangeDetectionStrategy, Component, inject } from '@angular/core';
 import { Icon } from '../../components/icon/icon';
 import { ContactTopicState } from '../../interfaces/contact-topic-state';
 
-/** For employers. The call to action preselects the contact topic. */
+/** What I offer employers and clients. Each call to action preselects its contact topic. */
 @Component({
   selector: 'app-services-section',
   imports: [Icon],
