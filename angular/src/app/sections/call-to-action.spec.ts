@@ -32,14 +32,15 @@ describe('call to action', () => {
       const fixture = TestBed.createComponent(ServicesSection);
       await fixture.whenStable();
       const host = fixture.nativeElement as HTMLElement;
-      const links = host.querySelectorAll<HTMLAnchorElement>('a.button-primary[href="#contact"]');
+      const links = Array.from(host.querySelectorAll<HTMLAnchorElement>('a.button-primary[href="#contact"]'));
+      const link = links.find((a) => a.textContent === 'Talk about a contract');
 
       // Act
-      links[1]?.click();
+      link?.click();
 
       // Assert
+      expect(link).toBeDefined();
       expect(links.length).toBe(2);
-      expect(links[1]?.textContent).toBe('Talk about a contract');
       expect(selected).toEqual(['Contract or consulting']);
     });
   });

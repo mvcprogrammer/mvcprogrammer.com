@@ -35,15 +35,14 @@ public sealed class CallToActionTests : BunitContext
         string? selected = null;
         topic.Subscribe(t => selected = t);
         var cut = Render<ServicesSection>();
-        var links = cut.FindAll("a.button-primary[href='#contact']");
+        var link = Assert.Single(cut.FindAll("a.button-primary[href='#contact']"), a => a.TextContent == "Talk about a contract");
 
         // Act
-        links[1].Click();
+        link.Click();
 
         // Assert
-        Assert.Equal(2, links.Count);
-        Assert.Equal("Talk about a contract", links[1].TextContent);
         Assert.Equal("Contract or consulting", selected);
+        Assert.Equal(2, cut.FindAll("a.button-primary[href='#contact']").Count);
     }
 
     #endregion

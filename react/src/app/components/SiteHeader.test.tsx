@@ -112,7 +112,7 @@ describe('SiteHeader', () => {
   });
 
   describe('rendering', () => {
-    it('should render the six section links with the menu closed', () => {
+    it('should render the five section links with the menu closed', () => {
       // Arrange, Act
       renderHeader();
 
@@ -121,6 +121,13 @@ describe('SiteHeader', () => {
         (a) => [a.textContent, a.getAttribute('href')],
       );
       expect(links).toEqual(SECTION_LINKS.map((link) => [link.label, `#${link.id}`]));
+      expect(links.map(([label]) => label)).toEqual([
+        'About',
+        'Offerings',
+        'Portfolio',
+        'Resume',
+        'Contact',
+      ]);
       const toggle = screen.getByRole('button', { name: 'Open menu' });
       expect(toggle.getAttribute('aria-expanded')).toBe('false');
       expect(document.querySelector('.site-nav')?.classList.contains('is-open')).toBe(false);
