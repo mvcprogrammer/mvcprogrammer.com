@@ -8,7 +8,7 @@
   <meta name="theme-color" content="#211e18" media="(prefers-color-scheme: dark)">
 
   <title>Neal Thomas | Senior Full-Stack Software Engineer | .NET, Angular, React, SQL Server</title>
-  <meta name="description" content="Neal Thomas is a senior full-stack software engineer in Tampa Bay, Florida, building enterprise API applications with C#/.NET Core, Angular, and SQL Server. 15+ years of experience, event-driven architecture, deep accounting and healthcare domain knowledge, and freelance Stellar MLS / Bridge Data Output API integration for real estate.">
+  <meta name="description" content="Neal Thomas is a senior full-stack software engineer in Tampa Bay, Florida, building enterprise API applications with C#/.NET Core, Angular, and SQL Server. 15+ years of experience, event-driven architecture, deep accounting and healthcare domain knowledge (AdvancedMD EHR and practice management API, HL7 v2, FHIR), and freelance Stellar MLS / Bridge Data Output API integration for real estate.">
   <meta name="author" content="Neal Thomas">
   <link rel="canonical" href="https://mvcprogrammer.com/">
 
@@ -57,7 +57,7 @@
       "https://www.linkedin.com/in/mvcprogrammer/",
       "https://www.flickr.com/photos/lightsplitters/"
     ],
-    "knowsAbout": ["C#", ".NET Core", "ASP.NET Core Web API", "Angular", "TypeScript", "SQL Server", "T-SQL", "Blazor", "RabbitMQ", "AWS", "Azure DevOps", "Event-driven architecture", "CQRS", "HL7", "FHIR", "Accounting systems", "Stellar MLS", "Bridge Data Output API", "MLS integration", "Real estate software", "Financial trading systems"]
+    "knowsAbout": ["C#", ".NET Core", "ASP.NET Core Web API", "Angular", "TypeScript", "SQL Server", "T-SQL", "Blazor", "RabbitMQ", "AWS", "Azure DevOps", "Event-driven architecture", "CQRS", "HL7 v2", "FHIR", "AdvancedMD", "AdvancedMD API integration", "EHR integration", "Practice management systems", "Healthcare interoperability", "Accounting systems", "Stellar MLS", "Bridge Data Output API", "MLS integration", "Real estate software", "Financial trading systems"]
   }
   </script>
 </head>
@@ -482,12 +482,15 @@
         <ol class="timeline" id="experience-timeline" data-api="/api" role="list">
           <li class="timeline-item">
             <p class="timeline-date"><time datetime="2023-12">Dec 2023</time> – <time datetime="2026-05">May 2026</time> · Remote</p>
-            <h3>Senior Software Engineer</h3>
+            <h3>Senior Software Engineer / Tech Lead</h3>
             <p class="timeline-org">AdvancedMD</p>
             <ul class="timeline-points">
+              <li>Tech lead on the AdvancedMD Partner API (AdvancedMD Connect), the XML and REST integration API that third-party applications use to read and write practice management (PM) and EHR data.</li>
+              <li>Prepared API clients for production certification: reviewed third-party integrations against AdvancedMD's API requirements and guided their developers from sandbox testing to production access.</li>
+              <li>Advised integrators on the AdvancedMD interoperability route that fit their product: the Partner API, the FHIR R4 APIs, HL7 v2 interfaces, or reporting extracts.</li>
+              <li>Applied working knowledge of EHR and PM setup and workflows (scheduling, patient demographics and insurance, charge entry and billing, clinical notes, documents, lab orders) so integrations behaved the way front-office, billing, and clinical staff expect.</li>
               <li>Re-architected a legacy interval-polling Windows service into an on-demand RabbitMQ pipeline, turning scheduled batch processing into event-driven real-time throughput handling 1M+ API requests 24/7.</li>
-              <li>Designed the publish/subscribe topology: durable queues, routing keys, consumer acknowledgment, dead-letter handling, and Polly retries with exponential backoff.</li>
-              <li>Scaled parallel consumers with bounded concurrency, thread-safe shared state, and cooperative cancellation for long-running operations.</li>
+              <li>Designed the publish/subscribe topology (durable queues, routing keys, consumer acknowledgment, dead-letter handling, Polly retries with exponential backoff) and scaled parallel consumers with bounded concurrency and cooperative cancellation.</li>
               <li>Built and maintained HL7 v2 and FHIR integrations with external healthcare systems in a HIPAA-regulated environment.</li>
               <li>Tuned SQL Server at enterprise scale on high-write integration tables: execution plans, indexing strategy, and query rewrites.</li>
               <li>Owned production incident response and root-cause analysis; instrumented services with Serilog, Seq, Datadog, and CloudWatch.</li>

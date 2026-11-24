@@ -159,14 +159,14 @@ public sealed class ExperienceTimelineTests : BunitContext
     public async Task OnInitializedAsync_ShouldOrderChipsPinnedThenRestThenDemoted()
     {
         // Arrange
-        Arrange_ApiAnswers(TestData.CreatePositionList(), TestData.CreateSkillList("CloudWatch", "SQL Server", "Angular", "AWS", "C#"));
+        Arrange_ApiAnswers(TestData.CreatePositionList(), TestData.CreateSkillList("CloudWatch", "SQL Server", "Angular", "AWS", "C#", "AdvancedMD Expert"));
 
         // Act
         var cut = Render<ExperienceTimeline>();
 
         // Assert
-        await cut.WaitForAssertionAsync(() => Assert.Equal(6, cut.FindAll(".skill-chip").Count));
-        Assert.Equal(["All", "C#", "Angular", "SQL Server", "AWS", "CloudWatch"], cut.FindAll(".skill-chip").Select(c => c.TextContent));
+        await cut.WaitForAssertionAsync(() => Assert.Equal(7, cut.FindAll(".skill-chip").Count));
+        Assert.Equal(["All", "AdvancedMD Expert", "C#", "Angular", "SQL Server", "AWS", "CloudWatch"], cut.FindAll(".skill-chip").Select(c => c.TextContent));
     }
 
     /// <summary>Past twelve skills, the rest hide behind a "+N more" chip that reveals them and removes itself.</summary>

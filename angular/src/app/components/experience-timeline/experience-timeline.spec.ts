@@ -152,13 +152,13 @@ describe('ExperienceTimeline', () => {
   describe('skill chips', () => {
     it('should order chips pinned first, then the rest in API order, then demoted', async () => {
       // Arrange
-      arrangeApiAnswers(createPositionList(), createSkillList('CloudWatch', 'SQL Server', 'Angular', 'AWS', 'C#'));
+      arrangeApiAnswers(createPositionList(), createSkillList('CloudWatch', 'SQL Server', 'Angular', 'AWS', 'C#', 'AdvancedMD Expert'));
 
       // Act
       await render();
 
       // Assert
-      expect(chipLabels()).toEqual(['All', 'C#', 'Angular', 'SQL Server', 'AWS', 'CloudWatch']);
+      expect(chipLabels()).toEqual(['All', 'AdvancedMD Expert', 'C#', 'Angular', 'SQL Server', 'AWS', 'CloudWatch']);
     });
 
     it('should hide chips past twelve behind a more button that reveals them', async () => {
