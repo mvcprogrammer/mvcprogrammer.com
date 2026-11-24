@@ -17,4 +17,19 @@ describe('calls to action', () => {
     expect(listener).toHaveBeenCalledWith('Job opportunity');
     expect(screen.getByText('Talk about a role').getAttribute('href')).toBe('#contact');
   });
+
+  it('should preselect the Contract or consulting topic from the Services section', () => {
+    // Arrange
+    const services = createSiteTestServices();
+    const listener = vi.fn();
+    services.topics.subscribe(listener);
+    renderWithSite(<ServicesSection />, services);
+
+    // Act
+    fireEvent.click(screen.getByText('Talk about a contract'));
+
+    // Assert
+    expect(listener).toHaveBeenCalledWith('Contract or consulting');
+    expect(screen.getByText('Talk about a contract').getAttribute('href')).toBe('#contact');
+  });
 });

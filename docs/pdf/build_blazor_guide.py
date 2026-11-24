@@ -117,7 +117,7 @@ story += [
             ["Styling", "Shared stylesheet plus " + c("vanilla.css") + " (palette).", "Shared stylesheet plus " + c("blazor.css") + " (palette, boot screen, error bar). Razor components carry no scoped CSS."],
             ["Build output", "The files as committed.", c("dotnet publish") + ": trimmed, invariant globalization, no time zone data, no fingerprint placeholders (the import map would be an inline script, which the CSP forbids)."],
             ["Hosting", "Root of the private S3 bucket, distribution for mvcprogrammer.com.", c("blazor/") + " prefix of the same bucket, distribution " + c("E2NFN5MW02S8Y9") + ", own ACM certificate, CSP with " + c("'wasm-unsafe-eval'") + ", S3 403 rewritten to " + c("index.html") + " so deep links reach the router."],
-            ["Tests", "None in the repo for the static page.", "124 bUnit and xUnit cases, run before every publish. (The Angular and React editions have their own Vitest suites.)"],
+            ["Tests", "None in the repo for the static page.", "125 bUnit and xUnit cases, run before every publish. (The Angular and React editions have their own Vitest suites.)"],
         ],
         [1.15 * inch, 2.85 * inch, 3.0 * inch],
     ),
@@ -192,7 +192,7 @@ story += [
     b("Dependencies of the class under test are faked, never the class itself. " + c("Assert.Equal") + " for exact values, " + c("Assert.Single") + " when one element is expected, " + c("Assert.ThrowsAsync") + " for async failures, " + c("CancellationToken.None") + " unless cancellation is the subject."),
     b("Async component assertions use " + c("cut.WaitForAssertionAsync(...)") + " because the first render happens before " + c("OnInitializedAsync") + " completes."),
     p("Test project layout", "h2"),
-    p("Folders mirror the app. The counts are test methods; theories expand to more cases at run time (102 in all, 124 cases once the theories expand)."),
+    p("Folders mirror the app. The counts are test methods; theories expand to more cases at run time (103 in all, 125 cases once the theories expand)."),
     table(
         ["File", "Tests", "What it proves"],
         [
@@ -203,7 +203,7 @@ story += [
             [link("Pages/HomeTests.cs", BLOB + "blazor/tests/Portfolio.Blazor.Tests/Pages/HomeTests.cs"), "2", "Every section in nav order with the engagement beacon started, and the watch handle and module released on dispose."],
             [link("Sections/ContactSectionTests.cs", BLOB + "blazor/tests/Portfolio.Blazor.Tests/Sections/ContactSectionTests.cs"), "12", "Phone field hidden by default, topic preselection and unsubscribe, phone reveal, post and confirmations, honeypot forwarded, 429, generic failure, timeout, no post when invalid."],
             [link("Sections/StaticSectionTests.cs", BLOB + "blazor/tests/Portfolio.Blazor.Tests/Sections/StaticSectionTests.cs"), "5", "The four edition chips in About with their hints, plain hero highlights, the resume button uses the configured URL, the colophon links to the Blazor source, Home renders every section in order."],
-            [link("Sections/CallToActionTests.cs", BLOB + "blazor/tests/Portfolio.Blazor.Tests/Sections/CallToActionTests.cs"), "1", "The Services button selects its contact topic."],
+            [link("Sections/CallToActionTests.cs", BLOB + "blazor/tests/Portfolio.Blazor.Tests/Sections/CallToActionTests.cs"), "2", "Each Services button selects its contact topic."],
             [link("Sections/FhirCardTests.cs", BLOB + "blazor/tests/Portfolio.Blazor.Tests/Sections/FhirCardTests.cs"), "4", "The FHIR API card renders its pitch, image, button, and three links with nothing FHIR-related requested, every project card has one button and at most one row of links after it, both demo dialogs render closed, and the button opens the explorer dialog on the configured URL."],
             [link("Services/ExperienceClientTests.cs", BLOB + "blazor/tests/Portfolio.Blazor.Tests/Services/ExperienceClientTests.cs"), "10", "Paths and deserialization, query-string escaping, blank skill ignored, error status, HTML body, null body, cancellation, skills, seed."],
             [link("Services/ContactClientTests.cs", BLOB + "blazor/tests/Portfolio.Blazor.Tests/Services/ContactClientTests.cs"), "5", "Null guards, camelCase JSON to the endpoint, status code on rejection, cancellation."],

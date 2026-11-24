@@ -1,18 +1,18 @@
 import { Icon } from '../components/Icon';
 import { useSite } from '../providers/SiteProvider';
 
-/** For employers. The call to action preselects the contact topic. */
+/** What I offer employers and clients. Each call to action preselects its contact topic. */
 export function ServicesSection() {
   const { topics } = useSite();
   return (
     <section className="section" id="services" aria-labelledby="services-title">
       <div className="container">
-        <p className="eyebrow">02 / For Employers</p>
-        <h2 id="services-title">What I Offer Employers</h2>
+        <p className="eyebrow">02 / My Offerings</p>
+        <h2 id="services-title">What I Offer</h2>
         <p className="section-intro">
-          For companies hiring a senior full-stack engineer. These are the six areas I own on a
-          product team, from the first design review through production support, and the standard I
-          hold each one to.
+          For companies hiring a senior full-stack engineer and for clients engaging one on
+          contract. These are the six areas I own on a product team or a client project, from the
+          first design review through production support, and the standard I hold each one to.
         </p>
         <div className="card-grid">
           <article className="card service-card">
@@ -121,6 +121,13 @@ export function ServicesSection() {
             onClick={() => topics.select('Job opportunity')}
           >
             Talk about a role
+          </a>
+          <a
+            className="button button-primary"
+            href="#contact"
+            onClick={() => topics.select('Contract or consulting')}
+          >
+            Talk about a contract
           </a>
           <a className="button button-secondary" href="#resume">
             See my experience

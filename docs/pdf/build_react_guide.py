@@ -122,7 +122,7 @@ story += [
             ["Styling", "Shared stylesheet plus " + c("vanilla.css") + " (palette).", "Shared stylesheet plus " + c("angular.css") + " (palette, boot screen); no component styles (CSP).", "Shared stylesheet plus " + c("react.css") + " (palette, boot screen). <b>No CSS-in-JS and no " + c("style") + " attribute</b>: the CSP forbids inline styles. No host elements, so no " + c("display: contents") + " list to maintain."],
             ["Build output", "The files as committed.", c("ng build") + ": esbuild, fingerprinted bundles, critical CSS not inlined.", c("tsc -b") + " then " + c("vite build") + ": one fingerprinted script and stylesheet under " + c("bundles/") + ", nothing inlined, no source maps."],
             ["Hosting", "Bucket root, distribution for mvcprogrammer.com.", c("angular/") + " prefix, own distribution, S3 403 rewritten to " + c("index.html") + ".", c("react/") + " prefix, own distribution, the static site's response headers policy unchanged, S3 403 rewritten to " + c("index.html") + " so React Router answers deep links."],
-            ["Tests", "None for the static page.", "140 Vitest cases on jsdom.", "188 Vitest cases on jsdom with Testing Library, run before every build."],
+            ["Tests", "None for the static page.", "153 Vitest cases on jsdom.", "201 Vitest cases on jsdom with Testing Library, run before every build."],
         ],
         [0.95 * inch, 1.6 * inch, 2.1 * inch, 2.35 * inch],
         first_style="cellsmall",
@@ -195,7 +195,7 @@ story += [
     b("Async rules: a state change after a promise is awaited with " + c("findBy...") + " or " + c("waitFor") + "; a call into the component from outside React (the topic state, an observer callback) is wrapped in " + c("act()") + "."),
     b("jsdom has no " + c("IntersectionObserver") + ", no " + c("matchMedia") + ", and no modal dialogs. The components guard for that; the tests stub the observer and the dialog methods where the behavior matters, and query a closed dialog's button with " + c("hidden: true") + "."),
     p("Test layout", "h2"),
-    p("Files mirror the app. The counts are test cases as Vitest reports them (200 in all)."),
+    p("Files mirror the app. The counts are test cases as Vitest reports them (201 in all)."),
     table(
         ["File", "Tests", "What it proves"],
         [
@@ -208,7 +208,7 @@ story += [
             [link("sections/ContactSection.test.tsx", BLOB + SRC + "sections/ContactSection.test.tsx"), "25", "Phone field hidden by default, reveal and hide, topic preselection and unsubscribe, post and both confirmations with reset, honeypot forwarded, disabled while sending, 429, generic failure, timeout, non-HTTP error, values kept after failure, no post when invalid, when a call has no number, or the message is too short, blur marks a field, fixing clears it, and the message table."],
             [link("sections/static-sections.test.tsx", BLOB + SRC + "sections/static-sections.test.tsx"), "10", "Hero with plain highlights, the four About chips, the quote, one button and at most one row of links on each project card, the kiosk button and its dialog, the FHIR card's pitch and the explorer dialog it opens, the iframe removed on close, the resume URL and education, the colophon."],
 
-            [link("sections/call-to-action.test.tsx", BLOB + SRC + "sections/call-to-action.test.tsx"), "1", "The Services button selects its contact topic."],
+            [link("sections/call-to-action.test.tsx", BLOB + SRC + "sections/call-to-action.test.tsx"), "2", "Each Services button selects its contact topic."],
             [link("pages/Home, pages/NotFound, App.test.tsx", TREE + SRC), "6", "Home renders every section in order and starts and stops the tracker, NotFound, the layout around the routed page, an unknown path routes to NotFound, App under the browser router."],
             [link("providers/site-services.test.ts, SiteProvider.test.tsx", TREE + SRC + "providers"), "14", "Every service built, invalid options rejected before building, each required key, each URL key, every problem named at once, the provider hands services down, useSite throws without one."],
             [link("services/fetch-experience-client.test.ts", BLOB + SRC + "services/fetch-experience-client.test.ts"), "12", "Paths, Accept header and timeout signal, query-string escaping, blank skill ignored, error status, non-JSON body, null bodies, skills, seed, the global fetch by default, a rejected fetch propagated."],

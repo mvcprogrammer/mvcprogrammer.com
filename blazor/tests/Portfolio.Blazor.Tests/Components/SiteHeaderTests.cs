@@ -22,7 +22,7 @@ public sealed class SiteHeaderTests : BunitContext
         Assert.Single(module.Invocations, i => i.Identifier == "watchHeader");
         var observe = Assert.Single(module.Invocations, i => i.Identifier == "observeSections");
         Assert.Equal(["about", "services", "portfolio", "resume", "contact"], Assert.IsType<string[]>(observe.Arguments[1]));
-        Assert.Equal(5, cut.FindAll(".nav-link").Count);
+        Assert.Equal(["About", "Offerings", "Portfolio", "Resume", "Contact"], cut.FindAll(".nav-link").Select(a => a.TextContent.Trim()));
         Assert.Equal("false", cut.Find(".nav-toggle").GetAttribute("aria-expanded"));
         Assert.Equal("Blazor Edition", cut.Find(".edition-toggle").TextContent.Trim());
         Assert.Equal("false", cut.Find(".edition-toggle").GetAttribute("aria-expanded"));

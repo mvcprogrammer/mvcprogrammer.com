@@ -41,7 +41,7 @@ export class SiteHeader {
   /** The sections the nav links to, in page order. */
   static readonly SECTION_LINKS: readonly SectionLink[] = [
     { id: 'about', label: 'About' },
-    { id: 'services', label: 'Employers' },
+    { id: 'services', label: 'Offerings' },
     { id: 'portfolio', label: 'Portfolio' },
     { id: 'resume', label: 'Resume' },
     { id: 'contact', label: 'Contact' },

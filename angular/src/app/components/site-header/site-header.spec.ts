@@ -136,7 +136,7 @@ describe('SiteHeader', () => {
     it('should render the brand, the five nav links in order, and the social links', () => {
       // Assert
       const labels = Array.from(host.querySelectorAll('.nav-link')).map((link) => link.textContent?.trim());
-      expect(labels).toEqual(['About', 'Employers', 'Portfolio', 'Resume', 'Contact']);
+      expect(labels).toEqual(['About', 'Offerings', 'Portfolio', 'Resume', 'Contact']);
       const hrefs = Array.from(host.querySelectorAll<HTMLAnchorElement>('.nav-link')).map((link) => link.getAttribute('href'));
       expect(hrefs).toEqual(['#about', '#services', '#portfolio', '#resume', '#contact']);
       expect(host.querySelector('.brand')?.getAttribute('href')).toBe('#top');

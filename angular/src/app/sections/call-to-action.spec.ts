@@ -22,5 +22,26 @@ describe('call to action', () => {
       expect(host.querySelectorAll('.service-card').length).toBe(6);
       expect(host.querySelectorAll('.service-icon svg use').length).toBe(6);
     });
+
+    it('should select the contract topic when "Talk about a contract" is clicked', async () => {
+      // Arrange
+      const services = createSiteTestServices();
+      const selected: string[] = [];
+      services.topics.topics.subscribe((topic) => selected.push(topic));
+      await TestBed.configureTestingModule({ imports: [ServicesSection], providers: services.providers }).compileComponents();
+      const fixture = TestBed.createComponent(ServicesSection);
+      await fixture.whenStable();
+      const host = fixture.nativeElement as HTMLElement;
+      const links = Array.from(host.querySelectorAll<HTMLAnchorElement>('a.button-primary[href="#contact"]'));
+      const link = links.find((a) => a.textContent === 'Talk about a contract');
+
+      // Act
+      link?.click();
+
+      // Assert
+      expect(link).toBeDefined();
+      expect(links.length).toBe(2);
+      expect(selected).toEqual(['Contract or consulting']);
+    });
   });
 });

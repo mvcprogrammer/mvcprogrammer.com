@@ -21,7 +21,7 @@ public sealed partial class SiteHeader : IAsyncDisposable
     private static readonly SectionLink[] _sectionLinks =
     [
         new("about", "About"),
-        new("services", "Employers"),
+        new("services", "Offerings"),
         new("portfolio", "Portfolio"),
         new("resume", "Resume"),
         new("contact", "Contact"),
