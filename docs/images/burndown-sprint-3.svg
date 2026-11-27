@@ -39,13 +39,19 @@
   <text x="790.8" y="396" text-anchor="middle">Sat 28</text>
   <text x="852.0" y="396" text-anchor="middle">Sun 29</text>
   <path class="ideal" d="M56.0,56.0 L117.2,80.6 L178.5,105.2 L239.7,129.8 L300.9,154.5 L362.2,179.1 L423.4,203.7 L484.6,228.3 L545.8,252.9 L607.1,277.5 L668.3,302.2 L729.5,326.8 L790.8,351.4 L852.0,376.0"/>
-  <path class="actual" d="M56.0,56.0 L117.2,56.0 L178.5,56.0 L239.7,56.0 L300.9,56.0 L362.2,56.0"/>
+  <path class="actual" d="M56.0,56.0 L117.2,56.0 L178.5,56.0 L239.7,56.0 L300.9,56.0 L362.2,56.0 L423.4,56.0 L484.6,56.0 L545.8,56.0 L607.1,56.0 L668.3,56.0 L729.5,56.0"/>
   <circle class="dot" cx="56.0" cy="56.0" r="4"><title>2026-11-16: 2 points remaining</title></circle>
   <circle class="dot" cx="117.2" cy="56.0" r="4"><title>2026-11-17: 2 points remaining</title></circle>
   <circle class="dot" cx="178.5" cy="56.0" r="4"><title>2026-11-18: 2 points remaining</title></circle>
   <circle class="dot" cx="239.7" cy="56.0" r="4"><title>2026-11-19: 2 points remaining</title></circle>
   <circle class="dot" cx="300.9" cy="56.0" r="4"><title>2026-11-20: 2 points remaining</title></circle>
   <circle class="dot" cx="362.2" cy="56.0" r="4"><title>2026-11-21: 2 points remaining</title></circle>
-  <line class="today" x1="362.2" x2="362.2" y1="56" y2="376"/>
+  <circle class="dot" cx="423.4" cy="56.0" r="4"><title>2026-11-22: 2 points remaining</title></circle>
+  <circle class="dot" cx="484.6" cy="56.0" r="4"><title>2026-11-23: 2 points remaining</title></circle>
+  <circle class="dot" cx="545.8" cy="56.0" r="4"><title>2026-11-24: 2 points remaining</title></circle>
+  <circle class="dot" cx="607.1" cy="56.0" r="4"><title>2026-11-25: 2 points remaining</title></circle>
+  <circle class="dot" cx="668.3" cy="56.0" r="4"><title>2026-11-26: 2 points remaining</title></circle>
+  <circle class="dot" cx="729.5" cy="56.0" r="4"><title>2026-11-27: 2 points remaining</title></circle>
+  <line class="today" x1="729.5" x2="729.5" y1="56" y2="376"/>
   <text x="852" y="426" text-anchor="end">points remaining · dashed: ideal · solid: actual</text>
 </svg>
